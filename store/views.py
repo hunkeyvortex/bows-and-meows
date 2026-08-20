@@ -22,6 +22,7 @@ from brevo.transactional_emails import (
     SendTransacEmailRequestSender,
     SendTransacEmailRequestToItem,
 )
+from brevo.core.api_error import ApiError
 import re
 from django.db import transaction
 import uuid
@@ -38,33 +39,63 @@ def home(request):
         {"products": products}
     )
 
+from brevo.core.api_error import ApiError
+
 def send_brevo_email(to_email, to_name, subject, html_content):
 
     api_key = os.getenv("BREVO_API_KEY")
     sender_email = os.getenv("BREVO_SENDER_EMAIL")
     sender_name = os.getenv("BREVO_SENDER_NAME", "Bows & Meows")
 
-    if not api_key or not sender_email or not to_email:
+    if not api_key:
+        print("BREVO ERROR: BREVO_API_KEY missing")
         return
 
-    client = Brevo(api_key=api_key)
+    if not sender_email:
+        print("BREVO ERROR: BREVO_SENDER_EMAIL missing")
+        return
 
-    client.transactional_emails.send_transac_email(
-        subject=subject,
-        html_content=html_content,
+    if not to_email:
+        print("BREVO ERROR: recipient email missing")
+        return
 
-        sender=SendTransacEmailRequestSender(
-            name=sender_name,
-            email=sender_email,
-        ),
+    try:
+        client = Brevo(api_key=api_key)
 
-        to=[
-            SendTransacEmailRequestToItem(
-                email=to_email,
-                name=to_name or "",
-            )
-        ],
-)
+        result = client.transactional_emails.send_transac_email(
+            subject=subject,
+            html_content=html_content,
+
+            sender=SendTransacEmailRequestSender(
+                name=sender_name,
+                email=sender_email,
+            ),
+
+            to=[
+                SendTransacEmailRequestToItem(
+                    email=to_email,
+                    name=to_name or "",
+                )
+            ],
+        )
+
+        print(
+            "BREVO EMAIL SENT:",
+            result.message_id
+        )
+
+    except ApiError as e:
+        print(
+            "BREVO API ERROR:",
+            e.status_code,
+            e.body
+        )
+
+    except Exception as e:
+        print(
+            "BREVO UNKNOWN ERROR:",
+            str(e)
+        )
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
