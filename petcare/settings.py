@@ -203,7 +203,13 @@ STORAGES = {
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-EMAIL_BACKEND = "store.email_backend.RelaxedStrictSMTPBackend"
+if os.getenv("RENDER_EXTERNAL_HOSTNAME"):
+    # Render Free blocks Gmail SMTP.
+    # Temporarily print emails to Render logs instead.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    # Local development - real Gmail works here.
+    EMAIL_BACKEND = "store.email_backend.RelaxedStrictSMTPBackend"
 
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
