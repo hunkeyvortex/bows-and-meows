@@ -16,6 +16,12 @@ from .models import Product, Order, OrderItem, Pet, Review
 from .models import Product, Order, OrderItem, Pet, Review, Wishlist
 from .models import Address
 import razorpay
+import os
+from brevo import Brevo
+from brevo.transactional_emails import (
+    SendTransacEmailRequestSender,
+    SendTransacEmailRequestToItem,
+)
 import re
 from django.db import transaction
 import uuid
@@ -32,7 +38,33 @@ def home(request):
         {"products": products}
     )
 
+def send_brevo_email(to_email, to_name, subject, html_content):
 
+    api_key = os.getenv("BREVO_API_KEY")
+    sender_email = os.getenv("BREVO_SENDER_EMAIL")
+    sender_name = os.getenv("BREVO_SENDER_NAME", "Bows & Meows")
+
+    if not api_key or not sender_email or not to_email:
+        return
+
+    client = Brevo(api_key=api_key)
+
+    client.transactional_emails.send_transac_email(
+        subject=subject,
+        html_content=html_content,
+
+        sender=SendTransacEmailRequestSender(
+            name=sender_name,
+            email=sender_email,
+        ),
+
+        to=[
+            SendTransacEmailRequestToItem(
+                email=to_email,
+                name=to_name or "",
+            )
+        ],
+)
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
@@ -141,21 +173,12 @@ def send_order_confirmation(order):
         f"Bows & Meows"
     )
 
-    email = EmailMultiAlternatives(
-        subject=subject,
-        body=text_content,
-        from_email=None,
-        to=[order.email],
-    )
-
-    email.attach_alternative(
-        html_content,
-        "text/html"
-    )
-
-    email.send(
-        fail_silently=True
-    )
+    send_brevo_email(
+    to_email=order.email,
+    to_name=order.customer_name,
+    subject=subject,
+    html_content=html_content,
+)
 
 def send_order_status_email(order):
 
@@ -197,20 +220,11 @@ def send_order_status_email(order):
         f"Bows & Meows"
     )
 
-    email = EmailMultiAlternatives(
+    send_brevo_email(
+        to_email=order.email,
+        to_name=order.customer_name,
         subject=subject,
-        body=text_content,
-        from_email=None,
-        to=[order.email],
-    )
-
-    email.attach_alternative(
-        html_content,
-        "text/html"
-    )
-
-    email.send(
-        fail_silently=True
+        html_content=html_content,
     )
 def checkout(request):
     cart = request.session.get("cart", {})
