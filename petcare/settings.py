@@ -57,11 +57,12 @@ DEBUG = (
 )
 
 ALLOWED_HOSTS = [
-    host.strip()
-    for host in (
-        env.get("ALLOWED_HOSTS", "")
-    ).split(",")
-    if host.strip()
+    "127.0.0.1",
+    "localhost",
+    "bows-and-meows-1.onrender.com",
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://bows-and-meows-1.onrender.com",
 ]
 
 render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
