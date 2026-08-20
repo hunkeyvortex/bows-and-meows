@@ -16,7 +16,10 @@ from dotenv import dotenv_values
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-env = dotenv_values(BASE_DIR / ".env")
+env = {
+    **dotenv_values(BASE_DIR / ".env"),
+    **os.environ,
+}
 
 CLOUDINARY_STORAGE = {
     "CLOUD_NAME": (
