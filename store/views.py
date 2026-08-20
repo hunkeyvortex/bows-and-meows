@@ -941,6 +941,13 @@ def crm_order_status(request, order_id):
     order = get_object_or_404(Order, id=order_id)
 
     if request.method == "POST":
+        print("CRM STATUS UPDATE FUNCTION CALLED")
+
+        new_status = request.POST.get("status")
+
+        print("NEW STATUS:", new_status)
+
+    if request.method == "POST":
         new_status = request.POST.get("status")
 
         valid_statuses = [
@@ -1004,7 +1011,10 @@ def crm_order_status(request, order_id):
                 order.save()
 
                 # Send email only if the status actually changed
+
+                # Send email only if the status actually changed
                 if old_status != new_status:
+                    print("CALLING ORDER STATUS EMAIL")
                     send_order_status_email(order)
 
                 return redirect("crm_orders")
