@@ -1,0 +1,250 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Checkout | Bows & Meows</title>
+
+    <link rel="stylesheet" href="{% static 'store/style.css' %}">
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">
+        🐾 Bows <span>&</span> Meows
+    </div>
+
+    <nav>
+        <a href="{% url 'home' %}">
+            Home
+        </a>
+
+        <a href="{% url 'cart' %}">
+            Cart
+        </a>
+    </nav>
+
+</header>
+
+{% if error %}
+    <div class="form-error">
+        {{ error }}
+    </div>
+{% endif %}
+<section class="checkout-page">
+
+    <div class="section-heading">
+
+        <span>Almost There</span>
+
+        <h2>Checkout</h2>
+
+        <p>
+            Enter your details to complete your order.
+        </p>
+
+    </div>
+
+
+    <div class="checkout-layout">
+
+
+        <form method="POST" class="checkout-form">
+
+            {% csrf_token %}
+
+        <input
+            type="hidden"
+            name="checkout_token"
+            value="{{ checkout_token }}"
+        >
+
+            <h2>Customer Details</h2>
+
+
+            <label>
+                Full Name
+            </label>
+            {% if request.user.is_authenticated and addresses %}
+
+                <div class="saved-addresses">
+
+                    <h3>Choose Saved Address</h3>
+
+                    {% for address in addresses %}
+
+                        <label class="saved-address-option">
+
+                            <input
+                                type="radio"
+                                name="saved_address"
+                                value="{{ address.id }}"
+                                {% if address.is_default %}checked{% endif %}
+                            >
+
+                            <div>
+
+                                <strong>
+                                    {{ address.full_name }}
+                                </strong>
+
+                                {% if address.is_default %}
+                                    <span class="default-address">
+                                        Default
+                                    </span>
+                                {% endif %}
+
+                                <p>
+                                    {{ address.address_line1 }},
+                                    {% if address.address_line2 %}
+                                        {{ address.address_line2 }},
+                                    {% endif %}
+                                    {{ address.city }},
+                                    {{ address.state }}
+                                    - {{ address.pincode }}
+                                </p>
+
+                                <p>
+                                    {{ address.phone }}
+                                </p>
+
+                            </div>
+
+                        </label>
+
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+            <input
+                type="text"
+                name="customer_name"
+                value="{% if default_address %}{{ default_address.full_name }}{% endif %}"
+                required
+            >
+
+
+            <label>
+                Email
+            </label>
+
+            <input
+                type="email"
+                name="email"
+                value="{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}"
+                required
+            >
+
+
+            <label>
+                Phone Number
+            </label>
+
+            <input
+                type="text"
+                name="phone"
+                value="{% if default_address %}{{ default_address.phone }}{% endif %}"
+                required
+            >
+
+
+            <label>
+                Delivery Address
+            </label>
+
+            <textarea
+                name="address"
+                rows="5"
+                required
+            >{% if default_address %}{{ default_address.address_line1 }}{% if default_address.address_line2 %}, {{ default_address.address_line2 }}{% endif %}, {{ default_address.city }}, {{ default_address.state }} - {{ default_address.pincode }}{% endif %}</textarea>
+
+
+            <label>
+                Payment Method
+            </label>
+
+            <select name="payment_method">
+
+                <option value="cod">
+                    Cash on Delivery
+                </option>
+
+                <option value="online">
+                    Online Payment
+                </option>
+
+            </select>
+
+
+            <button type="submit">
+                Place Order
+            </button>
+
+        </form>
+
+
+        <div class="checkout-summary">
+
+            <h2>
+                Your Order
+            </h2>
+
+
+            {% for item in cart_items %}
+
+                <div class="checkout-item">
+
+                    <div>
+
+                        <strong>
+                            {{ item.product.name }}
+                        </strong>
+
+                        <p>
+                            Qty: {{ item.quantity }}
+                        </p>
+
+                    </div>
+
+                    <span>
+                        ₹{{ item.subtotal }}
+                    </span>
+
+                </div>
+
+            {% endfor %}
+
+
+            <hr>
+
+
+            <div class="checkout-total">
+
+                <span>
+                    Total
+                </span>
+
+                <strong>
+                    ₹{{ total }}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+</body>
+
+</html>

@@ -1,0 +1,247 @@
+{% extends "store/base.html" %}
+
+{% block title %}
+{{ product.name }} | Bows & Meows
+{% endblock %}
+
+{% block content %}
+
+<section class="product-detail-page">
+
+    <div class="product-detail-container">
+
+
+        <div class="product-detail-image">
+
+            {% if product.image %}
+
+                <img
+                    src="{{ product.image.url }}"
+                    alt="{{ product.name }}"
+                >
+
+            {% else %}
+
+                <div class="product-detail-placeholder">
+                    🐾
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="product-detail-info">
+
+            <span class="product-category">
+                {{ product.get_category_display }}
+            </span>
+
+            <h1>
+                {{ product.name }}
+            </h1>
+
+            <div class="product-rating-summary">
+
+    <strong>
+        ⭐ {{ average_rating|floatformat:1 }}
+    </strong>
+
+    <span>
+        ({{ reviews.count }} reviews)
+    </span>
+
+    <section class="reviews-section">
+
+        <h2>Customer Reviews</h2>
+
+        {% if request.user.is_authenticated %}
+
+            <form
+                method="POST"
+                action="{% url 'add_review' product.id %}"
+                class="review-form"
+            >
+
+                {% csrf_token %}
+
+                <label>Rating</label>
+
+                <select name="rating" required>
+
+                    <option value="5">★★★★★</option>
+                    <option value="4">★★★★☆</option>
+                    <option value="3">★★★☆☆</option>
+                    <option value="2">★★☆☆☆</option>
+                    <option value="1">★☆☆☆☆</option>
+
+                </select>
+
+                <label>Your Review</label>
+
+                <textarea
+                    name="comment"
+                    rows="4"
+                    placeholder="Tell other pet parents what you think..."
+                >{% if user_review %}{{ user_review.comment }}{% endif %}</textarea>
+
+                <button type="submit">
+                    {% if user_review %}
+                        Update Review
+                    {% else %}
+                        Submit Review
+                    {% endif %}
+                </button>
+
+            </form>
+
+        {% else %}
+
+            <p>
+                <a href="{% url 'login' %}">
+                    Login
+                </a>
+                to write a review.
+            </p>
+
+        {% endif %}
+
+
+        <div class="review-list">
+
+            {% for review in reviews %}
+
+                <div class="review-card">
+
+                    <div class="review-header">
+
+                        <strong>
+                            {{ review.user.username }}
+                        </strong>
+
+                        <span>
+                            {{ review.rating }} / 5 ⭐
+                        </span>
+
+                    </div>
+
+                    <p>
+                        {{ review.comment }}
+                    </p>
+
+                    <small>
+                        {{ review.created_at|date:"d M Y" }}
+                    </small>
+
+                </div>
+
+            {% empty %}
+
+                <p>
+                    No reviews yet. Be the first to review this product.
+                </p>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+</div>
+
+            <h2 class="product-detail-price">
+                ₹{{ product.price }}
+            </h2>
+
+
+            {% if product.stock > 0 %}
+
+                <p class="product-in-stock">
+                    ✓ In Stock
+                </p>
+
+                <p class="stock-text">
+                    {{ product.stock }} items available
+                </p>
+
+            {% else %}
+
+                <p class="product-out-stock">
+                    Out of Stock
+                </p>
+
+            {% endif %}
+
+
+            <div class="product-description">
+
+                <h3>
+                    Product Description
+                </h3>
+
+                <p>
+                    {{ product.description|default:"No description available." }}
+                </p>
+
+            </div>
+
+
+            {% if product.stock > 0 %}
+
+                <a
+                    href="{% url 'add_to_cart' product.id %}"
+                    class="product-detail-cart"
+                >
+                    🛒 Add to Cart
+                </a>
+
+            {% endif %}
+
+            {% if request.user.is_authenticated %}
+
+                <a
+                    href="{% url 'toggle_wishlist' product.id %}"
+                    class="wishlist-btn"
+                >
+
+                    {% if is_saved %}
+                        ♥ Saved
+                    {% else %}
+                        ♡ Save Product
+                    {% endif %}
+
+                </a>
+
+            {% else %}
+
+                <a href="{% url 'login' %}" class="wishlist-btn">
+                    ♡ Login to Save
+                </a>
+
+            {% endif %}
+
+
+            <div class="product-benefits">
+
+                <div>
+                    🚚 Fast Delivery
+                </div>
+
+                <div>
+                    ✅ Genuine Product
+                </div>
+
+                <div>
+                    🔒 Secure Checkout
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+{% endblock %}

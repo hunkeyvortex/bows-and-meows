@@ -1,0 +1,180 @@
+{% extends "store/crm_base.html" %}
+
+{% block title %}
+{{ customer.username }} | CRM
+{% endblock %}
+
+{% block content %}
+
+<section class="crm-page">
+
+    <div class="crm-heading">
+
+        <div>
+
+            <span>CUSTOMER PROFILE</span>
+
+            <h1>
+                👤 {{ customer.username }}
+            </h1>
+
+            <p>
+                {{ customer.email }}
+            </p>
+
+        </div>
+
+        <a
+            href="{% url 'crm_customers' %}"
+            class="crm-admin-btn"
+        >
+            ← Customers
+        </a>
+
+    </div>
+
+
+    <div class="crm-stats">
+
+        <div class="crm-stat-card">
+
+            <div class="crm-stat-icon">
+                📦
+            </div>
+
+            <div>
+                <p>Orders</p>
+                <h2>{{ orders.count }}</h2>
+            </div>
+
+        </div>
+
+
+        <div class="crm-stat-card">
+
+            <div class="crm-stat-icon">
+                💰
+            </div>
+
+            <div>
+                <p>Total Spent</p>
+                <h2>₹{{ total_spent }}</h2>
+            </div>
+
+        </div>
+
+
+        <div class="crm-stat-card">
+
+            <div class="crm-stat-icon">
+                🐾
+            </div>
+
+            <div>
+                <p>Pets</p>
+                <h2>{{ pets.count }}</h2>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="crm-grid">
+
+
+        <div class="crm-panel">
+
+            <h2>
+                Order History
+            </h2>
+
+            <br>
+
+            {% for order in orders %}
+
+                <div class="low-stock-row">
+
+                    <div>
+
+                        <strong>
+                            Order #{{ order.id }}
+                        </strong>
+
+                        <p>
+                            {{ order.created_at|date:"d M Y" }}
+                        </p>
+
+                    </div>
+
+                    <div>
+
+                        ₹{{ order.total_amount }}
+
+                    </div>
+
+                </div>
+
+            {% empty %}
+
+                <p>
+                    No orders yet.
+                </p>
+
+            {% endfor %}
+
+        </div>
+
+
+        <div class="crm-panel">
+
+            <h2>
+                Pets
+            </h2>
+
+            <br>
+
+            {% for pet in pets %}
+
+                <div class="low-stock-row">
+
+                    <div>
+
+                        <strong>
+                            {% if pet.pet_type == "dog" %}
+                                🐶
+                            {% else %}
+                                🐱
+                            {% endif %}
+
+                            {{ pet.name }}
+                        </strong>
+
+                        <p>
+                            {{ pet.breed }}
+                        </p>
+
+                    </div>
+
+                    <span>
+                        {{ pet.age }} yrs
+                    </span>
+
+                </div>
+
+            {% empty %}
+
+                <p>
+                    No pets added.
+                </p>
+
+            {% endfor %}
+
+        </div>
+
+
+    </div>
+
+</section>
+
+{% endblock %}

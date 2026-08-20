@@ -1,0 +1,66 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Order Successful | Bows & Meows</title>
+
+    <link rel="stylesheet" href="{% static 'store/style.css' %}">
+</head>
+
+<body>
+
+
+<div class="success-page">
+
+    <div class="success-card">
+
+        <div class="success-icon">
+            ✓
+        </div>
+
+        <h1>
+            Order Confirmed!
+        </h1>
+
+        <p>
+            Thank you, {{ order.customer_name }}.
+        </p>
+
+        <p>
+            Your order number is:
+        </p>
+
+        <h2>
+            #{{ order.id }}
+        </h2>
+
+        <p>
+            Total:
+            <strong>
+                ₹{{ order.total_amount }}
+            </strong>
+        </p>
+
+        <p>
+            Payment:
+            {{ order.get_payment_method_display }}
+        </p>
+
+        <a href="{% url 'home' %}">
+            Continue Shopping
+        </a>
+
+    </div>
+
+</div>
+
+
+</body>
+
+</html>

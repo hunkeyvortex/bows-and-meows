@@ -1,0 +1,113 @@
+{% extends "store/base.html" %}
+
+{% block title %}
+Saved Products | Bows & Meows
+{% endblock %}
+
+{% block content %}
+
+<section class="products">
+
+    <div class="section-heading">
+
+        <span>Your Favourites</span>
+
+        <h2>Saved Products</h2>
+
+        <p>
+            Products you've saved for later.
+        </p>
+
+    </div>
+
+
+    <div class="product-container">
+
+        {% for item in items %}
+
+            <div class="product-card">
+
+                <div class="product-image">
+
+                    {% if item.product.image %}
+
+                        <a href="{% url 'product_detail' item.product.id %}">
+
+                            <img
+                                src="{{ item.product.image.url }}"
+                                alt="{{ item.product.name }}"
+                            >
+
+                        </a>
+
+                    {% else %}
+
+                        <div class="no-image">
+                            🐾
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="product-details">
+
+                    <span class="product-category">
+                        {{ item.product.get_category_display }}
+                    </span>
+
+                    <h3>
+
+                        <a
+                            href="{% url 'product_detail' item.product.id %}"
+                            class="product-title-link"
+                        >
+                            {{ item.product.name }}
+                        </a>
+
+                    </h3>
+
+                    <h4>
+                        ₹{{ item.product.price|floatformat:2 }}
+                    </h4>
+
+
+                    <a
+                        href="{% url 'add_to_cart' item.product.id %}"
+                        class="add-cart"
+                    >
+                        🛒 Add to Cart
+                    </a>
+
+
+                    <a
+                        href="{% url 'toggle_wishlist' item.product.id %}"
+                        class="remove-wishlist"
+                    >
+                        Remove
+                    </a>
+
+                </div>
+
+            </div>
+
+        {% empty %}
+
+            <div class="empty-products">
+
+                <h3>♡ No saved products yet</h3>
+
+                <p>
+                    Save products you want to come back to later.
+                </p>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+{% endblock %}

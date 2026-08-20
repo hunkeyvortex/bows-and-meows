@@ -1,0 +1,237 @@
+{% extends "store/crm_base.html" %}
+
+{% block title %}
+Reports | Bows & Meows CRM
+{% endblock %}
+
+{% block content %}
+
+<section class="crm-page">
+
+    <div class="crm-heading">
+
+        <div>
+            <span>CRM REPORTS</span>
+            <h1>Business Reports</h1>
+            
+            
+            <form method="GET" class="report-filter">
+                <select name="period">
+
+                    <option value="7"
+                    {% if period == "7" %}selected{% endif %}>
+                    Last 7 Days
+                </option>
+
+                <option value="30"
+                    {% if period == "30" %}selected{% endif %}>
+                    Last 30 Days
+                </option>
+
+                <option value="year"
+                    {% if period == "year" %}selected{% endif %}>
+                    This Year
+                </option>
+
+        <option value="all"
+            {% if period == "all" %}selected{% endif %}>
+            All Time
+        </option>
+
+    </select>
+
+    <button type="submit">
+        Apply
+    </button>
+
+</form>
+            <p>Track sales and customer performance.</p>
+        </div>
+
+    </div>
+
+
+    <div class="crm-stats">
+
+        <div class="crm-stat-card">
+            <div class="crm-stat-icon">💰</div>
+
+            <div>
+                <p>Total Revenue</p>
+                <h2>₹{{ total_revenue|floatformat:2 }}</h2>
+            </div>
+        </div>
+
+
+        <div class="crm-stat-card">
+            <div class="crm-stat-icon">📦</div>
+
+            <div>
+                <p>Total Orders</p>
+                <h2>{{ total_orders }}</h2>
+            </div>
+        </div>
+
+
+        <div class="crm-stat-card">
+            <div class="crm-stat-icon">✅</div>
+
+            <div>
+                <p>Delivered</p>
+                <h2>{{ delivered_orders }}</h2>
+            </div>
+        </div>
+
+
+        <div class="crm-stat-card">
+            <div class="crm-stat-icon">❌</div>
+
+            <div>
+                <p>Cancelled</p>
+                <h2>{{ cancelled_orders }}</h2>
+            </div>
+        </div>
+
+        <div class="crm-panel sales-chart-panel">
+
+            <h2>Daily Sales</h2>
+
+            <div class="sales-chart">
+
+                {% for sale in daily_sales %}
+
+                    <div class="sales-bar-group">
+
+                        <div
+                            class="sales-bar"
+                            style="height: {{ sale.orders|add:1 }}0px;"
+                        >
+                        </div>
+
+                        <span>
+                            {{ sale.day|date:"d M" }}
+                        </span>
+
+                        <small>
+                            ₹{{ sale.revenue|floatformat:2 }}
+                        </small>
+
+                        </div>
+
+                    {% empty %}
+
+                        <p>No sales data yet.</p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    <div class="crm-grid">
+
+        <div class="crm-panel">
+
+            <h2>Top Selling Products</h2>
+
+            <table class="crm-table">
+
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Sold</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                {% for product in top_products %}
+
+                    <tr>
+                        <td>{{ product.product__name }}</td>
+
+                        <td>
+                            {{ product.quantity_sold }}
+                        </td>
+
+                        <td>
+                            ₹{{ product.revenue|floatformat:2 }}
+                        </td>
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+                        <td colspan="3">
+                            No sales data yet.
+                        </td>
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div class="crm-panel">
+
+            <h2>Top Customers</h2>
+
+            <table class="crm-table">
+
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Orders</th>
+                        <th>Spent</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                {% for customer in top_customers %}
+
+                    <tr>
+
+                        <td>
+                            {{ customer.user__username }}
+                        </td>
+
+                        <td>
+                            {{ customer.order_count }}
+                        </td>
+
+                        <td>
+                            ₹{{ customer.total_spent|floatformat:2 }}
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+                        <td colspan="3">
+                            No customer data yet.
+                        </td>
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

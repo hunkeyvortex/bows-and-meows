@@ -1,0 +1,92 @@
+{% extends "store/crm_base.html" %}
+
+{% block title %}
+Customers | Bows & Meows CRM
+{% endblock %}
+
+{% block content %}
+
+<section class="crm-page">
+
+    <div class="crm-heading">
+
+        <div>
+            <span>CRM</span>
+            <h1>Customers</h1>
+            <p>Manage your Bows & Meows customers.</p>
+        </div>
+
+        <a href="{% url 'crm_dashboard' %}" class="crm-admin-btn">
+            ← Dashboard
+        </a>
+
+    </div>
+
+
+    <div class="crm-panel">
+
+        <table class="crm-table">
+
+            <thead>
+
+                <tr>
+                    <th>Customer</th>
+                    <th>Email</th>
+                    <th>Joined</th>
+                    <th>Action</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for customer in customers %}
+
+                <tr>
+
+                    <td>
+                        {{ customer.username }}
+                    </td>
+
+                    <td>
+                        {{ customer.email }}
+                    </td>
+
+                    <td>
+                        {{ customer.date_joined|date:"d M Y" }}
+                    </td>
+
+                    <td>
+
+                        <a
+                            href="{% url 'crm_customer_detail' customer.id %}"
+                            class="crm-view-btn"
+                        >
+                            View Customer
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+
+                    <td colspan="4">
+                        No customers yet.
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+{% endblock %}

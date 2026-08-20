@@ -1,0 +1,90 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Bows & Meows CRM{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'store/style.css' %}">
+</head>
+
+<body class="crm-body">
+
+<div class="crm-layout">
+
+    <aside class="crm-sidebar">
+
+        <div class="crm-logo">
+            🐾 Bows & Meows
+            <span>CRM</span>
+        </div>
+
+        <nav class="crm-nav">
+
+            <a href="{% url 'crm_dashboard' %}">
+                📊 Dashboard
+            </a>
+
+            <a href="{% url 'crm_customers' %}">
+                👥 Customers
+            </a>
+
+            <a href="{% url 'crm_orders' %}">
+                📦 Orders
+            </a>
+
+            <a href="{% url 'crm_inventory' %}">
+                🏷️ Inventory
+            </a>
+
+            <a href="{% url 'crm_reports' %}">
+                📈 Reports
+            </a>
+
+        </nav>
+
+        <div class="crm-sidebar-bottom">
+
+            <a href="{% url 'home' %}">
+                🏠 Store Website
+            </a>
+
+            <a href="{% url 'logout' %}">
+                🚪 Logout
+            </a>
+
+        </div>
+
+    </aside>
+
+
+    <main class="crm-main">
+
+        <div class="crm-topbar">
+
+            <div>
+                <strong>Admin Panel</strong>
+            </div>
+
+            <div class="crm-user">
+                👤 {{ request.user.username }}
+            </div>
+
+        </div>
+
+        <div class="crm-content">
+            {% block content %}
+            {% endblock %}
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+
+</html>

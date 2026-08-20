@@ -1,0 +1,60 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login | Bows & Meows</title>
+    <link rel="stylesheet" href="{% static 'store/style.css' %}">
+</head>
+
+<body>
+
+<div class="auth-page">
+
+    <div class="auth-card">
+
+        <h1>Welcome Back</h1>
+
+        <p>Login to your Bows & Meows account.</p>
+
+        {% if error %}
+            <p class="auth-error">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <label>Username</label>
+            <input type="text" name="username" required>
+
+            <label>Password</label>
+            <input type="password" name="password" required>
+
+            <button type="submit">
+                Login
+            </button>
+            <p style="margin-top: 15px;">
+        <a href="{% url 'password_reset' %}">
+            Forgot your password?
+        </a>
+            </p>
+
+        </form>
+
+        <p>
+            Don't have an account?
+            <a href="{% url 'register' %}">
+                Register
+            </a>
+        </p>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

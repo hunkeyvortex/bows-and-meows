@@ -1,0 +1,229 @@
+{% extends "store/crm_base.html" %}
+
+{% block title %}
+CRM Dashboard | Bows & Meows
+{% endblock %}
+
+{% block content %}
+
+<section class="crm-page">
+
+    <div class="crm-heading">
+
+        <div>
+            <span>ADMIN CRM</span>
+
+            <h1>
+                Bows & Meows Dashboard
+            </h1>
+
+            <p>
+                Manage customers, sales and inventory.
+            </p>
+        </div>
+
+        <div class="crm-actions">
+
+            <a href="{% url 'crm_customers' %}" class="crm-admin-btn">
+                👥 Customers
+            </a>
+
+            <a href="{% url 'crm_orders' %}" class="crm-admin-btn">
+                📦 Orders
+            </a>
+
+            <a href="{% url 'crm_inventory' %}" class="crm-admin-btn">
+                📊 Inventory
+            </a>
+
+            <a href="/admin/" class="crm-admin-btn">
+                ⚙️ Django Admin
+            </a>
+
+        </div>
+
+    </div>
+
+    <div class="crm-stats">
+
+        <div class="crm-stat-card">
+
+            <div class="crm-stat-icon">
+                👥
+            </div>
+
+            <div>
+                <p>Customers</p>
+                <h2>{{ total_customers }}</h2>
+            </div>
+
+        </div>
+
+
+        <div class="crm-stat-card">
+
+            <div class="crm-stat-icon">
+                📦
+            </div>
+
+            <div>
+                <p>Total Orders</p>
+                <h2>{{ total_orders }}</h2>
+            </div>
+
+        </div>
+
+
+        <div class="crm-stat-card">
+
+            <div class="crm-stat-icon">
+                💰
+            </div>
+
+            <div>
+                <p>Revenue</p>
+                <h2>₹{{ total_revenue|floatformat:2 }}</h2>
+            </div>
+
+        </div>
+
+
+        <div class="crm-stat-card">
+
+            <div class="crm-stat-icon">
+                ⚠️
+            </div>
+
+            <div>
+                <p>Low Stock</p>
+                <h2>{{ low_stock_products.count }}</h2>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="crm-grid">
+
+
+        <div class="crm-panel">
+
+            <div class="crm-panel-heading">
+                <h2>Recent Orders</h2>
+            </div>
+
+
+            <div class="crm-table-wrapper">
+
+                <table class="crm-table">
+
+                    <thead>
+
+                        <tr>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Date</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for order in recent_orders %}
+
+                            <tr>
+
+                                <td>
+                                    #{{ order.id }}
+                                </td>
+
+                                <td>
+                                    {{ order.customer_name }}
+                                </td>
+
+                                <td>
+
+                                    <span class="crm-status">
+                                        {{ order.get_status_display }}
+                                    </span>
+
+                                </td>
+
+                                <td>
+                                    ₹{{ order.total_amount }}
+                                </td>
+
+                                <td>
+                                    {{ order.created_at|date:"d M Y" }}
+                                </td>
+
+                            </tr>
+
+                        {% empty %}
+
+                            <tr>
+                                <td colspan="5">
+                                    No orders yet.
+                                </td>
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <div class="crm-panel">
+
+            <div class="crm-panel-heading">
+                <h2>Low Stock</h2>
+            </div>
+
+
+            {% for product in low_stock_products %}
+
+                <div class="low-stock-row">
+
+                    <div>
+
+                        <strong>
+                            {{ product.name }}
+                        </strong>
+
+                        <p>
+                            {{ product.get_category_display }}
+                        </p>
+
+                    </div>
+
+                    <span>
+                        {{ product.stock }} left
+                    </span>
+
+                </div>
+
+            {% empty %}
+
+                <p class="crm-empty">
+                    No low-stock products.
+                </p>
+
+            {% endfor %}
+
+        </div>
+
+
+    </div>
+
+</section>
+
+{% endblock %}

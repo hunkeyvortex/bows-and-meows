@@ -1,0 +1,91 @@
+{% extends "store/base.html" %}
+
+{% block title %}
+Payment | Bows & Meows
+{% endblock %}
+
+{% block content %}
+
+<section class="account-page">
+
+    <div class="success-card">
+
+        <h1>Complete Your Payment</h1>
+
+        <p>
+            Order #{{ order.id }}
+        </p>
+
+        <h2>
+            ₹{{ order.total_amount|floatformat:2 }}
+        </h2>
+
+        <button
+            id="pay-button"
+            class="product-detail-cart"
+        >
+            Pay Now
+        </button>
+
+    </div>
+
+</section>
+
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+    var options = {
+
+        "key": "{{ razorpay_key_id }}",
+        "amount": "{{ amount }}",
+        "currency": "INR",
+        "name": "Bows & Meows",
+        "description": "Pet Store Order #{{ order.id }}",
+        "order_id": "{{ razorpay_order_id }}",
+
+        "handler": function (response) {
+
+            window.location.href =
+                "{% url 'verify_payment' %}" +
+                "?razorpay_payment_id=" +
+                response.razorpay_payment_id +
+                "&razorpay_order_id=" +
+                response.razorpay_order_id +
+                "&razorpay_signature=" +
+                response.razorpay_signature;
+        },
+
+        "modal": {
+            "ondismiss": function () {
+
+                window.location.href =
+                    "{% url 'payment_cancelled' order.id %}";
+            }
+        }
+    };
+
+
+    var razorpay = new Razorpay(options);
+
+
+    razorpay.on(
+        "payment.failed",
+        function (response) {
+
+            window.location.href =
+                "{% url 'payment_failed_view' order.id %}";
+        }
+    );
+
+
+    document
+        .getElementById("pay-button")
+        .onclick = function(e) {
+
+            razorpay.open();
+            e.preventDefault();
+        };
+</script>
+
+{% endblock %}

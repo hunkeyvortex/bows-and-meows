@@ -1,0 +1,57 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Add Pet | Bows & Meows</title>
+    <link rel="stylesheet" href="{% static 'store/style.css' %}">
+</head>
+
+<body>
+
+<div class="auth-page">
+
+    <div class="auth-card">
+
+        <h1>Add Your Pet</h1>
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <label>Pet Name</label>
+            <input type="text" name="name" required>
+
+            <label>Pet Type</label>
+            <select name="pet_type" required>
+                <option value="dog">Dog</option>
+                <option value="cat">Cat</option>
+            </select>
+
+            <label>Breed</label>
+            <input type="text" name="breed">
+
+            <label>Age</label>
+            <input type="number" name="age">
+
+            <label>Weight (kg)</label>
+            <input type="number" step="0.01" name="weight">
+
+            <label>Notes</label>
+            <textarea name="notes" rows="4"></textarea>
+
+            <button type="submit">
+                Save Pet
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

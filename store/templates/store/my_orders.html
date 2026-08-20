@@ -1,0 +1,51 @@
+{% extends "store/base.html" %}
+
+{% block title %}
+My Orders | Bows & Meows
+{% endblock %}
+
+{% block content %}
+
+<section class="account-page">
+
+    <div class="section-heading">
+        <span>Your Purchases</span>
+        <h2>My Orders</h2>
+        <p>View your previous Bows & Meows orders.</p>
+    </div>
+
+    {% for order in orders %}
+
+        <div class="order-card">
+            <a href="{% url 'order_detail' order.id %}">
+                View Order
+            </a>
+            <h3>Order #{{ order.id }}</h3>
+
+            <p>
+                Date: {{ order.created_at }}
+            </p>
+
+            <p>
+                Status: {{ order.get_status_display }}
+            </p>
+
+            <p>
+                Payment: {{ order.get_payment_method_display }}
+            </p>
+
+            <p>
+                Total: ₹{{ order.total_amount }}
+            </p>
+
+        </div>
+
+    {% empty %}
+
+        <p>You haven't placed any orders yet.</p>
+
+    {% endfor %}
+
+</section>
+
+{% endblock %}

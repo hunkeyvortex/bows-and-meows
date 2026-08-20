@@ -1,0 +1,172 @@
+{% extends "store/crm_base.html" %}
+
+{% block title %}
+Inventory | Bows & Meows CRM
+{% endblock %}
+
+{% block content %}
+
+<section class="crm-page">
+
+    <div class="crm-heading">
+        <div>
+            <span>CRM INVENTORY</span>
+            <h1>Inventory Management</h1>
+            <p>Manage products, pricing and stock levels.</p>
+        </div>
+        <a href="{% url 'crm_inventory_add' %}" class="crm-admin-btn">
+            + Add Product
+        </a>
+
+        <a href="{% url 'crm_dashboard' %}" class="crm-admin-btn">
+            ← Dashboard
+        </a>
+    </div>
+
+
+    <div class="crm-panel">
+        <form method="GET" class="crm-filter-bar">
+
+    <input
+        type="text"
+        name="q"
+        placeholder="Search product..."
+        value="{{ search_query }}"
+    >
+
+    <select name="category">
+
+        <option value="">
+            All Categories
+        </option>
+
+        <option value="dog_food"
+            {% if category_filter == "dog_food" %}selected{% endif %}>
+            Dog Food
+        </option>
+
+        <option value="cat_food"
+            {% if category_filter == "cat_food" %}selected{% endif %}>
+            Cat Food
+        </option>
+
+        <option value="medicine"
+            {% if category_filter == "medicine" %}selected{% endif %}>
+            Medicine
+        </option>
+
+        <option value="treat"
+            {% if category_filter == "treat" %}selected{% endif %}>
+            Treat
+        </option>
+
+        <option value="accessory"
+            {% if category_filter == "accessory" %}selected{% endif %}>
+            Accessory
+        </option>
+
+    </select>
+
+    <select name="low_stock">
+
+        <option value="">
+            All Stock
+        </option>
+
+        <option value="yes"
+            {% if low_stock == "yes" %}selected{% endif %}>
+            Low Stock Only
+        </option>
+
+    </select>
+
+    <button type="submit">
+        Filter
+    </button>
+
+    <a href="{% url 'crm_inventory' %}">
+        Reset
+    </a>
+
+</form>
+        <table class="crm-table">
+
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Available</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for product in products %}
+
+                <tr>
+
+                    <td>
+                        {{ product.name }}
+                    </td>
+
+                    <td>
+                        {{ product.get_category_display }}
+                    </td>
+
+                    <td>
+                        ₹{{ product.price }}
+                    </td>
+
+                    <td>
+
+                        {% if product.stock <= 5 %}
+                            <span class="low-stock-badge">
+                                {{ product.stock }}
+                            </span>
+                        {% else %}
+                            {{ product.stock }}
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {% if product.is_available %}
+                            Yes
+                        {% else %}
+                            No
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <a
+                            href="{% url 'crm_inventory_edit' product.id %}"
+                            class="crm-view-btn"
+                        >
+                            Edit
+                        </a>
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+                    <td colspan="6">
+                        No products found.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+{% endblock %}

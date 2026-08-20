@@ -1,0 +1,122 @@
+{% extends "store/crm_base.html" %}
+
+{% block title %}
+Add Product | Bows & Meows CRM
+{% endblock %}
+
+{% block content %}
+
+<section class="crm-page">
+
+    <div class="crm-heading">
+
+        <div>
+            <span>INVENTORY</span>
+            <h1>Add Product</h1>
+            <p>Create a new product for the store.</p>
+        </div>
+
+        <a href="{% url 'crm_inventory' %}" class="crm-admin-btn">
+            ← Inventory
+        </a>
+
+    </div>
+
+
+    <div class="crm-panel crm-form-panel">
+
+        <form method="POST" enctype="multipart/form-data">
+            <label>Product Image</label>
+
+            <input
+                type="file"
+                name="image"
+                accept="image/*"
+            >
+            {% csrf_token %}
+
+            <label>Product Name</label>
+            <input type="text" name="name" required>
+
+
+            <label>Category</label>
+
+            <select name="category" required>
+
+                <option value="dog_food">
+                    Dog Food
+                </option>
+
+                <option value="cat_food">
+                    Cat Food
+                </option>
+
+                <option value="medicine">
+                    Medicine
+                </option>
+
+                <option value="treat">
+                    Treat
+                </option>
+
+                <option value="accessory">
+                    Accessory
+                </option>
+
+            </select>
+
+
+            <label>Price</label>
+
+            <input
+                type="number"
+                step="0.01"
+                name="price"
+                required
+            >
+
+
+            <label>Stock</label>
+
+            <input
+                type="number"
+                name="stock"
+                required
+            >
+
+
+            <label>Description</label>
+
+            <textarea
+                name="description"
+                rows="5"
+            ></textarea>
+
+
+            <label class="checkbox-label">
+
+                <input
+                    type="checkbox"
+                    name="is_available"
+                    checked
+                >
+
+                Available for sale
+
+            </label>
+
+
+            <button
+                type="submit"
+                class="crm-save-btn"
+            >
+                Add Product
+            </button>
+
+        </form>
+
+    </div>
+
+</section>
+
+{% endblock %}

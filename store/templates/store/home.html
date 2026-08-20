@@ -1,0 +1,438 @@
+{% extends "store/base.html" %}
+
+{% block title %}
+Bows & Meows
+{% endblock %}
+
+{% block content %}
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Bows & Meows | Pet Food & Care</title>
+
+<body>
+
+    <!-- TOP BAR -->
+
+
+    <!-- NAVBAR -->
+
+    <!-- HERO -->
+    <section class="hero">
+
+        <div class="hero-text">
+
+            <span class="hero-tag">
+                ❤️ Trusted Pet Care
+            </span>
+
+            <h1>
+                Better Care For Your
+                <span>Best Friend.</span>
+            </h1>
+
+            <p>
+                Premium food, treats, medicines and everyday essentials
+                for happy and healthy pets.
+            </p>
+
+            <div class="hero-buttons">
+
+                <button class="primary-btn">
+                    Shop Now
+                </button>
+
+                <button class="secondary-btn">
+                    Explore Medicines
+                </button>
+
+            </div>
+
+            <div class="hero-info">
+
+                <div>
+                    <strong>1000+</strong>
+                    <span>Products</span>
+                </div>
+
+                <div>
+                    <strong>500+</strong>
+                    <span>Happy Pets</span>
+                </div>
+
+                <div>
+                    <strong>4.9 ★</strong>
+                    <span>Customer Rating</span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="hero-visual">
+
+            <div class="pet-circle">
+
+                <div class="pet-emoji">
+                    🐶 🐱
+                </div>
+
+                <p>Your pets deserve the best.</p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- FEATURES -->
+    <section class="features">
+
+        <div class="feature">
+            <span>🚚</span>
+            <div>
+                <h4>Fast Delivery</h4>
+                <p>Quick doorstep delivery</p>
+            </div>
+        </div>
+
+        <div class="feature">
+            <span>✅</span>
+            <div>
+                <h4>Genuine Products</h4>
+                <p>Trusted pet care brands</p>
+            </div>
+        </div>
+
+        <div class="feature">
+            <span>💳</span>
+            <div>
+                <h4>Secure Payment</h4>
+                <p>Safe online payments</p>
+            </div>
+        </div>
+
+        <div class="feature">
+            <span>💬</span>
+            <div>
+                <h4>Pet Support</h4>
+                <p>We're here to help</p>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- CATEGORIES -->
+    <section class="categories">
+
+        <div class="section-heading">
+
+            <span>Shop Smart</span>
+
+            <h2>Shop By Category</h2>
+
+            <p>
+                Everything your dog or cat needs, all in one place.
+            </p>
+
+        </div>
+
+
+        <div class="category-container">
+
+            <div class="category-card dog-card">
+
+                <div class="category-icon">
+                    🐶
+                </div>
+
+                <h3>Dog Food</h3>
+
+                <p>
+                    Nutritious food for every breed and age.
+                </p>
+
+                <a href="#">
+                    Shop Dogs →
+                </a>
+
+            </div>
+
+
+            <div class="category-card cat-card">
+
+                <div class="category-icon">
+                    🐱
+                </div>
+
+                <h3>Cat Food</h3>
+
+                <p>
+                    Delicious meals your cat will love.
+                </p>
+
+                <a href="#">
+                    Shop Cats →
+                </a>
+
+            </div>
+
+
+            <div class="category-card medicine-card">
+
+                <div class="category-icon">
+                    💊
+                </div>
+
+                <h3>Pet Medicines</h3>
+
+                <p>
+                    Health and wellness essentials for pets.
+                </p>
+
+                <a href="#">
+                    Explore →
+                </a>
+
+            </div>
+
+
+            <div class="category-card treat-card">
+
+                <div class="category-icon">
+                    🦴
+                </div>
+
+                <h3>Treats</h3>
+
+                <p>
+                    Reward your furry friend with something tasty.
+                </p>
+
+                <a href="#">
+                    View Treats →
+                </a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- PRODUCTS -->
+    <section class="products">
+
+        <div class="section-heading">
+
+            <span>Popular Picks</span>
+
+            <h2>Featured Products</h2>
+
+            <p>
+                Loved by pets and trusted by pet parents.
+            </p>
+
+        </div>
+
+
+        <div class="product-container">
+
+            {% for product in products %}
+
+            <div class="product-card">
+
+                <div class="product-image">
+
+                    {% if product.image %}
+
+                    <a href="{% url 'product_detail' product.id %}">
+                        <img
+                            src="{{ product.image.url }}"
+                            alt="{{ product.name }}"
+                        >
+                    </a>
+
+                    {% else %}
+
+                    <div class="no-image">
+                        🐾
+                    </div>
+
+                    {% endif %}
+
+                    {% if product.stock > 0 %}
+
+                    <span class="stock-badge">
+                        In Stock
+                    </span>
+
+                    {% else %}
+
+                    <span class="out-stock">
+                        Out of Stock
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="product-details">
+
+                    <span class="product-category">
+                        {{ product.get_category_display }}
+                    </span>
+
+                    <h3>
+                        <a
+                            href="{% url 'product_detail' product.id %}"
+                            class="product-title-link"
+                        >
+                            {{ product.name }}
+                        </a>
+                    </h3>
+
+                    <div class="rating">
+                        ★★★★★
+                    </div>
+
+                    <div class="price-row">
+
+                        <h4>
+                            ₹{{ product.price }}
+                        </h4>
+
+                        <span>
+                            Stock: {{ product.stock }}
+                        </span>
+
+                    </div>
+
+                    <a href="{% url 'add_to_cart' product.id %}" class="add-cart">
+                        🛒 Add to Cart
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            {% empty %}
+
+            <div class="empty-products">
+
+                <h3>🐾 No products yet</h3>
+
+                <p>
+                    Add some products from the admin dashboard.
+                </p>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+
+    <!-- PROMO -->
+    <section class="promo">
+
+        <div>
+
+            <span>Special Offer</span>
+
+            <h2>
+                Give Your Pet Something Special
+            </h2>
+
+            <p>
+                Save on selected food, treats and pet care products.
+            </p>
+
+            <button>
+                Explore Offers
+            </button>
+
+        </div>
+
+        <div class="promo-emoji">
+            🐕 ❤️ 🐈
+        </div>
+
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer>
+
+        <div class="footer-grid">
+
+            <div>
+
+                <h2>
+                    🐾 Bows & Meows
+                </h2>
+
+                <p>
+                    Food, care and happiness for your furry family.
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <h4>Shop</h4>
+
+                <a href="#">Dog Food</a>
+                <a href="#">Cat Food</a>
+                <a href="#">Medicines</a>
+                <a href="#">Treats</a>
+
+            </div>
+
+
+            <div>
+
+                <h4>Customer Care</h4>
+
+                <a href="#">Contact Us</a>
+                <a href="#">Track Order</a>
+                <a href="#">Returns</a>
+                <a href="#">FAQs</a>
+
+            </div>
+
+
+            <div>
+
+                <h4>My Account</h4>
+
+                <a href="#">Login</a>
+                <a href="#">Orders</a>
+                <a href="#">My Pets</a>
+                <a href="#">Cart</a>
+
+            </div>
+
+        </div>
+
+        <div class="copyright">
+
+            © 2026 Bows & Meows. All rights reserved.
+
+        </div>
+
+    </footer>
+
+
+
+{% endblock %}
