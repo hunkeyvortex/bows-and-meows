@@ -1,0 +1,142 @@
+{% extends "store/crm_base.html" %}
+
+{% block title %}
+Bulk Import Products | Bows & Meows CRM
+{% endblock %}
+
+{% block content %}
+
+<section class="crm-page">
+
+    <div class="crm-heading">
+
+        <div>
+            <span>INVENTORY</span>
+            <h1>Bulk Product Import</h1>
+            <p>
+                Upload many products and package variants
+                using one CSV file.
+            </p>
+        </div>
+
+        <a
+            href="{% url 'crm_inventory' %}"
+            class="crm-admin-btn"
+        >
+            ← Inventory
+        </a>
+
+    </div>
+
+
+    <div class="crm-panel crm-form-panel">
+
+        <h2>Upload Product CSV</h2>
+
+        <p class="variant-help">
+            Use the same product code on multiple rows
+            when those rows are different package sizes
+            of the same product.
+        </p>
+
+
+        <form
+            method="POST"
+            enctype="multipart/form-data"
+        >
+
+            {% csrf_token %}
+
+            <label>Select CSV File</label>
+
+            <input
+                type="file"
+                name="csv_file"
+                accept=".csv,text/csv"
+                required
+            >
+
+            <button
+                type="submit"
+                class="crm-save-btn"
+            >
+                ⇧ Import Products
+            </button>
+
+        </form>
+
+
+        {% if errors %}
+
+            <div
+                style="
+                    margin-top:25px;
+                    padding:20px;
+                    border-radius:12px;
+                    background:#fff2f2;
+                "
+            >
+
+                <h3>⚠ Import Problems</h3>
+
+                {% for error in errors %}
+
+                    <p>{{ error }}</p>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+
+        {% if result %}
+
+            <div
+                style="
+                    margin-top:25px;
+                    padding:20px;
+                    border-radius:12px;
+                    background:#eff9ef;
+                "
+            >
+
+                <h2>✅ Import Complete</h2>
+
+                <p>
+                    Products created:
+                    <strong>
+                        {{ result.products }}
+                    </strong>
+                </p>
+
+                <p>
+                    Variants created:
+                    <strong>
+                        {{ result.variants }}
+                    </strong>
+                </p>
+
+                <p>
+                    Existing products found:
+                    <strong>
+                        {{ result.updated_products }}
+                    </strong>
+                </p>
+
+                <a
+                    href="{% url 'crm_inventory' %}"
+                    class="crm-admin-btn"
+                >
+                    View Inventory →
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+{% endblock %}

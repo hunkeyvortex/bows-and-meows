@@ -83,4 +83,9 @@ path(
     ),
     name="password_reset_complete",
 ),
+path(
+    "crm/inventory/bulk-import/",
+    views.crm_inventory_bulk_import,
+    name="crm_inventory_bulk_import",
+),
 ]

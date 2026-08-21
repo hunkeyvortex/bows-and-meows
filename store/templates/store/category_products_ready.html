@@ -1,0 +1,181 @@
+{% extends "store/base.html" %}
+
+{% block title %}{{ page_title }} | Bows & Meows{% endblock %}
+
+{% block content %}
+<div class="catalog-v3 catalog-v3-{{ page_type|default:'shop' }}">
+
+    <section class="catalog-v3-hero">
+        <div class="v2-shell catalog-v3-hero-grid">
+            <div class="catalog-v3-hero-copy">
+                {% if page_type == "dog" %}
+                    <span class="catalog-v3-kicker">THE DOG SHOP</span>
+                    <h1>Big care for your <span>best friend.</span></h1>
+                    <p>Nutrition, everyday essentials and trusted care for puppies, adults and senior dogs.</p>
+                    <div class="catalog-v3-hero-actions">
+                        <a href="#all-products" class="v2-btn v2-btn-primary">Shop Dog Essentials</a>
+                        <a href="{% url 'medicine_products' %}" class="v2-btn v2-btn-secondary">Explore Wellness</a>
+                    </div>
+                {% elif page_type == "cat" %}
+                    <span class="catalog-v3-kicker">THE CAT SHOP</span>
+                    <h1>Made for curious <span>little rulers.</span></h1>
+                    <p>Wholesome meals and everyday essentials selected for kittens and adult cats.</p>
+                    <div class="catalog-v3-hero-actions">
+                        <a href="#all-products" class="v2-btn v2-btn-primary">Shop Cat Essentials</a>
+                        <a href="{% url 'medicine_products' %}" class="v2-btn v2-btn-secondary">Explore Wellness</a>
+                    </div>
+                {% else %}
+                    <span class="catalog-v3-kicker">PET HEALTH & WELLNESS</span>
+                    <h1>Everyday care starts with <span>trusted essentials.</span></h1>
+                    <p>Browse pet-health products and wellness essentials available in the Bows & Meows store.</p>
+                    <div class="catalog-v3-hero-actions">
+                        <a href="#all-products" class="v2-btn v2-btn-primary">Browse Pharmacy</a>
+                        <a href="{% url 'home' %}" class="v2-btn v2-btn-secondary">Back to Store</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="catalog-v3-hero-art" aria-hidden="true">
+                {% if page_type == "dog" %}
+                    <div class="catalog-v3-pet-orb catalog-v3-orb-dog">🐕</div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-one"><span>🥣</span><strong>Daily nutrition</strong></div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-two"><span>🦴</span><strong>Happy rewards</strong></div>
+                {% elif page_type == "cat" %}
+                    <div class="catalog-v3-pet-orb catalog-v3-orb-cat">🐈</div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-one"><span>🐟</span><strong>Meals they love</strong></div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-two"><span>🧶</span><strong>Curious by nature</strong></div>
+                {% else %}
+                    <div class="catalog-v3-pet-orb catalog-v3-orb-health">✚</div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-one"><span>✓</span><strong>Wellness essentials</strong></div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-two"><span>🐾</span><strong>Pet-first care</strong></div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="catalog-v3-benefits">
+        <div class="v2-shell catalog-v3-benefit-grid">
+            <div><span>✓</span><p><strong>Genuine products</strong><small>Trusted pet essentials</small></p></div>
+            <div><span>🔒</span><p><strong>Secure checkout</strong><small>Protected payments</small></p></div>
+            <div><span>📦</span><p><strong>Order tracking</strong><small>Follow every update</small></p></div>
+            <div><span>♡</span><p><strong>Save favourites</strong><small>Come back anytime</small></p></div>
+        </div>
+    </section>
+
+    <section class="catalog-v3-discovery">
+        <div class="v2-shell">
+            <div class="catalog-v3-section-head">
+                <div>
+                    <span class="catalog-v3-kicker">QUICK DISCOVERY</span>
+                    {% if page_type == "dog" %}
+                        <h2>Everything for better dog days</h2>
+                    {% elif page_type == "cat" %}
+                        <h2>Everyday favourites for cats</h2>
+                    {% else %}
+                        <h2>Shop pet wellness with confidence</h2>
+                    {% endif %}
+                </div>
+                <p>Start with the essentials, then browse the full catalogue below.</p>
+            </div>
+
+            <div class="catalog-v3-discovery-grid">
+                {% if page_type == "dog" %}
+                    <a href="#all-products" class="catalog-v3-discovery-card"><span>🥣</span><strong>Dog Food</strong><small>Daily nutrition</small></a>
+                    <a href="{% url 'search_products' %}?q=treat" class="catalog-v3-discovery-card"><span>🦴</span><strong>Treats</strong><small>Rewards & training</small></a>
+                    <a href="{% url 'search_products' %}?q=toy" class="catalog-v3-discovery-card"><span>🎾</span><strong>Toys</strong><small>Play & enrichment</small></a>
+                    <a href="{% url 'medicine_products' %}" class="catalog-v3-discovery-card"><span>💊</span><strong>Wellness</strong><small>Health essentials</small></a>
+                {% elif page_type == "cat" %}
+                    <a href="#all-products" class="catalog-v3-discovery-card"><span>🐟</span><strong>Cat Food</strong><small>Daily meals</small></a>
+                    <a href="{% url 'search_products' %}?q=treat" class="catalog-v3-discovery-card"><span>🍗</span><strong>Treats</strong><small>Tasty rewards</small></a>
+                    <a href="{% url 'search_products' %}?q=toy" class="catalog-v3-discovery-card"><span>🧶</span><strong>Toys</strong><small>Play & curiosity</small></a>
+                    <a href="{% url 'medicine_products' %}" class="catalog-v3-discovery-card"><span>💊</span><strong>Wellness</strong><small>Health essentials</small></a>
+                {% else %}
+                    <a href="#all-products" class="catalog-v3-discovery-card"><span>💊</span><strong>Pharmacy</strong><small>Available products</small></a>
+                    <a href="{% url 'dog_products' %}" class="catalog-v3-discovery-card"><span>🐕</span><strong>Dog Care</strong><small>Shop for dogs</small></a>
+                    <a href="{% url 'cat_products' %}" class="catalog-v3-discovery-card"><span>🐈</span><strong>Cat Care</strong><small>Shop for cats</small></a>
+                    <a href="{% url 'home' %}#featured-products" class="catalog-v3-discovery-card"><span>★</span><strong>Popular Picks</strong><small>Store favourites</small></a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="catalog-v3-products" id="all-products">
+        <div class="v2-shell">
+            <div class="catalog-v3-toolbar-head">
+                <div>
+                    <span class="catalog-v3-kicker">SHOP THE COLLECTION</span>
+                    <h2>{{ page_title }}</h2>
+                    <p>{{ product_count }} product{{ product_count|pluralize }} available</p>
+                </div>
+            </div>
+
+            <form method="GET" class="catalog-v3-toolbar">
+                <div class="catalog-v3-search-box">
+                    <span>⌕</span>
+                    <input type="search" name="q" value="{{ query }}" placeholder="Search within {{ page_title|lower }}...">
+                </div>
+
+                <select name="sort" aria-label="Sort products">
+                    <option value="featured" {% if sort == "featured" %}selected{% endif %}>Featured</option>
+                    <option value="price_low" {% if sort == "price_low" %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_high" {% if sort == "price_high" %}selected{% endif %}>Price: High to Low</option>
+                    <option value="name" {% if sort == "name" %}selected{% endif %}>Name: A to Z</option>
+                </select>
+
+                <button type="submit">Apply</button>
+                {% if query or sort != "featured" %}
+                    <a href="{{ request.path }}" class="catalog-v3-reset">Reset</a>
+                {% endif %}
+            </form>
+
+            <div class="catalog-v3-product-grid">
+                {% for product in products %}
+                    <article class="catalog-v3-product-card">
+                        <div class="catalog-v3-product-media">
+                            <a href="{% url 'product_detail' product.id %}">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                                {% else %}
+                                    <div class="catalog-v3-product-placeholder">🐾</div>
+                                {% endif %}
+                            </a>
+
+                            {% if product.stock > 0 %}
+                                <span class="catalog-v3-stock in">In stock</span>
+                            {% else %}
+                                <span class="catalog-v3-stock out">Out of stock</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="catalog-v3-product-body">
+                            <span class="catalog-v3-product-category">{{ product.get_category_display }}</span>
+                            <h3><a href="{% url 'product_detail' product.id %}">{{ product.name }}</a></h3>
+
+                            <div class="catalog-v3-rating" aria-label="Store product">★★★★★ <small>Popular pick</small></div>
+
+                            <div class="catalog-v3-price-row">
+                                <strong>₹{{ product.price|floatformat:2 }}</strong>
+                                <small>{{ product.stock }} available</small>
+                            </div>
+
+                            {% if product.stock > 0 %}
+                                <a href="{% url 'add_to_cart' product.id %}" class="catalog-v3-add">Add to cart</a>
+                            {% else %}
+                                <span class="catalog-v3-add disabled">Currently unavailable</span>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="catalog-v3-empty">
+                        <span>🐾</span>
+                        <h3>No matching products found.</h3>
+                        <p>Try clearing the search or add products from your CRM inventory.</p>
+                        <a href="{{ request.path }}" class="v2-btn v2-btn-primary">Show all products</a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

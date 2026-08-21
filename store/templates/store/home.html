@@ -1,438 +1,367 @@
 {% extends "store/base.html" %}
 
 {% block title %}
-Bows & Meows
+Bows & Meows | Pet Food, Care & Essentials
 {% endblock %}
 
 {% block content %}
 
+<div class="store-v2">
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <section class="v2-hero">
+        <div class="v2-shell v2-hero-grid">
 
-    <title>Bows & Meows | Pet Food & Care</title>
+            <div class="v2-hero-copy">
+                <span class="v2-eyebrow">PET CARE, WITHOUT THE CLUTTER</span>
 
-<body>
-
-    <!-- TOP BAR -->
-
-
-    <!-- NAVBAR -->
-
-    <!-- HERO -->
-    <section class="hero">
-
-        <div class="hero-text">
-
-            <span class="hero-tag">
-                ❤️ Trusted Pet Care
-            </span>
-
-            <h1>
-                Better Care For Your
-                <span>Best Friend.</span>
-            </h1>
-
-            <p>
-                Premium food, treats, medicines and everyday essentials
-                for happy and healthy pets.
-            </p>
-
-            <div class="hero-buttons">
-
-                <button class="primary-btn">
-                    Shop Now
-                </button>
-
-                <button class="secondary-btn">
-                    Explore Medicines
-                </button>
-
-            </div>
-
-            <div class="hero-info">
-
-                <div>
-                    <strong>1000+</strong>
-                    <span>Products</span>
-                </div>
-
-                <div>
-                    <strong>500+</strong>
-                    <span>Happy Pets</span>
-                </div>
-
-                <div>
-                    <strong>4.9 ★</strong>
-                    <span>Customer Rating</span>
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <div class="hero-visual">
-
-            <div class="pet-circle">
-
-                <div class="pet-emoji">
-                    🐶 🐱
-                </div>
-
-                <p>Your pets deserve the best.</p>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- FEATURES -->
-    <section class="features">
-
-        <div class="feature">
-            <span>🚚</span>
-            <div>
-                <h4>Fast Delivery</h4>
-                <p>Quick doorstep delivery</p>
-            </div>
-        </div>
-
-        <div class="feature">
-            <span>✅</span>
-            <div>
-                <h4>Genuine Products</h4>
-                <p>Trusted pet care brands</p>
-            </div>
-        </div>
-
-        <div class="feature">
-            <span>💳</span>
-            <div>
-                <h4>Secure Payment</h4>
-                <p>Safe online payments</p>
-            </div>
-        </div>
-
-        <div class="feature">
-            <span>💬</span>
-            <div>
-                <h4>Pet Support</h4>
-                <p>We're here to help</p>
-            </div>
-        </div>
-
-    </section>
-
-
-    <!-- CATEGORIES -->
-    <section class="categories">
-
-        <div class="section-heading">
-
-            <span>Shop Smart</span>
-
-            <h2>Shop By Category</h2>
-
-            <p>
-                Everything your dog or cat needs, all in one place.
-            </p>
-
-        </div>
-
-
-        <div class="category-container">
-
-            <div class="category-card dog-card">
-
-                <div class="category-icon">
-                    🐶
-                </div>
-
-                <h3>Dog Food</h3>
+                <h1>
+                    Better choices for
+                    <span>happier pets.</span>
+                </h1>
 
                 <p>
-                    Nutritious food for every breed and age.
+                    Food, wellness and everyday essentials for dogs and cats —
+                    selected to make pet parenting simpler.
                 </p>
 
-                <a href="#">
-                    Shop Dogs →
-                </a>
-
-            </div>
-
-
-            <div class="category-card cat-card">
-
-                <div class="category-icon">
-                    🐱
-                </div>
-
-                <h3>Cat Food</h3>
-
-                <p>
-                    Delicious meals your cat will love.
-                </p>
-
-                <a href="#">
-                    Shop Cats →
-                </a>
-
-            </div>
-
-
-            <div class="category-card medicine-card">
-
-                <div class="category-icon">
-                    💊
-                </div>
-
-                <h3>Pet Medicines</h3>
-
-                <p>
-                    Health and wellness essentials for pets.
-                </p>
-
-                <a href="#">
-                    Explore →
-                </a>
-
-            </div>
-
-
-            <div class="category-card treat-card">
-
-                <div class="category-icon">
-                    🦴
-                </div>
-
-                <h3>Treats</h3>
-
-                <p>
-                    Reward your furry friend with something tasty.
-                </p>
-
-                <a href="#">
-                    View Treats →
-                </a>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- PRODUCTS -->
-    <section class="products">
-
-        <div class="section-heading">
-
-            <span>Popular Picks</span>
-
-            <h2>Featured Products</h2>
-
-            <p>
-                Loved by pets and trusted by pet parents.
-            </p>
-
-        </div>
-
-
-        <div class="product-container">
-
-            {% for product in products %}
-
-            <div class="product-card">
-
-                <div class="product-image">
-
-                    {% if product.image %}
-
-                    <a href="{% url 'product_detail' product.id %}">
-                        <img
-                            src="{{ product.image.url }}"
-                            alt="{{ product.name }}"
-                        >
+                <div class="v2-hero-actions">
+                    <a href="{% url 'dog_products' %}" class="v2-btn v2-btn-primary">
+                        Shop for Dogs
                     </a>
-
-                    {% else %}
-
-                    <div class="no-image">
-                        🐾
-                    </div>
-
-                    {% endif %}
-
-                    {% if product.stock > 0 %}
-
-                    <span class="stock-badge">
-                        In Stock
-                    </span>
-
-                    {% else %}
-
-                    <span class="out-stock">
-                        Out of Stock
-                    </span>
-
-                    {% endif %}
-
+                    <a href="{% url 'cat_products' %}" class="v2-btn v2-btn-secondary">
+                        Shop for Cats
+                    </a>
                 </div>
 
+                <div class="v2-hero-proof">
+                    <div>
+                        <strong>Genuine</strong>
+                        <span>Trusted products</span>
+                    </div>
+                    <div>
+                        <strong>Secure</strong>
+                        <span>Razorpay checkout</span>
+                    </div>
+                    <div>
+                        <strong>Personal</strong>
+                        <span>Pet profiles & saved picks</span>
+                    </div>
+                </div>
+            </div>
 
-                <div class="product-details">
+            <div class="v2-hero-art" aria-label="Dog and cat care illustration">
+                <div class="v2-hero-orbit v2-orbit-one"></div>
+                <div class="v2-hero-orbit v2-orbit-two"></div>
 
-                    <span class="product-category">
-                        {{ product.get_category_display }}
-                    </span>
+                <div class="v2-pet-stage">
+                    <div class="v2-pet-pair">🐶 <span>🐱</span></div>
+                    <p>Good days start with good care.</p>
+                </div>
 
-                    <h3>
-                        <a
-                            href="{% url 'product_detail' product.id %}"
-                            class="product-title-link"
-                        >
-                            {{ product.name }}
+                <div class="v2-floating-card v2-floating-top">
+                    <span>★</span>
+                    <div>
+                        <strong>Pet-parent approved</strong>
+                        <small>Everyday essentials in one place</small>
+                    </div>
+                </div>
+
+                <div class="v2-floating-card v2-floating-bottom">
+                    <span>📦</span>
+                    <div>
+                        <strong>Order with confidence</strong>
+                        <small>Track status from your account</small>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <section class="v2-trust-strip">
+        <div class="v2-shell v2-trust-grid">
+
+            <div>
+                <span class="v2-trust-icon">✓</span>
+                <div>
+                    <strong>Genuine Products</strong>
+                    <small>Reliable pet-care essentials</small>
+                </div>
+            </div>
+
+            <div>
+                <span class="v2-trust-icon">🔒</span>
+                <div>
+                    <strong>Secure Payments</strong>
+                    <small>Protected online checkout</small>
+                </div>
+            </div>
+
+            <div>
+                <span class="v2-trust-icon">☁</span>
+                <div>
+                    <strong>Easy Shopping</strong>
+                    <small>Saved products & addresses</small>
+                </div>
+            </div>
+
+            <div>
+                <span class="v2-trust-icon">📍</span>
+                <div>
+                    <strong>Order Tracking</strong>
+                    <small>Follow every order update</small>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <section class="v2-section">
+        <div class="v2-shell">
+
+            <div class="v2-section-head">
+                <div>
+                    <span class="v2-eyebrow">SHOP YOUR WAY</span>
+                    <h2>Start with your pet</h2>
+                </div>
+                <p>Less searching. Faster choices. Everything organized around the pet you care for.</p>
+            </div>
+
+            <div class="v2-pet-categories">
+
+                <a href="{% url 'dog_products' %}" class="v2-pet-card v2-dog-card">
+                    <div class="v2-pet-card-copy">
+                        <span>FOR DOGS</span>
+                        <h3>Food, care & everyday joy</h3>
+                        <p>Explore essentials for puppies, adults and senior dogs.</p>
+                        <strong>Shop Dogs →</strong>
+                    </div>
+                    <div class="v2-pet-card-emoji">🐕</div>
+                </a>
+
+                <a href="{% url 'cat_products' %}" class="v2-pet-card v2-cat-card">
+                    <div class="v2-pet-card-copy">
+                        <span>FOR CATS</span>
+                        <h3>Nutrition, comfort & play</h3>
+                        <p>Everyday essentials for curious cats and growing kittens.</p>
+                        <strong>Shop Cats →</strong>
+                    </div>
+                    <div class="v2-pet-card-emoji">🐈</div>
+                </a>
+
+            </div>
+
+        </div>
+    </section>
+
+
+    <section class="v2-section v2-section-soft">
+        <div class="v2-shell">
+
+            <div class="v2-section-head">
+                <div>
+                    <span class="v2-eyebrow">QUICK SHOP</span>
+                    <h2>Popular categories</h2>
+                </div>
+            </div>
+
+            <div class="v2-quick-grid">
+
+                <a href="{% url 'dog_products' %}" class="v2-quick-card">
+                    <span class="v2-quick-emoji">🥣</span>
+                    <strong>Dog Food</strong>
+                    <small>Daily nutrition</small>
+                </a>
+
+                <a href="{% url 'cat_products' %}" class="v2-quick-card">
+                    <span class="v2-quick-emoji">🐟</span>
+                    <strong>Cat Food</strong>
+                    <small>Meals they love</small>
+                </a>
+
+                <a href="{% url 'medicine_products' %}" class="v2-quick-card">
+                    <span class="v2-quick-emoji">💊</span>
+                    <strong>Pharmacy</strong>
+                    <small>Health & wellness</small>
+                </a>
+
+                <a href="{% url 'search_products' %}?q=treat" class="v2-quick-card">
+                    <span class="v2-quick-emoji">🦴</span>
+                    <strong>Treats</strong>
+                    <small>Reward good days</small>
+                </a>
+
+                <a href="{% url 'search_products' %}?q=toy" class="v2-quick-card">
+                    <span class="v2-quick-emoji">🎾</span>
+                    <strong>Toys</strong>
+                    <small>Play & enrichment</small>
+                </a>
+
+                {% if request.user.is_authenticated %}
+                <a href="{% url 'wishlist' %}" class="v2-quick-card">
+                    <span class="v2-quick-emoji">♡</span>
+                    <strong>Saved Picks</strong>
+                    <small>Your favourites</small>
+                </a>
+                {% else %}
+                <a href="{% url 'register' %}" class="v2-quick-card">
+                    <span class="v2-quick-emoji">🐾</span>
+                    <strong>Join Us</strong>
+                    <small>Save favourites</small>
+                </a>
+                {% endif %}
+
+            </div>
+
+        </div>
+    </section>
+
+
+    <section class="v2-section" id="featured-products">
+        <div class="v2-shell">
+
+            <div class="v2-section-head">
+                <div>
+                    <span class="v2-eyebrow">POPULAR RIGHT NOW</span>
+                    <h2>Pet-parent picks</h2>
+                </div>
+                <p>Browse products currently available in the Bows & Meows store.</p>
+            </div>
+
+            <div class="v2-products-grid">
+
+                {% for product in products|slice:":8" %}
+
+                <article class="v2-product-card">
+
+                    <div class="v2-product-media">
+
+                        <a href="{% url 'product_detail' product.id %}">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                            {% else %}
+                                <div class="v2-product-placeholder">🐾</div>
+                            {% endif %}
                         </a>
-                    </h3>
 
-                    <div class="rating">
-                        ★★★★★
+                        {% if product.stock > 0 %}
+                            <span class="v2-stock v2-stock-in">In stock</span>
+                        {% else %}
+                            <span class="v2-stock v2-stock-out">Out of stock</span>
+                        {% endif %}
+
                     </div>
 
-                    <div class="price-row">
+                    <div class="v2-product-body">
 
-                        <h4>
-                            ₹{{ product.price }}
-                        </h4>
-
-                        <span>
-                            Stock: {{ product.stock }}
+                        <span class="v2-product-category">
+                            {{ product.get_category_display }}
                         </span>
 
+                        <h3>
+                            <a href="{% url 'product_detail' product.id %}">
+                                {{ product.name }}
+                            </a>
+                        </h3>
+
+                        <div class="v2-product-meta">
+                            <strong>₹{{ product.price }}</strong>
+                            <small>{{ product.stock }} available</small>
+                        </div>
+
+                        {% if product.stock > 0 %}
+                            <a href="{% url 'add_to_cart' product.id %}" class="v2-add-cart">
+                                Add to cart
+                            </a>
+                        {% else %}
+                            <span class="v2-add-cart v2-add-disabled">
+                                Currently unavailable
+                            </span>
+                        {% endif %}
+
                     </div>
 
-                    <a href="{% url 'add_to_cart' product.id %}" class="add-cart">
-                        🛒 Add to Cart
-                    </a>
+                </article>
 
+                {% empty %}
+
+                <div class="v2-empty-products">
+                    <span>🐾</span>
+                    <h3>Your catalogue is ready for products.</h3>
+                    <p>Add products from the CRM inventory and they will appear here automatically.</p>
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+    </section>
+
+
+    {% if request.user.is_authenticated %}
+    <section class="v2-section">
+        <div class="v2-shell">
+
+            <div class="v2-personal-card">
+
+                <div>
+                    <span class="v2-eyebrow">MADE FOR YOUR PET</span>
+                    <h2>Your pet profile should make shopping easier.</h2>
+                    <p>
+                        Keep your pet details in one place today. Next, we can use breed,
+                        age and pet type to power smarter product recommendations.
+                    </p>
+
+                    <a href="{% url 'my_pets' %}" class="v2-btn v2-btn-dark">
+                        View My Pets
+                    </a>
+                </div>
+
+                <div class="v2-personal-visual">
+                    <span>🐶</span>
+                    <span>🐱</span>
+                    <small>Personalized care starts here</small>
                 </div>
 
             </div>
 
+        </div>
+    </section>
+    {% endif %}
 
-            {% empty %}
 
-            <div class="empty-products">
+    <section class="v2-section" id="offers">
+        <div class="v2-shell">
 
-                <h3>🐾 No products yet</h3>
+            <div class="v2-offer-banner">
 
-                <p>
-                    Add some products from the admin dashboard.
-                </p>
+                <div class="v2-offer-copy">
+                    <span>SMARTER PET SHOPPING</span>
+                    <h2>Everything they need. Less noise for you.</h2>
+                    <p>
+                        Build your basket across food, wellness and daily essentials,
+                        then manage orders from one account.
+                    </p>
+
+                    <a href="#featured-products" class="v2-btn v2-btn-light">
+                        Explore Products
+                    </a>
+                </div>
+
+                <div class="v2-offer-art">
+                    <span>🐕</span>
+                    <div>♥</div>
+                    <span>🐈</span>
+                </div>
 
             </div>
 
-            {% endfor %}
-
         </div>
-
     </section>
 
-
-    <!-- PROMO -->
-    <section class="promo">
-
-        <div>
-
-            <span>Special Offer</span>
-
-            <h2>
-                Give Your Pet Something Special
-            </h2>
-
-            <p>
-                Save on selected food, treats and pet care products.
-            </p>
-
-            <button>
-                Explore Offers
-            </button>
-
-        </div>
-
-        <div class="promo-emoji">
-            🐕 ❤️ 🐈
-        </div>
-
-    </section>
-
-
-    <!-- FOOTER -->
-    <footer>
-
-        <div class="footer-grid">
-
-            <div>
-
-                <h2>
-                    🐾 Bows & Meows
-                </h2>
-
-                <p>
-                    Food, care and happiness for your furry family.
-                </p>
-
-            </div>
-
-
-            <div>
-
-                <h4>Shop</h4>
-
-                <a href="#">Dog Food</a>
-                <a href="#">Cat Food</a>
-                <a href="#">Medicines</a>
-                <a href="#">Treats</a>
-
-            </div>
-
-
-            <div>
-
-                <h4>Customer Care</h4>
-
-                <a href="#">Contact Us</a>
-                <a href="#">Track Order</a>
-                <a href="#">Returns</a>
-                <a href="#">FAQs</a>
-
-            </div>
-
-
-            <div>
-
-                <h4>My Account</h4>
-
-                <a href="#">Login</a>
-                <a href="#">Orders</a>
-                <a href="#">My Pets</a>
-                <a href="#">Cart</a>
-
-            </div>
-
-        </div>
-
-        <div class="copyright">
-
-            © 2026 Bows & Meows. All rights reserved.
-
-        </div>
-
-    </footer>
-
-
+</div>
 
 {% endblock %}

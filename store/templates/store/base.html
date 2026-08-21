@@ -2,141 +2,159 @@
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>{% block title %}Bows & Meows{% endblock %}</title>
-
     <link rel="stylesheet" href="{% static 'store/style.css' %}">
 </head>
 
 <body>
 
-<div class="top-bar">
-    🐾 Free delivery on orders above ₹999
+<div class="v2-announcement">
+    <div class="v2-shell v2-announcement-inner">
+        <span>🐾 Free delivery above ₹999</span>
+        <span class="v2-announcement-note">Genuine pet essentials • Secure checkout</span>
+    </div>
 </div>
 
-<header class="navbar">
+<header class="site-header-v2">
 
-    <div class="logo">
-        🐾 Bows <span>&</span> Meows
+    <div class="v2-shell v2-main-header">
+
+        <a href="{% url 'home' %}" class="v2-brand" aria-label="Bows & Meows home">
+            <span class="v2-brand-mark">🐾</span>
+            <span class="v2-brand-copy">
+                <strong>Bows & Meows</strong>
+                <small>Pet care, made better</small>
+            </span>
+        </a>
+
+        <form method="GET" action="{% url 'search_products' %}" class="v2-search">
+            <span class="v2-search-icon">⌕</span>
+            <input
+                type="text"
+                name="q"
+                placeholder="Search food, treats, medicines & more"
+                aria-label="Search products"
+            >
+            <button type="submit">Search</button>
+        </form>
+
+        <div class="v2-header-actions">
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'wishlist' %}" class="v2-action-link">
+                    <span>♡</span>
+                    <small>Saved</small>
+                </a>
+
+                <a href="{% url 'account' %}" class="v2-action-link">
+                    <span>👤</span>
+                    <small>{{ request.user.username }}</small>
+                </a>
+            {% else %}
+                <a href="{% url 'login' %}" class="v2-action-link">
+                    <span>👤</span>
+                    <small>Login</small>
+                </a>
+            {% endif %}
+
+            <a href="{% url 'cart' %}" class="v2-cart-link">
+                <span>🛒</span>
+                <small>Cart</small>
+            </a>
+        </div>
+
     </div>
 
-    <nav>
-        <a href="{% url 'home' %}">Home</a>
-        <a href="{% url 'dog_products' %}">
-            Dogs
-        </a>
+    <div class="v2-category-bar">
+        <div class="v2-shell v2-category-nav">
+            <a href="{% url 'home' %}" class="v2-nav-home">Home</a>
+            <a href="{% url 'dog_products' %}">Dogs</a>
+            <a href="{% url 'cat_products' %}">Cats</a>
+            <a href="{% url 'medicine_products' %}">Pharmacy</a>
+            <a href="{% url 'home' %}#featured-products">Best Sellers</a>
+            <a href="{% url 'home' %}#offers">Offers</a>
 
-        <a href="{% url 'cat_products' %}">
-            Cats
-        </a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'my_pets' %}">My Pets</a>
+            {% endif %}
 
-        <a href="{% url 'medicine_products' %}">
-            Medicines
-        </a>
-        <a href="#">Offers</a>
+            <span class="v2-nav-spacer"></span>
 
-        {% if request.user.is_authenticated %}
-            <a href="{% url 'my_pets' %}">My Pets</a>
-        {% endif %}
-    </nav>
-
-    <form
-        method="GET"
-        action="{% url 'search_products' %}"
-        class="store-search"
-    >
-
-        <input
-            type="text"
-            name="q"
-            placeholder="Search pet products..."
-        >
-
-        <button type="submit">
-            🔍
-        </button>
-
-    </form>
-
-    <div class="nav-actions">
-
-        {% if request.user.is_authenticated %}
-
-            <a href="{% url 'account' %}" class="login-btn">
-                👤 {{ request.user.username }}
-            </a>
-
-            <a href="{% url 'logout' %}" class="login-btn">
-                Logout
-            </a>
-
-        {% else %}
-
-            <a href="{% url 'login' %}" class="login-btn">
-                Login
-            </a>
-
-            <a href="{% url 'register' %}" class="register-btn">
-                Register
-            </a>
-
-        {% endif %}
-
-        <a href="{% url 'cart' %}" class="cart-btn">
-            🛒 Cart
-        </a>
-
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'my_orders' %}" class="v2-nav-muted">Track Orders</a>
+                <a href="{% url 'logout' %}" class="v2-nav-muted">Logout</a>
+            {% else %}
+                <a href="{% url 'register' %}" class="v2-nav-muted">Create Account</a>
+            {% endif %}
+        </div>
     </div>
 
 </header>
 
+<main>
+    {% block content %}
+    {% endblock %}
+</main>
 
-{% block content %}
-{% endblock %}
+<footer class="site-footer-v2">
+    <div class="v2-shell">
 
+        <div class="v2-footer-grid">
 
-<footer>
+            <div class="v2-footer-brand">
+                <div class="v2-brand v2-brand-footer">
+                    <span class="v2-brand-mark">🐾</span>
+                    <span class="v2-brand-copy">
+                        <strong>Bows & Meows</strong>
+                        <small>Pet care, made better</small>
+                    </span>
+                </div>
 
-    <div class="footer-grid">
+                <p>
+                    Thoughtful food, care and everyday essentials
+                    for the pets who make home feel like home.
+                </p>
+            </div>
 
-        <div>
-            <h2>🐾 Bows & Meows</h2>
-            <p>Food, care and happiness for your furry family.</p>
+            <div>
+                <h4>Shop</h4>
+                <a href="{% url 'dog_products' %}">Dogs</a>
+                <a href="{% url 'cat_products' %}">Cats</a>
+                <a href="{% url 'medicine_products' %}">Pharmacy</a>
+                <a href="{% url 'home' %}#featured-products">Best Sellers</a>
+            </div>
+
+            <div>
+                <h4>My Account</h4>
+                {% if request.user.is_authenticated %}
+                    <a href="{% url 'account' %}">Account</a>
+                    <a href="{% url 'my_orders' %}">Orders</a>
+                    <a href="{% url 'wishlist' %}">Saved Products</a>
+                    <a href="{% url 'my_pets' %}">My Pets</a>
+                {% else %}
+                    <a href="{% url 'login' %}">Login</a>
+                    <a href="{% url 'register' %}">Create Account</a>
+                {% endif %}
+            </div>
+
+            <div>
+                <h4>Why Bows & Meows</h4>
+                <span>✓ Genuine products</span>
+                <span>✓ Secure payments</span>
+                <span>✓ Pet-first shopping</span>
+                <span>✓ Easy order tracking</span>
+            </div>
+
         </div>
 
-        <div>
-            <h4>Shop</h4>
-            <a href="#">Dog Food</a>
-            <a href="#">Cat Food</a>
-            <a href="#">Medicines</a>
-            <a href="#">Treats</a>
-        </div>
-
-        <div>
-            <h4>Customer Care</h4>
-            <a href="#">Contact Us</a>
-            <a href="#">Track Order</a>
-            <a href="#">Returns</a>
-            <a href="#">FAQs</a>
-        </div>
-
-        <div>
-            <h4>My Account</h4>
-            <a href="{% url 'account' %}">Account</a>
-            <a href="{% url 'my_pets' %}">My Pets</a>
-            <a href="{% url 'cart' %}">Cart</a>
+        <div class="v2-footer-bottom">
+            <span>© 2026 Bows & Meows. All rights reserved.</span>
+            <span>Made with care for pet parents.</span>
         </div>
 
     </div>
-
-    <div class="copyright">
-        © 2026 Bows & Meows. All rights reserved.
-    </div>
-
 </footer>
 
 </body>

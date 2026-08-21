@@ -2,237 +2,581 @@
 
 {% block title %}
 {{ product.name }} | Bows & Meows
+
+<style>
+.smart-pack-advisor {
+    margin: 24px 0;
+    padding: 22px;
+    border: 1px solid #dfe7dd;
+    border-radius: 20px;
+    background:
+        linear-gradient(
+            135deg,
+            #f5faf1,
+            #ffffff
+        );
+}
+
+.smart-pack-kicker {
+    display: block;
+    margin-bottom: 6px;
+    color: #3d6b4f;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .08em;
+}
+
+.smart-pack-head h3 {
+    margin: 0 0 6px;
+    font-size: 22px;
+}
+
+.smart-pack-head p,
+.smart-pack-empty p {
+    margin: 0;
+    color: #6d746e;
+    line-height: 1.6;
+    font-size: 13px;
+}
+
+.smart-pack-label {
+    display: block;
+    margin-top: 20px;
+    margin-bottom: 7px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.smart-pack-pet-select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d6ddd4;
+    border-radius: 11px;
+    background: white;
+}
+
+.smart-pack-preference {
+    margin-top: 20px;
+    padding: 15px;
+    background: white;
+    border: 1px solid #e2e7df;
+    border-radius: 14px;
+}
+
+.smart-pack-preference-labels {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 11px;
+}
+
+.smart-pack-preference-labels strong {
+    color: #345840;
+}
+
+.smart-pack-preference input {
+    width: 100%;
+}
+
+.smart-pack-result {
+    margin-top: 18px;
+}
+
+.smart-pack-summary {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.smart-pack-summary > div {
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #e3e7e0;
+    border-radius: 12px;
+}
+
+.smart-pack-summary small,
+.smart-pack-summary strong,
+.smart-pack-summary span {
+    display: block;
+}
+
+.smart-pack-summary small {
+    color: #7b827b;
+}
+
+.smart-pack-summary strong {
+    margin: 4px 0;
+}
+
+.smart-pack-summary span {
+    color: #68706a;
+    font-size: 11px;
+}
+
+.smart-pack-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.smart-pack-card {
+    position: relative;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #dfe4dd;
+    border-radius: 14px;
+}
+
+.smart-pack-card-best {
+    border: 2px solid #355f44;
+    padding: 14px;
+    box-shadow:
+        0 10px 25px
+        rgba(53, 95, 68, .10);
+}
+
+.smart-pack-badge {
+    display: inline-block;
+    margin-bottom: 9px;
+    padding: 5px 7px;
+    border-radius: 999px;
+    background: #edf5e9;
+    color: #355f44;
+    font-size: 9px;
+    font-weight: 900;
+}
+
+.smart-pack-card h4 {
+    margin: 0 0 7px;
+}
+
+.smart-pack-card > strong,
+.smart-pack-card > p,
+.smart-pack-card > small,
+.smart-pack-card > em {
+    display: block;
+}
+
+.smart-pack-card > p {
+    margin: 5px 0;
+    font-size: 11px;
+}
+
+.smart-pack-card > small {
+    color: #737a74;
+}
+
+.smart-pack-card > em {
+    margin-top: 8px;
+    color: #496452;
+    font-size: 10px;
+    font-style: normal;
+}
+
+.smart-pack-card button {
+    width: 100%;
+    margin-top: 12px;
+    padding: 9px 10px;
+    border: none;
+    border-radius: 9px;
+    background: #243c2d;
+    color: white;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.smart-pack-recommendation,
+.smart-pack-warning,
+.smart-pack-empty {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 12px;
+    background: #253c2e;
+    color: white;
+}
+
+.smart-pack-recommendation span {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    color: #cce0cf;
+}
+
+.smart-pack-recommendation strong {
+    display: block;
+}
+
+.smart-pack-recommendation p,
+.smart-pack-warning p {
+    margin: 5px 0 0;
+    color: #d5dfd7;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.smart-pack-warning a,
+.smart-pack-empty a {
+    display: inline-block;
+    margin-top: 8px;
+    color: white;
+    font-weight: 800;
+}
+
+@media (max-width: 700px) {
+    .smart-pack-grid,
+    .smart-pack-summary {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+
 {% endblock %}
 
 {% block content %}
 
-<section class="product-detail-page">
+<section class="pd-v2-page">
+    <div class="v2-shell">
 
-    <div class="product-detail-container">
-
-
-        <div class="product-detail-image">
-
-            {% if product.image %}
-
-                <img
-                    src="{{ product.image.url }}"
-                    alt="{{ product.name }}"
-                >
-
-            {% else %}
-
-                <div class="product-detail-placeholder">
-                    🐾
-                </div>
-
-            {% endif %}
-
+        <div class="pd-v2-breadcrumb">
+            <a href="{% url 'home' %}">Home</a>
+            <span>›</span>
+            <span>{{ product.get_category_display }}</span>
+            <span>›</span>
+            <strong>{{ product.name }}</strong>
         </div>
 
+        <div class="pd-v2-layout">
 
-        <div class="product-detail-info">
+            <div class="pd-v2-media-card">
+                {% if product.image %}
+                    <img
+                        src="{{ product.image.url }}"
+                        alt="{{ product.name }}"
+                        class="pd-v2-main-image"
+                    >
+                {% else %}
+                    <div class="pd-v2-placeholder">🐾</div>
+                {% endif %}
 
-            <span class="product-category">
-                {{ product.get_category_display }}
-            </span>
-
-            <h1>
-                {{ product.name }}
-            </h1>
-
-            <div class="product-rating-summary">
-
-    <strong>
-        ⭐ {{ average_rating|floatformat:1 }}
-    </strong>
-
-    <span>
-        ({{ reviews.count }} reviews)
-    </span>
-
-    <section class="reviews-section">
-
-        <h2>Customer Reviews</h2>
-
-        {% if request.user.is_authenticated %}
-
-            <form
-                method="POST"
-                action="{% url 'add_review' product.id %}"
-                class="review-form"
-            >
-
-                {% csrf_token %}
-
-                <label>Rating</label>
-
-                <select name="rating" required>
-
-                    <option value="5">★★★★★</option>
-                    <option value="4">★★★★☆</option>
-                    <option value="3">★★★☆☆</option>
-                    <option value="2">★★☆☆☆</option>
-                    <option value="1">★☆☆☆☆</option>
-
-                </select>
-
-                <label>Your Review</label>
-
-                <textarea
-                    name="comment"
-                    rows="4"
-                    placeholder="Tell other pet parents what you think..."
-                >{% if user_review %}{{ user_review.comment }}{% endif %}</textarea>
-
-                <button type="submit">
-                    {% if user_review %}
-                        Update Review
-                    {% else %}
-                        Submit Review
-                    {% endif %}
-                </button>
-
-            </form>
-
-        {% else %}
-
-            <p>
-                <a href="{% url 'login' %}">
-                    Login
-                </a>
-                to write a review.
-            </p>
-
-        {% endif %}
+                {% if product.is_featured %}
+                    <span class="pd-v2-featured-badge">Featured</span>
+                {% endif %}
+            </div>
 
 
-        <div class="review-list">
+            <div class="pd-v2-info">
 
-            {% for review in reviews %}
+                {% if product.brand %}
+                    <span class="pd-v2-brand">{{ product.brand }}</span>
+                {% endif %}
 
-                <div class="review-card">
+                <h1>{{ product.name }}</h1>
 
-                    <div class="review-header">
+                <div class="pd-v2-rating-row">
+                    <span class="pd-v2-rating">
+                        ★ {{ average_rating|floatformat:1 }}
+                    </span>
+                    <a href="#reviews">
+                        {{ reviews.count }} review{{ reviews.count|pluralize }}
+                    </a>
+                </div>
 
-                        <strong>
-                            {{ review.user.username }}
-                        </strong>
-
+                <div class="pd-v2-tags">
+                    {% if product.pet_type %}
                         <span>
-                            {{ review.rating }} / 5 ⭐
+                            {% if product.pet_type == "dog" %}
+                                🐕 Dog
+                            {% elif product.pet_type == "cat" %}
+                                🐈 Cat
+                            {% else %}
+                                🐾 Dog & Cat
+                            {% endif %}
                         </span>
+                    {% endif %}
+
+                    {% if product.life_stage %}
+                        <span>{{ product.get_life_stage_display }}</span>
+                    {% endif %}
+
+                    {% if product.flavour %}
+                        <span>{{ product.flavour }}</span>
+                    {% endif %}
+                </div>
+
+
+                <div class="pd-v2-price-block">
+                    <strong class="pd-v2-price">
+                        ₹{{ product.price|floatformat:2 }}
+                    </strong>
+
+                    {% if product.original_price %}
+                        <span class="pd-v2-mrp">
+                            MRP ₹{{ product.original_price|floatformat:2 }}
+                        </span>
+                    {% endif %}
+                </div>
+
+
+                {% if product.variants.all %}
+                <div class="pd-v2-variant-section">
+
+                    <div class="pd-v2-section-label">
+                        <strong>Choose package size</strong>
+                        <span>Select the size that suits your pet</span>
+                    </div>
+
+                    <div class="pd-v2-variant-grid">
+
+                        {% for variant in product.variants.all %}
+                            <button
+                                type="button"
+                                class="pd-v2-variant-card
+                                {% if not variant.is_available or variant.stock <= 0 %}
+                                    pd-v2-variant-disabled
+                                {% endif %}"
+                                data-variant-id="{{ variant.id }}"
+                                data-size="{{ variant.size }}"
+                                data-price="{{ variant.price }}"
+                                data-image="{% if variant.image %}{{ variant.image.url }}{% endif %}"
+                                data-mrp="{% if variant.original_price %}{{ variant.original_price }}{% endif %}"
+                                data-stock="{{ variant.stock }}"
+                                {% if not variant.is_available or variant.stock <= 0 %}
+                                    disabled
+                                {% endif %}
+                            >
+                                <strong>{{ variant.size }}</strong>
+
+                                <span>
+                                    ₹{{ variant.price|floatformat:2 }}
+                                </span>
+
+                                {% if variant.original_price %}
+                                    <small>
+                                        MRP ₹{{ variant.original_price|floatformat:2 }}
+                                    </small>
+                                {% endif %}
+
+                                {% if variant.stock > 0 and variant.is_available %}
+                                    <em>{{ variant.stock }} available</em>
+                                {% else %}
+                                    <em>Out of stock</em>
+                                {% endif %}
+                            </button>
+                        {% empty %}
+                        {% endfor %}
 
                     </div>
 
-                    <p>
-                        {{ review.comment }}
+                    <input
+                        type="hidden"
+                        id="selected-variant-id"
+                        value=""
+                    >
+
+                    <p class="pd-v2-variant-note" id="variant-message">
+                        Choose a size before adding this product to your cart.
                     </p>
 
-                    <small>
-                        {{ review.created_at|date:"d M Y" }}
-                    </small>
-
                 </div>
-
-            {% empty %}
-
-                <p>
-                    No reviews yet. Be the first to review this product.
-                </p>
-
-            {% endfor %}
-
-        </div>
-
-    </section>
-
-</div>
-
-            <h2 class="product-detail-price">
-                ₹{{ product.price }}
-            </h2>
+                {% endif %}
 
 
-            {% if product.stock > 0 %}
 
-                <p class="product-in-stock">
-                    ✓ In Stock
-                </p>
+                {% if product.variants.all and feeding_guides %}
+                <section class="smart-pack-advisor" id="smart-pack-advisor">
 
-                <p class="stock-text">
-                    {{ product.stock }} items available
-                </p>
+                    <div class="smart-pack-head">
+                        <div>
+                            <span class="smart-pack-kicker">🐾 BOWS & MEOWS SMART PACK ADVISOR</span>
+                            <h3>Which pack fits your pet best?</h3>
+                            <p>
+                                We use your pet's saved weight and this product's feeding guide
+                                to compare freshness, value and how long each pack may last.
+                            </p>
+                        </div>
+                    </div>
 
-            {% else %}
+                    {% if request.user.is_authenticated %}
 
-                <p class="product-out-stock">
-                    Out of Stock
-                </p>
+                        {% if pets %}
+                            <label class="smart-pack-label" for="advisor-pet">
+                                Shopping for
+                            </label>
 
-            {% endif %}
+                            <select id="advisor-pet" class="smart-pack-pet-select">
+                                <option value="">Choose your pet</option>
 
+                                {% for pet in pets %}
+                                    <option
+                                        value="{{ pet.id }}"
+                                        data-name="{{ pet.name }}"
+                                        data-weight="{% if pet.weight %}{{ pet.weight }}{% endif %}"
+                                    >
+                                        {{ pet.name }}
+                                        {% if pet.breed %} • {{ pet.breed }}{% endif %}
+                                        {% if pet.weight %} • {{ pet.weight }} KG{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
 
-            <div class="product-description">
+                            <div class="smart-pack-preference">
+                                <div class="smart-pack-preference-labels">
+                                    <span>🌿 Freshness</span>
+                                    <strong id="advisor-priority-text">Balanced</strong>
+                                    <span>💰 Value</span>
+                                </div>
 
-                <h3>
-                    Product Description
-                </h3>
+                                <input
+                                    type="range"
+                                    id="advisor-priority"
+                                    min="0"
+                                    max="100"
+                                    value="50"
+                                    step="1"
+                                >
+                            </div>
 
-                <p>
-                    {{ product.description|default:"No description available." }}
-                </p>
+                            <div id="advisor-result" class="smart-pack-result">
+                                <p>
+                                    Choose a pet above and we'll compare the available package sizes.
+                                </p>
+                            </div>
 
-            </div>
+                        {% else %}
+                            <div class="smart-pack-empty">
+                                <strong>Add your pet to unlock personalized pack recommendations.</strong>
+                                <p>
+                                    Save your pet's weight once and Bows & Meows can estimate
+                                    how long different food packs may last.
+                                </p>
+                                <a href="{% url 'my_pets' %}">
+                                    Add / update my pet →
+                                </a>
+                            </div>
+                        {% endif %}
 
-
-            {% if product.stock > 0 %}
-
-                <a
-                    href="{% url 'add_to_cart' product.id %}"
-                    class="product-detail-cart"
-                >
-                    🛒 Add to Cart
-                </a>
-
-            {% endif %}
-
-            {% if request.user.is_authenticated %}
-
-                <a
-                    href="{% url 'toggle_wishlist' product.id %}"
-                    class="wishlist-btn"
-                >
-
-                    {% if is_saved %}
-                        ♥ Saved
                     {% else %}
-                        ♡ Save Product
+                        <div class="smart-pack-empty">
+                            <strong>Login to use the Smart Pack Advisor.</strong>
+                            <p>
+                                Your saved pet profile powers personalized pack estimates.
+                            </p>
+                            <a href="{% url 'login' %}?next={{ request.path }}">
+                                Login →
+                            </a>
+                        </div>
                     {% endif %}
 
-                </a>
 
-            {% else %}
+                    <div id="feeding-guide-data" hidden>
+                        {% for guide in feeding_guides %}
+                            <span
+                                class="feeding-guide-data"
+                                data-min="{{ guide.min_weight }}"
+                                data-max="{{ guide.max_weight }}"
+                                data-grams="{{ guide.daily_grams }}"
+                            ></span>
+                        {% endfor %}
+                    </div>
 
-                <a href="{% url 'login' %}" class="wishlist-btn">
-                    ♡ Login to Save
-                </a>
-
-            {% endif %}
-
-
-            <div class="product-benefits">
-
-                <div>
-                    🚚 Fast Delivery
+                </section>
+                {% endif %}
+                
+                <div class="pd-v2-stock-row">
+                    {% if product.stock > 0 %}
+                        <span class="pd-v2-in-stock">✓ In stock</span>
+                        <small>{{ product.stock }} total units available</small>
+                    {% else %}
+                        <span class="pd-v2-out-stock">Out of stock</span>
+                    {% endif %}
                 </div>
 
-                <div>
-                    ✅ Genuine Product
+
+                {% if product.key_benefits %}
+                <div class="pd-v2-benefits-box">
+                    <h3>Why pet parents choose it</h3>
+                    <div class="pd-v2-benefit-copy">
+                        {{ product.key_benefits|linebreaksbr }}
+                    </div>
+                </div>
+                {% endif %}
+
+
+                <div class="pd-v2-actions">
+
+                    {% if product.stock > 0 %}
+
+                        {% if product.variants.all %}
+                            <button
+                                type="button"
+                                class="pd-v2-cart-btn"
+                                id="variant-cart-button"
+                                data-cart-url="{% url 'add_to_cart' product.id %}"
+                                disabled
+                            >
+                                🛒 Select a size
+                            </button>
+                        {% else %}
+                            <a
+                                href="{% url 'add_to_cart' product.id %}"
+                                class="pd-v2-cart-btn"
+                            >
+                                🛒 Add to Cart
+                            </a>
+                        {% endif %}
+
+                    {% endif %}
+
+
+                    {% if request.user.is_authenticated %}
+                        <a
+                            href="{% url 'toggle_wishlist' product.id %}"
+                            class="pd-v2-wishlist-btn"
+                        >
+                            {% if is_saved %}
+                                ♥ Saved
+                            {% else %}
+                                ♡ Save Product
+                            {% endif %}
+                        </a>
+                    {% else %}
+                        <a
+                            href="{% url 'login' %}?next={{ request.path }}"
+                            class="pd-v2-wishlist-btn"
+                        >
+                            ♡ Login to Save
+                        </a>
+                    {% endif %}
+
                 </div>
 
-                <div>
-                    🔒 Secure Checkout
+
+                <div class="pd-v2-trust-grid">
+                    <div>
+                        <span>✓</span>
+                        <strong>Genuine Product</strong>
+                        <small>Reliable pet-care essentials</small>
+                    </div>
+
+                    <div>
+                        <span>🔒</span>
+                        <strong>Secure Checkout</strong>
+                        <small>Protected online payment</small>
+                    </div>
+
+                    <div>
+                        <span>📦</span>
+                        <strong>Order Tracking</strong>
+                        <small>Follow your order status</small>
+                    </div>
                 </div>
 
             </div>
@@ -240,8 +584,956 @@
         </div>
 
 
-    </div>
+        <div class="pd-v2-details-grid">
 
+            <section class="pd-v2-description-card">
+                <span class="v2-eyebrow">PRODUCT DETAILS</span>
+                <h2>About {{ product.name }}</h2>
+
+                <p>
+                    {{ product.description|default:"Product details will be added soon."|linebreaksbr }}
+                </p>
+
+                <div class="pd-v2-spec-grid">
+                    {% if product.brand %}
+                        <div>
+                            <small>Brand</small>
+                            <strong>{{ product.brand }}</strong>
+                        </div>
+                    {% endif %}
+
+                    <div>
+                        <small>Category</small>
+                        <strong>{{ product.get_category_display }}</strong>
+                    </div>
+
+                    {% if product.life_stage %}
+                        <div>
+                            <small>Life Stage</small>
+                            <strong>{{ product.get_life_stage_display }}</strong>
+                        </div>
+                    {% endif %}
+
+                    {% if product.flavour %}
+                        <div>
+                            <small>Flavour</small>
+                            <strong>{{ product.flavour }}</strong>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+
+
+            <aside class="pd-v2-smart-card">
+                <span class="v2-eyebrow">SMART SHOPPING</span>
+                <h3>More useful than a price tag.</h3>
+
+                {% if product.variants.all %}
+                    <p>
+                        Compare package sizes and stock here. In the next step,
+                        Bows & Meows will calculate pack value and remember the
+                        exact size you add to your cart.
+                    </p>
+                {% else %}
+                    <p>
+                        Save this product to your account and find it again
+                        whenever your pet needs a refill.
+                    </p>
+                {% endif %}
+
+                {% if request.user.is_authenticated %}
+                    <a href="{% url 'my_pets' %}">
+                        View My Pets →
+                    </a>
+                {% endif %}
+            </aside>
+
+        </div>
+
+
+        <section class="pd-v2-reviews" id="reviews">
+
+            <div class="pd-v2-reviews-head">
+                <div>
+                    <span class="v2-eyebrow">PET PARENT REVIEWS</span>
+                    <h2>What customers say</h2>
+                </div>
+
+                <div class="pd-v2-review-score">
+                    <strong>{{ average_rating|floatformat:1 }}</strong>
+                    <span>★</span>
+                    <small>{{ reviews.count }} review{{ reviews.count|pluralize }}</small>
+                </div>
+            </div>
+
+
+            <div class="pd-v2-review-layout">
+
+                <div class="pd-v2-review-list">
+
+                    {% for review in reviews %}
+
+                        <article class="pd-v2-review-card">
+
+                            <div class="pd-v2-review-card-head">
+                                <div>
+                                    <strong>{{ review.user.username }}</strong>
+                                    <small>
+                                        {{ review.created_at|date:"d M Y" }}
+                                    </small>
+                                </div>
+
+                                <span>
+                                    {{ review.rating }} / 5 ★
+                                </span>
+                            </div>
+
+                            <p>
+                                {{ review.comment|default:"No written comment." }}
+                            </p>
+
+                        </article>
+
+                    {% empty %}
+
+                        <div class="pd-v2-no-reviews">
+                            <span>🐾</span>
+                            <h3>No reviews yet</h3>
+                            <p>Be the first pet parent to review this product.</p>
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <div class="pd-v2-review-form-card">
+
+                    {% if request.user.is_authenticated %}
+
+                        <h3>
+                            {% if user_review %}
+                                Update your review
+                            {% else %}
+                                Review this product
+                            {% endif %}
+                        </h3>
+
+                        <form
+                            method="POST"
+                            action="{% url 'add_review' product.id %}"
+                            class="pd-v2-review-form"
+                        >
+                            {% csrf_token %}
+
+                            <label>Rating</label>
+                            <select name="rating" required>
+                                <option value="5">★★★★★ Excellent</option>
+                                <option value="4">★★★★☆ Very good</option>
+                                <option value="3">★★★☆☆ Good</option>
+                                <option value="2">★★☆☆☆ Fair</option>
+                                <option value="1">★☆☆☆☆ Poor</option>
+                            </select>
+
+                            <label>Your Review</label>
+                            <textarea
+                                name="comment"
+                                rows="5"
+                                placeholder="Tell other pet parents what you think..."
+                            >{% if user_review %}{{ user_review.comment }}{% endif %}</textarea>
+
+                            <button type="submit">
+                                {% if user_review %}
+                                    Update Review
+                                {% else %}
+                                    Submit Review
+                                {% endif %}
+                            </button>
+                        </form>
+
+                    {% else %}
+
+                        <h3>Share your experience</h3>
+                        <p>Login to write a product review.</p>
+                        <a href="{% url 'login' %}?next={{ request.path }}">
+                            Login to Review
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
 </section>
+
+
+<script>
+const variantButtons = document.querySelectorAll(".pd-v2-variant-card");
+const priceElement = document.querySelector(".pd-v2-price");
+const mrpElement = document.querySelector(".pd-v2-mrp");
+const cartButton = document.getElementById("variant-cart-button");
+const selectedVariantInput = document.getElementById("selected-variant-id");
+const variantMessage = document.getElementById("variant-message");
+
+variantButtons.forEach(function (button) {
+
+    if (button.disabled) {
+        return;
+    }
+
+    button.addEventListener("click", function () {
+
+        variantButtons.forEach(function (item) {
+            item.classList.remove("pd-v2-variant-selected");
+        });
+
+        button.classList.add("pd-v2-variant-selected");
+
+        const variantId = button.dataset.variantId;
+        const price = button.dataset.price;
+        const mrp = button.dataset.mrp;
+        const stock = button.dataset.stock;
+        const variantImage =
+            button.dataset.image;
+
+        const mainProductImage =
+            document.querySelector(
+                ".pd-v2-main-image"
+            );
+
+        if (selectedVariantInput) {
+            selectedVariantInput.value = variantId;
+        }
+
+        if (priceElement) {
+            priceElement.textContent =
+                "₹" + Number(price).toFixed(2);
+        }
+
+        if (mrpElement) {
+            if (mrp) {
+                mrpElement.textContent =
+                    "MRP ₹" + Number(mrp).toFixed(2);
+                mrpElement.style.display = "";
+            } else {
+                mrpElement.style.display = "none";
+            }
+        }
+        if (
+            variantImage
+            && mainProductImage
+        ) {
+            mainProductImage.src =
+                variantImage;
+        }
+        if (variantMessage) {
+            variantMessage.textContent =
+                stock + " unit(s) available in this size.";
+        }
+
+        if (cartButton) {
+            cartButton.disabled = false;
+
+            const selectedSize =
+                button.querySelector("strong").textContent.trim();
+
+            cartButton.textContent =
+                "🛒 Add " + selectedSize + " to Cart";
+
+            cartButton.onclick = function () {
+                const baseUrl = cartButton.dataset.cartUrl;
+
+                window.location.href =
+                    baseUrl
+                    + "?variant="
+                    + encodeURIComponent(variantId);
+            };
+        }
+
+    });
+
+});
+
+
+const advisorPet = document.getElementById("advisor-pet");
+const advisorPriority = document.getElementById("advisor-priority");
+const advisorPriorityText = document.getElementById("advisor-priority-text");
+const advisorResult = document.getElementById("advisor-result");
+/* ==========================================
+   REMEMBER SELECTED PET
+   ========================================== */
+
+const PET_STORAGE_KEY = "bows_meows_selected_pet";
+
+if (advisorPet) {
+
+    // Restore previously selected pet
+    const savedPetId =
+        localStorage.getItem(PET_STORAGE_KEY);
+
+    if (savedPetId) {
+
+        const savedOption =
+            advisorPet.querySelector(
+                `option[value="${savedPetId}"]`
+            );
+
+        if (savedOption) {
+
+            advisorPet.value = savedPetId;
+
+            // Automatically calculate recommendation
+            runSmartPackAdvisor();
+        }
+    }
+
+
+    // Remember whenever customer changes pet
+    advisorPet.addEventListener(
+        "change",
+        function () {
+
+            if (advisorPet.value) {
+
+                localStorage.setItem(
+                    PET_STORAGE_KEY,
+                    advisorPet.value
+                );
+
+            } else {
+
+                localStorage.removeItem(
+                    PET_STORAGE_KEY
+                );
+            }
+
+        }
+    );
+}
+function packSizeToGrams(sizeText) {
+
+    if (!sizeText) {
+        return null;
+    }
+
+    const clean = sizeText
+        .trim()
+        .toLowerCase();
+
+    const match = clean.match(
+        /(\d+(?:\.\d+)?)\s*(kg|g)\b/
+    );
+
+    if (!match) {
+        return null;
+    }
+
+    const amount =
+        Number(match[1]);
+
+    const unit =
+        match[2];
+
+    if (unit === "kg") {
+        return amount * 1000;
+    }
+
+    return amount;
+}
+
+
+function getDailyFeeding(weight) {
+
+    const guides =
+        document.querySelectorAll(
+            ".feeding-guide-data"
+        );
+
+    for (const guide of guides) {
+
+        const min =
+            Number(guide.dataset.min);
+
+        const max =
+            Number(guide.dataset.max);
+
+        const grams =
+            Number(guide.dataset.grams);
+
+        if (
+            weight >= min
+            && weight <= max
+        ) {
+            return grams;
+        }
+    }
+
+    return null;
+}
+
+
+function normalizeReverse(
+    value,
+    min,
+    max
+) {
+
+    if (max === min) {
+        return 1;
+    }
+
+    return 1 - (
+        (value - min)
+        / (max - min)
+    );
+}
+
+
+function updatePriorityLabel() {
+
+    if (
+        !advisorPriority
+        || !advisorPriorityText
+    ) {
+        return;
+    }
+
+    const value =
+        Number(advisorPriority.value);
+
+    if (value < 35) {
+        advisorPriorityText.textContent =
+            "Freshness first";
+    } else if (value > 65) {
+        advisorPriorityText.textContent =
+            "Value first";
+    } else {
+        advisorPriorityText.textContent =
+            "Balanced";
+    }
+}
+
+
+function selectRecommendedVariant(
+    variantId
+) {
+
+    const button =
+        document.querySelector(
+            '.pd-v2-variant-card[data-variant-id="'
+            + variantId
+            + '"]'
+        );
+
+    if (button && !button.disabled) {
+        button.click();
+        button.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    }
+}
+
+
+function runSmartPackAdvisor() {
+
+    if (
+        !advisorPet
+        || !advisorResult
+    ) {
+        return;
+    }
+
+    const selected =
+        advisorPet.options[
+            advisorPet.selectedIndex
+        ];
+
+    if (
+        !selected
+        || !selected.value
+    ) {
+
+        advisorResult.innerHTML = `
+            <p>
+                Choose a pet above and we'll compare
+                the available package sizes.
+            </p>
+        `;
+
+        return;
+    }
+
+    const petName =
+        selected.dataset.name;
+
+    const weight =
+        Number(selected.dataset.weight);
+
+    if (
+        !weight
+        || weight <= 0
+    ) {
+
+        advisorResult.innerHTML = `
+            <div class="smart-pack-warning">
+                <strong>
+                    We need ${petName}'s weight first.
+                </strong>
+
+                <p>
+                    Add a weight to the pet profile
+                    and then come back here.
+                </p>
+
+                <a href="{% url 'my_pets' %}">
+                    Update pet profile →
+                </a>
+            </div>
+        `;
+
+        return;
+    }
+
+    const dailyGrams =
+        getDailyFeeding(weight);
+
+    if (!dailyGrams) {
+
+        advisorResult.innerHTML = `
+            <div class="smart-pack-warning">
+                <strong>
+                    We don't have a feeding range
+                    for ${weight} KG yet.
+                </strong>
+
+                <p>
+                    Use the manufacturer's feeding
+                    instructions for this product.
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+    const cards = [];
+
+    document
+        .querySelectorAll(
+            ".pd-v2-variant-card"
+        )
+        .forEach(function (button) {
+
+            if (button.disabled) {
+                return;
+            }
+
+            const grams =
+                packSizeToGrams(
+                    button.dataset.size
+                );
+
+            if (!grams) {
+                return;
+            }
+
+            const price =
+                Number(
+                    button.dataset.price
+                );
+
+            const days =
+                grams / dailyGrams;
+
+            const pricePerDay =
+                price / days;
+
+            const pricePer100g =
+                price / grams * 100;
+
+            cards.push({
+                id:
+                    button.dataset.variantId,
+                size:
+                    button.dataset.size,
+                price: price,
+                grams: grams,
+                days: days,
+                pricePerDay:
+                    pricePerDay,
+                pricePer100g:
+                    pricePer100g,
+            });
+        });
+
+
+    if (!cards.length) {
+
+        advisorResult.innerHTML = `
+            <p>
+                Package-duration estimates work
+                with food sizes written in grams
+                or kilograms.
+            </p>
+        `;
+
+        return;
+    }
+
+
+    const minDays =
+        Math.min(
+            ...cards.map(
+                item => item.days
+            )
+        );
+
+    const maxDays =
+        Math.max(
+            ...cards.map(
+                item => item.days
+            )
+        );
+
+    const minValue =
+        Math.min(
+            ...cards.map(
+                item => item.pricePer100g
+            )
+        );
+
+    const maxValue =
+        Math.max(
+            ...cards.map(
+                item => item.pricePer100g
+            )
+        );
+
+    const priority =
+        advisorPriority
+        ? Number(
+            advisorPriority.value
+        ) / 100
+        : 0.5;
+
+
+    cards.forEach(function (item) {
+
+        // -------------------------------
+        // 1. FRESHNESS SCORE
+        // Smaller packs score higher
+        // -------------------------------
+
+        const freshnessScore =
+            normalizeReverse(
+                item.days,
+                minDays,
+                maxDays
+            );
+
+
+        // -------------------------------
+        // 2. VALUE SCORE
+        // Lower ₹ / 100g scores higher
+        // -------------------------------
+
+        const valueScore =
+            normalizeReverse(
+                item.pricePer100g,
+                minValue,
+                maxValue
+            );
+
+
+        // -------------------------------
+        // 3. PRACTICAL DURATION SCORE
+        //
+        // Ideal pack:
+        // approximately 20–45 days
+        // -------------------------------
+
+        let durationScore = 1;
+
+        if (item.days < 20) {
+
+            durationScore =
+                Math.max(
+                    0,
+                    item.days / 20
+                );
+
+        } else if (item.days <= 45) {
+
+            durationScore = 1;
+
+        } else if (item.days <= 75) {
+
+            durationScore =
+                1 -
+                (
+                    (item.days - 45)
+                    / 60
+                );
+
+        } else {
+
+            durationScore =
+                Math.max(
+                    0,
+                    0.5 -
+                    (
+                        (item.days - 75)
+                        / 100
+                    )
+                );
+        }
+
+
+        // -------------------------------
+        // 4. SLIDER BEHAVIOUR
+        // -------------------------------
+
+        let freshnessWeight;
+        let valueWeight;
+        let durationWeight;
+
+
+        if (priority < 0.35) {
+
+            // FRESHNESS FIRST
+
+            freshnessWeight = 0.65;
+            valueWeight = 0.10;
+            durationWeight = 0.25;
+
+        } else if (priority > 0.65) {
+
+            // VALUE FIRST
+
+            freshnessWeight = 0.10;
+            valueWeight = 0.65;
+            durationWeight = 0.25;
+
+        } else {
+
+            // BALANCED
+
+            freshnessWeight = 0.25;
+            valueWeight = 0.25;
+            durationWeight = 0.50;
+        }
+
+
+        item.score =
+            (
+                freshnessScore
+                * freshnessWeight
+            )
+            +
+            (
+                valueScore
+                * valueWeight
+            )
+            +
+            (
+                durationScore
+                * durationWeight
+            );
+
+    });
+
+
+    const recommended =
+        [...cards].sort(
+            (a, b) =>
+                b.score - a.score
+        )[0];
+
+    const freshest =
+        [...cards].sort(
+            (a, b) =>
+                a.days - b.days
+        )[0];
+
+    const bestValue =
+        [...cards].sort(
+            (a, b) =>
+                a.pricePer100g
+                - b.pricePer100g
+        )[0];
+
+
+    let html = `
+        <div class="smart-pack-summary">
+            <div>
+                <small>Shopping for</small>
+                <strong>${petName}</strong>
+                <span>${weight.toFixed(1)} KG</span>
+            </div>
+
+            <div>
+                <small>Estimated daily serving</small>
+                <strong>${dailyGrams} g/day</strong>
+                <span>Based on this product's saved feeding guide</span>
+            </div>
+        </div>
+
+        <div class="smart-pack-grid">
+    `;
+
+
+    cards.forEach(function (item) {
+
+        let badge = "";
+
+        if (
+            item.id
+            === recommended.id
+        ) {
+            badge =
+                "✨ Bows & Meows Pick";
+        } else if (
+            item.id
+            === freshest.id
+        ) {
+            badge =
+                "🌿 Freshest";
+        } else if (
+            item.id
+            === bestValue.id
+        ) {
+            badge =
+                "💰 Best Value";
+        }
+
+        let freshnessNote = "";
+
+        if (item.days > 90) {
+
+            freshnessNote =
+                "⚠ May stay open for a long time";
+
+        } else if (item.days > 45) {
+
+            freshnessNote =
+                "✓ Better for bulk buying";
+
+        } else if (item.days >= 20) {
+
+            freshnessNote =
+                "✓ Great balance of freshness & convenience";
+
+        } else {
+
+            freshnessNote =
+                "🌿 Best for frequent fresh packs";
+        }
+        html += `
+            <article class="smart-pack-card
+                ${
+                    item.id
+                    === recommended.id
+                    ? "smart-pack-card-best"
+                    : ""
+                }
+            ">
+
+                ${
+                    badge
+                    ? `<span class="smart-pack-badge">${badge}</span>`
+                    : ""
+                }
+
+                <h4>${item.size}</h4>
+
+                <strong>
+                    ~${Math.round(item.days)} days
+                </strong>
+
+                <p>
+                    ₹${item.pricePerDay.toFixed(2)}
+                    / estimated feeding day
+                </p>
+
+                <small>
+                    ₹${item.pricePer100g.toFixed(2)}
+                    / 100 g
+                </small>
+
+                <em>
+                    ${freshnessNote}
+                </em>
+
+                ${
+                    item.id
+                    === recommended.id
+                    ? `
+                        <button
+                            type="button"
+                            onclick="selectRecommendedVariant('${item.id}')"
+                        >
+                            Choose ${item.size}
+                        </button>
+                    `
+                    : ""
+                }
+
+            </article>
+        `;
+    });
+
+
+    html += `
+        </div>
+
+        <div class="smart-pack-recommendation">
+            <span>✨ RECOMMENDATION</span>
+
+            <strong>
+                ${recommended.size}
+                is the current best match
+                for ${petName}.
+            </strong>
+
+            <p>
+                Move the Freshness ↔ Value slider
+                to change what matters most to you.
+            </p>
+        </div>
+    `;
+
+    advisorResult.innerHTML =
+        html;
+}
+
+
+if (advisorPriority) {
+
+    updatePriorityLabel();
+
+    advisorPriority.addEventListener(
+        "input",
+        function () {
+            updatePriorityLabel();
+            runSmartPackAdvisor();
+        }
+    );
+}
+
+
+if (advisorPet) {
+
+    advisorPet.addEventListener(
+        "change",
+        runSmartPackAdvisor
+    );
+}
+
+</script>
 
 {% endblock %}

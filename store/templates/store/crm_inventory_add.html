@@ -9,7 +9,6 @@ Add Product | Bows & Meows CRM
 <section class="crm-page">
 
     <div class="crm-heading">
-
         <div>
             <span>INVENTORY</span>
             <h1>Add Product</h1>
@@ -19,98 +18,263 @@ Add Product | Bows & Meows CRM
         <a href="{% url 'crm_inventory' %}" class="crm-admin-btn">
             ← Inventory
         </a>
-
     </div>
-
 
     <div class="crm-panel crm-form-panel">
 
         <form method="POST" enctype="multipart/form-data">
-            <label>Product Image</label>
 
+            {% csrf_token %}
+
+            <h2>Product Information</h2>
+
+            <label>Product Name</label>
+            <input type="text" name="name" required>
+
+            <label>Brand</label>
+            <input
+                type="text"
+                name="brand"
+                placeholder="Royal Canin, Pedigree, Whiskas..."
+            >
+
+            <label>Pet Type</label>
+            <select name="pet_type">
+                <option value="">Select Pet</option>
+                <option value="dog">Dog</option>
+                <option value="cat">Cat</option>
+                <option value="both">Dog & Cat</option>
+            </select>
+
+            <label>Category</label>
+            <select name="category" required>
+
+                <optgroup label="Dog">
+                    <option value="dog_food">Dog Food</option>
+                    <option value="dog_treat">Dog Treats</option>
+                    <option value="dog_toy">Dog Toys</option>
+                    <option value="dog_grooming">Dog Grooming</option>
+                    <option value="dog_accessory">Dog Accessories</option>
+                    <option value="dog_health">Dog Health</option>
+                </optgroup>
+
+                <optgroup label="Cat">
+                    <option value="cat_food">Cat Food</option>
+                    <option value="cat_treat">Cat Treats</option>
+                    <option value="cat_toy">Cat Toys</option>
+                    <option value="cat_litter">Cat Litter</option>
+                    <option value="cat_grooming">Cat Grooming</option>
+                    <option value="cat_accessory">Cat Accessories</option>
+                    <option value="cat_health">Cat Health</option>
+                </optgroup>
+
+                <optgroup label="Health & Wellness">
+                    <option value="medicine">Medicine</option>
+                    <option value="supplement">Supplements</option>
+                    <option value="skin_coat">Skin & Coat</option>
+                    <option value="dental">Dental Care</option>
+                    <option value="joint_care">Joint Care</option>
+                    <option value="digestive">Digestive Care</option>
+                </optgroup>
+
+            </select>
+
+            <label>Life Stage</label>
+            <select name="life_stage">
+                <option value="">Not Applicable</option>
+                <option value="puppy_kitten">Puppy / Kitten</option>
+                <option value="adult">Adult</option>
+                <option value="senior">Senior</option>
+                <option value="all">All Life Stages</option>
+            </select>
+
+            <label>Flavour</label>
+            <input
+                type="text"
+                name="flavour"
+                placeholder="Chicken, Lamb, Tuna..."
+            >
+
+            <label>Description</label>
+            <textarea name="description" rows="5"></textarea>
+
+            <label>Key Benefits</label>
+            <textarea
+                name="key_benefits"
+                rows="4"
+                placeholder="Digestive support&#10;Healthy skin & coat&#10;Complete nutrition"
+            ></textarea>
+
+            <h2 class="crm-form-section">
+                Pricing & Inventory
+            </h2>
+
+            <label>Selling Price</label>
+            <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="price"
+                required
+            >
+
+            <label>MRP</label>
+            <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="original_price"
+            >
+
+            <label>Stock</label>
+            <input
+                type="number"
+                min="0"
+                name="stock"
+                required
+            >
+
+            <label>Product Image</label>
             <input
                 type="file"
                 name="image"
                 accept="image/*"
             >
-            {% csrf_token %}
-
-            <label>Product Name</label>
-            <input type="text" name="name" required>
-
-
-            <label>Category</label>
-
-            <select name="category" required>
-
-                <option value="dog_food">
-                    Dog Food
-                </option>
-
-                <option value="cat_food">
-                    Cat Food
-                </option>
-
-                <option value="medicine">
-                    Medicine
-                </option>
-
-                <option value="treat">
-                    Treat
-                </option>
-
-                <option value="accessory">
-                    Accessory
-                </option>
-
-            </select>
-
-
-            <label>Price</label>
-
-            <input
-                type="number"
-                step="0.01"
-                name="price"
-                required
-            >
-
-
-            <label>Stock</label>
-
-            <input
-                type="number"
-                name="stock"
-                required
-            >
-
-
-            <label>Description</label>
-
-            <textarea
-                name="description"
-                rows="5"
-            ></textarea>
-
 
             <label class="checkbox-label">
+                <input type="checkbox" name="is_featured">
+                Featured Product
+            </label>
 
+            <label class="checkbox-label">
                 <input
                     type="checkbox"
                     name="is_available"
                     checked
                 >
-
-                Available for sale
-
+                Available for Sale
             </label>
+
+
+            <h2 class="crm-form-section">
+                Package Sizes / Variants
+            </h2>
+
+            <p class="variant-help">
+                Add sizes such as 100 g, 1 KG, 3 KG,
+                500 ml, Small, Medium, etc.
+            </p>
+
+            <div id="variant-container">
+
+                <div class="variant-row">
+
+                    <input
+                        type="text"
+                        name="variant_size"
+                        placeholder="Size e.g. 1 KG"
+                    >
+                    <input
+                        type="file"
+                        name="variant_image"
+                        accept="image/*"
+                    >
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="variant_original_price"
+                        placeholder="MRP"
+                    >
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="variant_price"
+                        placeholder="Price"
+                    >
+
+                    <input
+                        type="number"
+                        min="0"
+                        name="variant_stock"
+                        placeholder="Stock"
+                    >
+
+                    <input
+                        type="text"
+                        name="variant_sku"
+                        placeholder="SKU"
+                    >
+
+                </div>
+
+            </div>
+
+            <button
+                type="button"
+                id="add-variant"
+                class="variant-add-btn"
+            >
+                + Add Another Size
+            </button>
+
+
+            <h2 class="crm-form-section">
+                Feeding Guide
+            </h2>
+
+            <p class="variant-help">
+                Optional. Use this for food products so Bows & Meows
+                can recommend the best package size for each pet.
+            </p>
+
+            <div id="feeding-guide-container">
+
+                <div class="feeding-guide-row">
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="feeding_min_weight"
+                        placeholder="Min weight KG"
+                    >
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="feeding_max_weight"
+                        placeholder="Max weight KG"
+                    >
+
+                    <input
+                        type="number"
+                        min="1"
+                        name="feeding_daily_grams"
+                        placeholder="Daily grams"
+                    >
+
+                </div>
+
+            </div>
+
+            <button
+                type="button"
+                id="add-feeding-guide"
+                class="variant-add-btn"
+            >
+                + Add Weight Range
+            </button>
 
 
             <button
                 type="submit"
                 class="crm-save-btn"
             >
-                Add Product
+                Save Product
             </button>
 
         </form>
@@ -118,5 +282,156 @@ Add Product | Bows & Meows CRM
     </div>
 
 </section>
+
+
+<script>
+const variantContainer =
+    document.getElementById("variant-container");
+
+const addVariantButton =
+    document.getElementById("add-variant");
+
+if (variantContainer && addVariantButton) {
+
+    addVariantButton.addEventListener(
+        "click",
+        function () {
+
+            const row =
+                document.createElement("div");
+
+            row.className = "variant-row";
+
+            row.innerHTML = `
+                <input
+                    type="text"
+                    name="variant_size"
+                    placeholder="Size e.g. 3 KG"
+                >
+                <input
+                    type="file"
+                    name="variant_image"
+                    accept="image/*"
+                >
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="variant_original_price"
+                    placeholder="MRP"
+                >
+
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="variant_price"
+                    placeholder="Price"
+                >
+
+                <input
+                    type="number"
+                    min="0"
+                    name="variant_stock"
+                    placeholder="Stock"
+                >
+
+                <input
+                    type="text"
+                    name="variant_sku"
+                    placeholder="SKU"
+                >
+
+                <button
+                    type="button"
+                    class="remove-variant"
+                >
+                    ✕
+                </button>
+            `;
+
+            variantContainer.appendChild(row);
+
+            row
+                .querySelector(".remove-variant")
+                .addEventListener(
+                    "click",
+                    function () {
+                        row.remove();
+                    }
+                );
+        }
+    );
+}
+
+
+const feedingContainer =
+    document.getElementById(
+        "feeding-guide-container"
+    );
+
+const feedingButton =
+    document.getElementById(
+        "add-feeding-guide"
+    );
+
+if (feedingContainer && feedingButton) {
+
+    feedingButton.addEventListener(
+        "click",
+        function () {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "feeding-guide-row";
+
+            row.innerHTML = `
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="feeding_min_weight"
+                    placeholder="Min weight KG"
+                >
+
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="feeding_max_weight"
+                    placeholder="Max weight KG"
+                >
+
+                <input
+                    type="number"
+                    min="1"
+                    name="feeding_daily_grams"
+                    placeholder="Daily grams"
+                >
+
+                <button
+                    type="button"
+                    class="remove-variant"
+                >
+                    ✕
+                </button>
+            `;
+
+            feedingContainer.appendChild(row);
+
+            row
+                .querySelector(".remove-variant")
+                .addEventListener(
+                    "click",
+                    function () {
+                        row.remove();
+                    }
+                );
+        }
+    );
+}
+</script>
 
 {% endblock %}

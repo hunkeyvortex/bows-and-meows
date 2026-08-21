@@ -1,55 +1,25 @@
-{% load static %}
+{% extends "store/base.html" %}
 
-<!DOCTYPE html>
-<html lang="en">
+{% block title %}
+Your Cart | Bows & Meows
+{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Your Cart | Bows & Meows</title>
-
-    <link rel="stylesheet" href="{% static 'store/style.css' %}">
-</head>
-
-<body>
-
-
-<header class="navbar">
-
-    <div class="logo">
-        🐾 Bows <span>&</span> Meows
-    </div>
-
-    <nav>
-        <a href="{% url 'home' %}">
-            Home
-        </a>
-    </nav>
-
-</header>
-
+{% block content %}
 
 <section class="cart-page">
 
     <div class="section-heading">
-
         <span>Your Basket</span>
-
         <h2>Shopping Cart</h2>
-
         <p>
-            Review your items before checkout.
+            Review your products, package sizes and quantities
+            before checkout.
         </p>
-
     </div>
-
 
     {% if cart_items %}
 
         <div class="cart-layout">
-
 
             <div class="cart-items">
 
@@ -57,22 +27,15 @@
 
                     <div class="cart-item">
 
-
                         <div class="cart-image">
 
                             {% if item.product.image %}
-
                                 <img
                                     src="{{ item.product.image.url }}"
                                     alt="{{ item.product.name }}"
                                 >
-
                             {% else %}
-
-                                <div class="no-image">
-                                    🐾
-                                </div>
-
+                                <div class="no-image">🐾</div>
                             {% endif %}
 
                         </div>
@@ -81,32 +44,84 @@
                         <div class="cart-product-info">
 
                             <span>
+                                {% if item.product.brand %}
+                                    {{ item.product.brand }} •
+                                {% endif %}
                                 {{ item.product.get_category_display }}
                             </span>
 
-                            <h3>
-                                {{ item.product.name }}
-                            </h3>
+                            <h3>{{ item.product.name }}</h3>
+
+                            {% if item.variant %}
+                                <div class="cart-variant-pill">
+                                    Package:
+                                    <strong>{{ item.variant.size }}</strong>
+                                </div>
+                            {% endif %}
 
                             <p>
-                                ₹{{ item.product.price }} each
+                                ₹{{ item.unit_price|floatformat:2 }} each
                             </p>
 
                             <div class="quantity-controls">
 
-                                <a href="{% url 'decrease_quantity' item.product.id %}">
+                                <a href="{% url 'decrease_quantity' item.product.id %}{% if item.variant %}?variant={{ item.variant.id }}{% endif %}">
                                     −
                                 </a>
 
-                                <span>
-                                    {{ item.quantity }}
-                                </span>
+                                <span>{{ item.quantity }}</span>
 
-                                <a href="{% url 'increase_quantity' item.product.id %}">
+                                <a href="{% url 'increase_quantity' item.product.id %}{% if item.variant %}?variant={{ item.variant.id }}{% endif %}">
                                     +
                                 </a>
 
                             </div>
+
+
+                            {% if item.upgrade_suggestion %}
+
+                                <div class="smart-pack-suggestion">
+
+                                    <div class="smart-pack-icon">
+                                        🐾
+                                    </div>
+
+                                    <div>
+
+                                        <strong>
+                                            Smarter pack choice
+                                        </strong>
+
+                                        <p>
+                                            Spend
+                                            ₹{{ item.upgrade_suggestion.extra_cost|floatformat:2 }}
+                                            more and get
+                                            {{ item.upgrade_suggestion.extra_size_text }}
+                                            extra.
+                                        </p>
+
+                                        <small>
+                                            Switch to
+                                            {{ item.upgrade_suggestion.variant.size }}
+                                            and save about
+                                            {{ item.upgrade_suggestion.unit_saving_percent }}%
+                                            per unit of product.
+                                        </small>
+
+                                        <a
+                                            href="{% url 'add_to_cart' item.product.id %}?variant={{ item.upgrade_suggestion.variant.id }}&replace={{ item.cart_key|urlencode }}"
+                                            class="smart-pack-switch"
+                                        >
+                                            Switch to
+                                            {{ item.upgrade_suggestion.variant.size }}
+                                            →
+                                        </a>
+
+                                    </div>
+
+                                </div>
+
+                            {% endif %}
 
                         </div>
 
@@ -114,15 +129,14 @@
                         <div class="cart-price">
 
                             <h3>
-                                ₹{{ item.subtotal }}
+                                ₹{{ item.subtotal|floatformat:2 }}
                             </h3>
 
-                            <a href="{% url 'remove_from_cart' item.product.id %}">
+                            <a href="{% url 'remove_from_cart' item.product.id %}{% if item.variant %}?variant={{ item.variant.id }}{% endif %}">
                                 Remove
                             </a>
 
                         </div>
-
 
                     </div>
 
@@ -133,95 +147,116 @@
 
             <div class="order-summary">
 
-                <h2>
-                    Order Summary
-                </h2>
+                <h2>Order Summary</h2>
 
                 <div class="summary-row">
-
-                    <span>
-                        Subtotal
-                    </span>
-
-                    <span>
-                        ₹{{ total }}
-                    </span>
-
+                    <span>Subtotal</span>
+                    <span>₹{{ total|floatformat:2 }}</span>
                 </div>
-
 
                 <div class="summary-row">
-
-                    <span>
-                        Delivery
-                    </span>
-
-                    <span>
-                        Free
-                    </span>
-
+                    <span>Delivery</span>
+                    <span>Free</span>
                 </div>
-
 
                 <hr>
 
-
                 <div class="summary-total">
-
-                    <span>
-                        Total
-                    </span>
-
-                    <strong>
-                        ₹{{ total }}
-                    </strong>
-
+                    <span>Total</span>
+                    <strong>₹{{ total|floatformat:2 }}</strong>
                 </div>
 
-
-                <a href="{% url 'checkout' %}" class="checkout-btn">
+                <a
+                    href="{% url 'checkout' %}"
+                    class="checkout-btn"
+                >
                     Proceed to Checkout
                 </a>
 
-
-                <a href="{% url 'home' %}" class="continue-shopping">
+                <a
+                    href="{% url 'home' %}"
+                    class="continue-shopping"
+                >
                     ← Continue Shopping
                 </a>
 
             </div>
 
-
         </div>
-
 
     {% else %}
 
         <div class="empty-cart">
-
-            <div>
-                🛒
-            </div>
-
-            <h2>
-                Your cart is empty
-            </h2>
-
+            <div>🛒</div>
+            <h2>Your cart is empty</h2>
             <p>
                 Your furry friend is waiting for something special.
             </p>
-
             <a href="{% url 'home' %}">
                 Continue Shopping
             </a>
-
         </div>
 
     {% endif %}
 
-
 </section>
 
 
-</body>
+<style>
+.cart-variant-pill {
+    display: inline-block;
+    margin: 8px 0 4px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #f2f4ef;
+    color: #33443a;
+    font-size: 13px;
+}
 
-</html>
+.smart-pack-suggestion {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 15px;
+    border: 1px solid #dfe8d7;
+    border-radius: 14px;
+    background: #f5faef;
+}
+
+.smart-pack-icon {
+    font-size: 24px;
+}
+
+.smart-pack-suggestion strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.smart-pack-suggestion p {
+    margin: 0 0 5px;
+    color: #344238;
+}
+
+.smart-pack-suggestion small {
+    display: block;
+    color: #657067;
+    line-height: 1.5;
+}
+
+.smart-pack-switch {
+    display: inline-block;
+    margin-top: 10px;
+    color: #1f5b3a;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+@media (max-width: 700px) {
+    .smart-pack-suggestion {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+{% endblock %}

@@ -20,78 +20,425 @@ Edit Product | Bows & Meows CRM
         </a>
     </div>
 
-
     <div class="crm-panel crm-form-panel">
 
         <form method="POST" enctype="multipart/form-data">
-            <label>Product Image</label>
-
-            {% if product.image %}
-
-                <div class="crm-current-image">
-
-                    <img
-                        src="{{ product.image.url }}"
-                        alt="{{ product.name }}"
-                    >
-
-                </div>
-
-            {% endif %}
-
-            <input
-            type="file"
-            name="image"
-            accept="image/*"
-            >
-
             {% csrf_token %}
 
-            <label>Product Name</label>
+            <h2>Product Information</h2>
 
+            <label>Product Name</label>
+            <input type="text" name="name" value="{{ product.name }}" required>
+
+            <label>Brand</label>
             <input
                 type="text"
-                name="name"
-                value="{{ product.name }}"
-                required
+                name="brand"
+                value="{{ product.brand }}"
+                placeholder="Royal Canin, Pedigree, Whiskas..."
             >
 
+            <label>Pet Type</label>
+            <select name="pet_type">
+                <option value="">Select Pet</option>
+                <option value="dog" {% if product.pet_type == "dog" %}selected{% endif %}>Dog</option>
+                <option value="cat" {% if product.pet_type == "cat" %}selected{% endif %}>Cat</option>
+                <option value="both" {% if product.pet_type == "both" %}selected{% endif %}>Dog & Cat</option>
+            </select>
 
-            <label>Price</label>
+            <label>Category</label>
+            <select name="category" required>
+                <optgroup label="Dog">
+                    <option value="dog_food" {% if product.category == "dog_food" %}selected{% endif %}>Dog Food</option>
+                    <option value="dog_treat" {% if product.category == "dog_treat" %}selected{% endif %}>Dog Treats</option>
+                    <option value="dog_toy" {% if product.category == "dog_toy" %}selected{% endif %}>Dog Toys</option>
+                    <option value="dog_grooming" {% if product.category == "dog_grooming" %}selected{% endif %}>Dog Grooming</option>
+                    <option value="dog_accessory" {% if product.category == "dog_accessory" %}selected{% endif %}>Dog Accessories</option>
+                    <option value="dog_health" {% if product.category == "dog_health" %}selected{% endif %}>Dog Health</option>
+                </optgroup>
 
+                <optgroup label="Cat">
+                    <option value="cat_food" {% if product.category == "cat_food" %}selected{% endif %}>Cat Food</option>
+                    <option value="cat_treat" {% if product.category == "cat_treat" %}selected{% endif %}>Cat Treats</option>
+                    <option value="cat_toy" {% if product.category == "cat_toy" %}selected{% endif %}>Cat Toys</option>
+                    <option value="cat_litter" {% if product.category == "cat_litter" %}selected{% endif %}>Cat Litter</option>
+                    <option value="cat_grooming" {% if product.category == "cat_grooming" %}selected{% endif %}>Cat Grooming</option>
+                    <option value="cat_accessory" {% if product.category == "cat_accessory" %}selected{% endif %}>Cat Accessories</option>
+                    <option value="cat_health" {% if product.category == "cat_health" %}selected{% endif %}>Cat Health</option>
+                </optgroup>
+
+                <optgroup label="Health & Wellness">
+                    <option value="medicine" {% if product.category == "medicine" %}selected{% endif %}>Medicine</option>
+                    <option value="supplement" {% if product.category == "supplement" %}selected{% endif %}>Supplements</option>
+                    <option value="skin_coat" {% if product.category == "skin_coat" %}selected{% endif %}>Skin & Coat</option>
+                    <option value="dental" {% if product.category == "dental" %}selected{% endif %}>Dental Care</option>
+                    <option value="joint_care" {% if product.category == "joint_care" %}selected{% endif %}>Joint Care</option>
+                    <option value="digestive" {% if product.category == "digestive" %}selected{% endif %}>Digestive Care</option>
+                </optgroup>
+            </select>
+
+            <label>Life Stage</label>
+            <select name="life_stage">
+                <option value="" {% if not product.life_stage %}selected{% endif %}>Not Applicable</option>
+                <option value="puppy_kitten" {% if product.life_stage == "puppy_kitten" %}selected{% endif %}>Puppy / Kitten</option>
+                <option value="adult" {% if product.life_stage == "adult" %}selected{% endif %}>Adult</option>
+                <option value="senior" {% if product.life_stage == "senior" %}selected{% endif %}>Senior</option>
+                <option value="all" {% if product.life_stage == "all" %}selected{% endif %}>All Life Stages</option>
+            </select>
+
+            <label>Flavour</label>
+            <input
+                type="text"
+                name="flavour"
+                value="{{ product.flavour }}"
+                placeholder="Chicken, Lamb, Tuna..."
+            >
+
+            <label>Description</label>
+            <textarea name="description" rows="5">{{ product.description }}</textarea>
+
+            <label>Key Benefits</label>
+            <textarea
+                name="key_benefits"
+                rows="4"
+                placeholder="Digestive support&#10;Healthy skin & coat&#10;Complete nutrition"
+            >{{ product.key_benefits }}</textarea>
+
+            <h2 class="crm-form-section">Pricing & Inventory</h2>
+
+            <label>Selling Price</label>
             <input
                 type="number"
                 step="0.01"
+                min="0"
                 name="price"
                 value="{{ product.price }}"
                 required
             >
 
-
-            <label>Stock</label>
-
+            <label>MRP</label>
             <input
                 type="number"
+                step="0.01"
+                min="0"
+                name="original_price"
+                value="{% if product.original_price %}{{ product.original_price }}{% endif %}"
+            >
+
+            <label>Total Stock</label>
+            <input
+                type="number"
+                min="0"
                 name="stock"
                 value="{{ product.stock }}"
                 required
             >
 
+            <label>Product Image</label>
+
+            {% if product.image %}
+                <div class="crm-current-image">
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                </div>
+                <small>Upload a new image only if you want to replace the current one.</small>
+            {% endif %}
+
+            <input type="file" name="image" accept="image/*">
 
             <label class="checkbox-label">
+                <input
+                    type="checkbox"
+                    name="is_featured"
+                    {% if product.is_featured %}checked{% endif %}
+                >
+                Featured Product
+            </label>
 
+            <label class="checkbox-label">
                 <input
                     type="checkbox"
                     name="is_available"
-                    {% if product.is_available %}
-                        checked
-                    {% endif %}
+                    {% if product.is_available %}checked{% endif %}
                 >
-
-                Available for sale
-
+                Available for Sale
             </label>
 
+
+            <h2 class="crm-form-section">Existing Package Sizes / Variants</h2>
+
+            <p class="variant-help">
+                Edit price, MRP, stock or SKU for existing sizes.
+                Tick Delete only if you want that size removed.
+            </p>
+
+            <div id="existing-variant-container">
+
+                {% for variant in variants %}
+                    <div class="variant-row variant-existing-row">
+
+                        <input
+                            type="hidden"
+                            name="existing_variant_id"
+                            value="{{ variant.id }}"
+                        >
+
+                        <input
+                            type="text"
+                            name="existing_variant_size"
+                            value="{{ variant.size }}"
+                            placeholder="Size"
+                            required
+                        >
+                        <div class="variant-image-field">
+
+                            {% if variant.image %}
+                                <img
+                                    src="{{ variant.image.url }}"
+                                    alt="{{ variant.size }}"
+                                    style="
+                                        width:60px;
+                                        height:60px;
+                                        object-fit:contain;
+                                        display:block;
+                                        margin-bottom:6px;
+                                    "
+                                >
+                            {% endif %}
+
+                            <input
+                                type="file"
+                                name="existing_variant_image_{{ variant.id }}"
+                                accept="image/*"
+                            >
+
+                        </div>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            name="existing_variant_original_price"
+                            value="{% if variant.original_price %}{{ variant.original_price }}{% endif %}"
+                            placeholder="MRP"
+                        >
+
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            name="existing_variant_price"
+                            value="{{ variant.price }}"
+                            placeholder="Price"
+                            required
+                        >
+
+                        <input
+                            type="number"
+                            min="0"
+                            name="existing_variant_stock"
+                            value="{{ variant.stock }}"
+                            placeholder="Stock"
+                            required
+                        >
+
+                        <input
+                            type="text"
+                            name="existing_variant_sku"
+                            value="{{ variant.sku|default:'' }}"
+                            placeholder="SKU"
+                        >
+
+                        <label class="variant-delete-label">
+                            <input
+                                type="checkbox"
+                                name="delete_variant"
+                                value="{{ variant.id }}"
+                            >
+                            Delete
+                        </label>
+
+                    </div>
+                {% empty %}
+                    <p class="variant-help">
+                        This product does not have any package-size variants yet.
+                        Add one below.
+                    </p>
+                {% endfor %}
+
+            </div>
+
+
+            <h2 class="crm-form-section">Add New Package Sizes</h2>
+
+            <div id="variant-container">
+
+                <div class="variant-row">
+
+                    <input
+                        type="text"
+                        name="variant_size"
+                        placeholder="Size e.g. 7 KG"
+                    >
+                    <input
+                        type="file"
+                        name="variant_image_0"
+                        accept="image/*"
+                    >
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="variant_original_price"
+                        placeholder="MRP"
+                    >
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="variant_price"
+                        placeholder="Price"
+                    >
+
+                    <input
+                        type="number"
+                        min="0"
+                        name="variant_stock"
+                        placeholder="Stock"
+                    >
+
+                    <input
+                        type="text"
+                        name="variant_sku"
+                        placeholder="SKU"
+                    >
+
+                </div>
+
+            </div>
+
+            <button
+                type="button"
+                id="add-variant"
+                class="variant-add-btn"
+            >
+                + Add Another Size
+            </button>
+
+
+            <h2 class="crm-form-section">
+                Feeding Guide
+            </h2>
+
+            <p class="variant-help">
+                Optional. Add the product's real feeding recommendation by pet weight.
+                Bows & Meows will use this to estimate how long each pack lasts.
+            </p>
+
+            <div id="existing-feeding-guide-container">
+
+                {% for guide in feeding_guides %}
+
+                    <div class="feeding-guide-row">
+
+                        <input
+                            type="hidden"
+                            name="existing_feeding_id"
+                            value="{{ guide.id }}"
+                        >
+
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            name="existing_feeding_min_weight"
+                            value="{{ guide.min_weight }}"
+                            placeholder="Min weight KG"
+                            required
+                        >
+
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            name="existing_feeding_max_weight"
+                            value="{{ guide.max_weight }}"
+                            placeholder="Max weight KG"
+                            required
+                        >
+
+                        <input
+                            type="number"
+                            min="1"
+                            name="existing_feeding_daily_grams"
+                            value="{{ guide.daily_grams }}"
+                            placeholder="Daily grams"
+                            required
+                        >
+
+                        <label class="variant-delete-label">
+                            <input
+                                type="checkbox"
+                                name="delete_feeding_guide"
+                                value="{{ guide.id }}"
+                            >
+                            Delete
+                        </label>
+
+                    </div>
+
+                {% empty %}
+
+                    <p class="variant-help">
+                        No feeding guide has been added to this product yet.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+
+
+            <h3 class="crm-subsection-title">
+                Add New Feeding Range
+            </h3>
+
+            <div id="feeding-guide-container">
+
+                <div class="feeding-guide-row">
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="feeding_min_weight"
+                        placeholder="Min weight KG"
+                    >
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="feeding_max_weight"
+                        placeholder="Max weight KG"
+                    >
+
+                    <input
+                        type="number"
+                        min="1"
+                        name="feeding_daily_grams"
+                        placeholder="Daily grams"
+                    >
+
+                </div>
+
+            </div>
+
+            <button
+                type="button"
+                id="add-feeding-guide"
+                class="variant-add-btn"
+            >
+                + Add Weight Range
+            </button>
 
             <button type="submit" class="crm-save-btn">
                 Save Changes
@@ -102,5 +449,143 @@ Edit Product | Bows & Meows CRM
     </div>
 
 </section>
+
+
+<script>
+const container = document.getElementById("variant-container");
+const button = document.getElementById("add-variant");
+
+if (container && button) {
+    let variantImageIndex = 1;
+    button.addEventListener("click", function () {
+
+        const row = document.createElement("div");
+        row.className = "variant-row";
+
+        row.innerHTML = `
+            <input
+                type="text"
+                name="variant_size"
+                placeholder="Size e.g. 3 KG"
+            >
+            <input
+                type="file"
+                name="variant_image_${variantImageIndex}"
+                accept="image/*"
+            >
+            <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="variant_original_price"
+                placeholder="MRP"
+            >
+
+            <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="variant_price"
+                placeholder="Price"
+            >
+
+            <input
+                type="number"
+                min="0"
+                name="variant_stock"
+                placeholder="Stock"
+            >
+
+            <input
+                type="text"
+                name="variant_sku"
+                placeholder="SKU"
+            >
+
+            <button
+                type="button"
+                class="remove-variant"
+            >
+                ✕
+            </button>
+        `;
+
+        container.appendChild(row);
+        variantImageIndex++;
+
+        row
+            .querySelector(".remove-variant")
+            .addEventListener("click", function () {
+                row.remove();
+            });
+    });
+}
+
+
+const feedingContainer =
+    document.getElementById("feeding-guide-container");
+
+const feedingButton =
+    document.getElementById("add-feeding-guide");
+
+if (feedingContainer && feedingButton) {
+
+    feedingButton.addEventListener(
+        "click",
+        function () {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "feeding-guide-row";
+
+            row.innerHTML = `
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="feeding_min_weight"
+                    placeholder="Min weight KG"
+                >
+
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="feeding_max_weight"
+                    placeholder="Max weight KG"
+                >
+
+                <input
+                    type="number"
+                    min="1"
+                    name="feeding_daily_grams"
+                    placeholder="Daily grams"
+                >
+
+                <button
+                    type="button"
+                    class="remove-variant"
+                >
+                    ✕
+                </button>
+            `;
+
+            feedingContainer.appendChild(row);
+
+            row
+                .querySelector(".remove-variant")
+                .addEventListener(
+                    "click",
+                    function () {
+                        row.remove();
+                    }
+                );
+        }
+    );
+}
+
+</script>
 
 {% endblock %}
