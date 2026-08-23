@@ -154,6 +154,28 @@ def home(request):
         .order_by("-sold_count", "-is_featured", "-id")[:10]
     )
 
+    famous_brands = list(
+        Product.objects
+        .filter(is_available=True, is_archived=False, stock__gt=0)
+        .exclude(brand__isnull=True)
+        .exclude(brand="")
+        .values("brand")
+        .annotate(
+            product_count=Count("id", distinct=True),
+            brand_sales=Sum(
+                "orderitem__quantity",
+                filter=Q(
+                    orderitem__order__status__in=[
+                        "confirmed",
+                        "shipped",
+                        "delivered",
+                    ]
+                ),
+            ),
+        )
+        .order_by("-brand_sales", "-product_count", "brand")[:12]
+    )
+
     offers = (
         base_products
         .filter(original_price__isnull=False, original_price__gt=F("price"))
@@ -190,6 +212,9 @@ def home(request):
 
         "top_cat_foods":
             top_cat_foods,
+
+        "famous_brands":
+            famous_brands,
 
         "offers":
             offers,

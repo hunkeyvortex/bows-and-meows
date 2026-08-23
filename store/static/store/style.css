@@ -5216,9 +5216,98 @@ span {
     text-align: center;
 }
 
+.bm-famous-brands {
+    padding: 42px 0 48px;
+    background: #fff;
+}
+
+.bm-famous-brands-head {
+    margin-bottom: 21px;
+}
+
+.bm-famous-brands-head h2 {
+    margin: 6px 0;
+    color: #172a20;
+    font-size: clamp(29px, 3vw, 40px);
+    letter-spacing: -.035em;
+}
+
+.bm-famous-brands-head p {
+    margin: 0;
+    color: #6c776f;
+}
+
+.bm-famous-brands-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.bm-famous-brand-card {
+    display: flex;
+    min-width: 0;
+    min-height: 170px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 18px 12px;
+    border: 1px solid #e1e6de;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #fff 45%, #f3f7ed);
+    color: #1d3428;
+    text-align: center;
+    text-decoration: none;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.bm-famous-brand-card:hover {
+    transform: translateY(-3px);
+    border-color: #b8cbb9;
+    box-shadow: 0 13px 26px rgba(30, 70, 48, .09);
+}
+
+.bm-famous-brand-mark {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    margin-bottom: 11px;
+    place-items: center;
+    border-radius: 15px;
+    background: #1d513b;
+    color: #e4f690;
+    font-size: 24px;
+    font-weight: 950;
+    box-shadow: 0 8px 18px rgba(29, 81, 59, .14);
+}
+
+.bm-famous-brand-card strong {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bm-famous-brand-card small {
+    margin-top: 4px;
+    color: #7a847e;
+    font-size: 10px;
+}
+
+.bm-famous-brand-arrow {
+    margin-top: 12px;
+    color: #285c42;
+    font-size: 10px;
+    font-weight: 850;
+}
+
 @media (max-width: 1000px) {
     .bm-top-selling-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .bm-famous-brands-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 
@@ -5295,6 +5384,34 @@ span {
     .bm-top-selling-grid .home-product-variants {
         overflow: hidden;
         white-space: nowrap;
+    }
+
+    .bm-famous-brands {
+        padding: 30px 0 36px;
+    }
+
+    .bm-famous-brands-head h2 {
+        font-size: 29px;
+    }
+
+    .bm-famous-brands-head p {
+        font-size: 12px;
+    }
+
+    .bm-famous-brands-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .bm-famous-brand-card {
+        min-height: 145px;
+        border-radius: 15px;
+    }
+
+    .bm-famous-brand-mark {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
     }
 }
 

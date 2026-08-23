@@ -578,8 +578,8 @@ Bow & Meow | Pet Food, Care & Essentials
         <div class="bm-top-selling-head">
             <div>
                 <span class="v2-eyebrow">PET-PARENT FAVOURITES</span>
-                <h2 id="top-selling-title">Our Top Selling Products</h2>
-                <p>Trusted food picks for happier dogs and cats.</p>
+                <h2 id="top-selling-title">Top Selling Products in Food</h2>
+                <p>Our most-loved dog and cat food, chosen by pet parents.</p>
             </div>
             <div class="bm-top-selling-tabs" role="tablist" aria-label="Top-selling pet food">
                 <button class="is-active" type="button" role="tab" aria-selected="true" aria-controls="top-dog-food" data-top-selling-tab="dog">Dog Food</button>
@@ -608,6 +608,30 @@ Bow & Meow | Pet Food, Care & Essentials
         </div>
     </div>
 </section>
+
+{% if famous_brands %}
+<section class="bm-famous-brands" aria-labelledby="famous-brands-title">
+    <div class="v2-shell">
+        <div class="bm-famous-brands-head">
+            <div>
+                <span class="v2-eyebrow">SHOP TRUSTED NAMES</span>
+                <h2 id="famous-brands-title">Famous Brands</h2>
+                <p>Discover customer favourites from the brands pet parents know and trust.</p>
+            </div>
+        </div>
+        <div class="bm-famous-brands-grid">
+            {% for item in famous_brands %}
+                <a href="{% url 'search_products' %}?q={{ item.brand|urlencode }}" class="bm-famous-brand-card" aria-label="Shop {{ item.brand }} products">
+                    <span class="bm-famous-brand-mark">{{ item.brand|slice:":1"|upper }}</span>
+                    <strong>{{ item.brand }}</strong>
+                    <small>{{ item.product_count }} product{{ item.product_count|pluralize }}</small>
+                    <span class="bm-famous-brand-arrow">View products →</span>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <!-- ==========================================
      BEST SELLERS
