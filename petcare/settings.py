@@ -11,8 +11,14 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 import os
 import dj_database_url
+import truststore
 from pathlib import Path
 from dotenv import dotenv_values
+
+# Python's bundled CA file can reject certificates issued through the Windows
+# trust chain (common with antivirus/web protection). Use the operating-system
+# certificate store for outbound HTTPS calls such as Google OAuth.
+truststore.inject_into_ssl()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -65,15 +71,10 @@ CSRF_TRUSTED_ORIGINS = [
     "https://bows-and-meows-1.onrender.com",
 ]
 
-render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+render_hostname = (env.get("RENDER_EXTERNAL_HOSTNAME") or "").strip()
 
 if render_hostname:
     ALLOWED_HOSTS.append(render_hostname)
-# trigger render deploy
-
-CSRF_TRUSTED_ORIGINS = []
-
-if render_hostname:
     CSRF_TRUSTED_ORIGINS.append(
         f"https://{render_hostname}"
     )
@@ -85,6 +86,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.sites',
 
     'django.contrib.staticfiles',
 
@@ -92,6 +94,10 @@ INSTALLED_APPS = [
     'cloudinary',
 
     'store',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
 
 MIDDLEWARE = [
@@ -101,11 +107,38 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'petcare.urls'
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+GOOGLE_OAUTH_CLIENT_ID = (env.get("GOOGLE_OAUTH_CLIENT_ID") or "").strip()
+GOOGLE_OAUTH_CLIENT_SECRET = (env.get("GOOGLE_OAUTH_CLIENT_SECRET") or "").strip()
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APPS": [{
+            "client_id": GOOGLE_OAUTH_CLIENT_ID,
+            "secret": GOOGLE_OAUTH_CLIENT_SECRET,
+            "key": "",
+        }],
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+        "VERIFIED_EMAIL": True,
+    }
+}
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_ADAPTER = "store.adapters.GoogleAccountAdapter"
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 
 TEMPLATES = [
     {
@@ -117,6 +150,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'store.context_processors.customer_support',
             ],
         },
     },
@@ -224,9 +258,11 @@ EMAIL_HOST_PASSWORD = (
 ).strip()
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-DEFAULT_FROM_EMAIL = "Bows & Meows <noreply@bowsandmeows.com>"
+DEFAULT_FROM_EMAIL = "Bow & Meow <noreply@bowsandmeows.com>"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
+WHATSAPP_NUMBER = (env.get("WHATSAPP_NUMBER") or "").strip()
+SUPPORT_EMAIL = (env.get("SUPPORT_EMAIL") or EMAIL_HOST_USER or "").strip()

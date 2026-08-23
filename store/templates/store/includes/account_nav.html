@@ -1,0 +1,3 @@
+<nav class="bm-profile-nav" aria-label="Account navigation">
+<a href="{% url 'account' %}"{% if request.resolver_match.url_name == 'account' %} class="active"{% endif %}>Overview</a><a href="{% url 'my_orders' %}"{% if request.resolver_match.url_name == 'my_orders' or request.resolver_match.url_name == 'order_detail' %} class="active"{% endif %}>Orders</a><a href="{% url 'my_addresses' %}"{% if 'address' in request.resolver_match.url_name %} class="active"{% endif %}>Addresses</a><a href="{% url 'my_pets' %}"{% if 'pet' in request.resolver_match.url_name %} class="active"{% endif %}>My Pets</a><a href="{% url 'wishlist' %}"{% if request.resolver_match.url_name == 'wishlist' %} class="active"{% endif %}>Saved</a>
+</nav>

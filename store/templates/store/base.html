@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Bows & Meows{% endblock %}</title>
+    <title>{% block title %}Bow & Meow{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'store/style.css' %}">
 </head>
 
@@ -13,7 +13,7 @@
 
 <div class="v2-announcement">
     <div class="v2-shell v2-announcement-inner">
-        <span>🐾 Free delivery above ₹999</span>
+        <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#package"></use></svg> Free delivery above ₹999</span>
         <span class="v2-announcement-note">Genuine pet essentials • Secure checkout</span>
     </div>
 </div>
@@ -22,10 +22,10 @@
 
     <div class="v2-shell v2-main-header">
 
-        <a href="{% url 'home' %}" class="v2-brand" aria-label="Bows & Meows home">
-            <span class="v2-brand-mark">🐾</span>
+        <a href="{% url 'home' %}" class="v2-brand" aria-label="Bow & Meow home">
+            <span class="v2-brand-mark"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span>
             <span class="v2-brand-copy">
-                <strong>Bows & Meows</strong>
+                <strong>Bow & Meow</strong>
                 <small>Pet care, made better</small>
             </span>
         </a>
@@ -60,7 +60,7 @@
             {% endif %}
 
             <a href="{% url 'cart' %}" class="v2-cart-link">
-                <span>🛒</span>
+                <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#cart"></use></svg></span>
                 <small>Cart</small>
             </a>
         </div>
@@ -73,6 +73,9 @@
             <a href="{% url 'dog_products' %}">Dogs</a>
             <a href="{% url 'cat_products' %}">Cats</a>
             <a href="{% url 'medicine_products' %}">Pharmacy</a>
+            <a href="{% url 'wellness_products' %}">Wellness</a>
+            <a href="{% url 'grooming_products' %}">Grooming</a>
+            <a href="{% url 'bird_products' %}">Bird Care</a>
             <a href="{% url 'home' %}#featured-products">Best Sellers</a>
             <a href="{% url 'home' %}#offers">Offers</a>
 
@@ -84,7 +87,10 @@
 
             {% if request.user.is_authenticated %}
                 <a href="{% url 'my_orders' %}" class="v2-nav-muted">Track Orders</a>
-                <a href="{% url 'logout' %}" class="v2-nav-muted">Logout</a>
+                <form method="POST" action="{% url 'logout' %}" class="v2-inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="v2-nav-muted v2-link-button">Logout</button>
+                </form>
             {% else %}
                 <a href="{% url 'register' %}" class="v2-nav-muted">Create Account</a>
             {% endif %}
@@ -94,6 +100,13 @@
 </header>
 
 <main>
+    {% if messages %}
+        <div class="store-message-stack" role="status" aria-live="polite">
+            {% for message in messages %}
+                <div class="store-message store-message-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
     {% block content %}
     {% endblock %}
 </main>
@@ -105,9 +118,9 @@
 
             <div class="v2-footer-brand">
                 <div class="v2-brand v2-brand-footer">
-                    <span class="v2-brand-mark">🐾</span>
+                    <span class="v2-brand-mark"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span>
                     <span class="v2-brand-copy">
-                        <strong>Bows & Meows</strong>
+                        <strong>Bow & Meow</strong>
                         <small>Pet care, made better</small>
                     </span>
                 </div>
@@ -123,6 +136,12 @@
                 <a href="{% url 'dog_products' %}">Dogs</a>
                 <a href="{% url 'cat_products' %}">Cats</a>
                 <a href="{% url 'medicine_products' %}">Pharmacy</a>
+                <a href="{% url 'wellness_products' %}">Wellness</a>
+                <a href="{% url 'grooming_products' %}">Grooming & Hygiene</a>
+                <a href="{% url 'bird_products' %}">Bird Care</a>
+                <a href="{% url 'small_pet_products' %}">Small Pets</a>
+                <a href="{% url 'farm_animal_products' %}">Farm Animals</a>
+                <a href="{% url 'fish_reptile_products' %}">Fish & Reptiles</a>
                 <a href="{% url 'home' %}#featured-products">Best Sellers</a>
             </div>
 
@@ -140,22 +159,33 @@
             </div>
 
             <div>
-                <h4>Why Bows & Meows</h4>
-                <span>✓ Genuine products</span>
-                <span>✓ Secure payments</span>
-                <span>✓ Pet-first shopping</span>
-                <span>✓ Easy order tracking</span>
+                <h4>Help & Policies</h4>
+                <a href="{% url 'contact_page' %}">Contact Us</a>
+                <a href="{% url 'faq_page' %}">FAQ</a>
+                <a href="{% url 'shipping_policy' %}">Shipping & Delivery</a>
+                <a href="{% url 'returns_policy' %}">Returns & Refunds</a>
+                <a href="{% url 'veterinary_disclaimer' %}">Veterinary Medicines</a>
+                <a href="{% url 'privacy_policy' %}">Privacy Policy</a>
+                <a href="{% url 'terms_page' %}">Terms & Conditions</a>
             </div>
 
         </div>
 
         <div class="v2-footer-bottom">
-            <span>© 2026 Bows & Meows. All rights reserved.</span>
+            <span>© 2026 Bow & Meow. All rights reserved.</span>
             <span>Made with care for pet parents.</span>
         </div>
 
     </div>
 </footer>
+
+{% if whatsapp_number %}
+<a class="bm-floating-help" href="https://wa.me/{{ whatsapp_number }}?text=Hello%20Bows%20%26%20Meows%2C%20I%20need%20help%20with..." target="_blank" rel="noopener" aria-label="Chat with Bow & Meow on WhatsApp"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#chat"></use></svg></span><strong>Need help?</strong></a>
+{% else %}
+<a class="bm-floating-help" href="{% url 'contact_page' %}" aria-label="Contact Bow & Meow"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#chat"></use></svg></span><strong>Need help?</strong></a>
+{% endif %}
+
+<script src="{% static 'store/cart-sounds.js' %}" defer></script>
 
 </body>
 </html>

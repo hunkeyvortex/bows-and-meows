@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>{% block title %}Bows & Meows CRM{% endblock %}</title>
+    <title>{% block title %}Bow & Meow CRM{% endblock %}</title>
 
     <link rel="stylesheet" href="{% static 'store/style.css' %}">
 </head>
@@ -19,30 +19,37 @@
     <aside class="crm-sidebar">
 
         <div class="crm-logo">
-            🐾 Bows & Meows
-            <span>CRM</span>
+            <span class="crm-logo-mark">🐾</span>
+            <span class="crm-logo-copy">
+                <strong>Bow & Meow</strong>
+                <small>Store Management</small>
+            </span>
         </div>
 
         <nav class="crm-nav">
 
-            <a href="{% url 'crm_dashboard' %}">
-                📊 Dashboard
+            <a href="{% url 'crm_dashboard' %}" {% if request.resolver_match.url_name == 'crm_dashboard' %}class="active"{% endif %}>
+                <span>▦</span> Dashboard
             </a>
 
-            <a href="{% url 'crm_customers' %}">
-                👥 Customers
+            <a href="{% url 'crm_customers' %}" {% if 'crm_customer' in request.resolver_match.url_name %}class="active"{% endif %}>
+                <span>♟</span> Customers
             </a>
 
-            <a href="{% url 'crm_orders' %}">
-                📦 Orders
+            <a href="{% url 'crm_orders' %}" {% if request.resolver_match.url_name == 'crm_orders' %}class="active"{% endif %}>
+                <span>□</span> Orders
             </a>
 
-            <a href="{% url 'crm_inventory' %}">
-                🏷️ Inventory
+            <a href="{% url 'crm_inventory' %}" {% if 'crm_inventory' in request.resolver_match.url_name or request.resolver_match.url_name == 'crm_bulk_images' %}class="active"{% endif %}>
+                <span>◇</span> Inventory
             </a>
 
-            <a href="{% url 'crm_reports' %}">
-                📈 Reports
+            <a href="{% url 'crm_coupons' %}" {% if request.resolver_match.url_name == 'crm_coupons' %}class="active"{% endif %}>
+                <span>%</span> Coupons
+            </a>
+
+            <a href="{% url 'crm_reports' %}" {% if request.resolver_match.url_name == 'crm_reports' %}class="active"{% endif %}>
+                <span>↗</span> Reports
             </a>
 
         </nav>
@@ -50,12 +57,13 @@
         <div class="crm-sidebar-bottom">
 
             <a href="{% url 'home' %}">
-                🏠 Store Website
+                <span>⌂</span> Store Website
             </a>
 
-            <a href="{% url 'logout' %}">
-                🚪 Logout
-            </a>
+            <form method="POST" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit"><span>↪</span> Log out</button>
+            </form>
 
         </div>
 
@@ -67,19 +75,30 @@
         <div class="crm-topbar">
 
             <div>
-                <strong>Admin Panel</strong>
+                <span class="crm-topbar-kicker">BOW & MEOW</span>
+                <strong>Store command centre</strong>
             </div>
 
             <div class="crm-user">
-                👤 {{ request.user.username }}
+                <span class="crm-user-avatar">{{ request.user.username|first|upper }}</span>
+                <span><small>Administrator</small><strong>{{ request.user.username }}</strong></span>
             </div>
 
         </div>
 
         <div class="crm-content">
+            {% if messages %}
+                <div class="crm-message-stack">
+                    {% for message in messages %}
+                        <div class="crm-message crm-message-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
             {% block content %}
             {% endblock %}
         </div>
+
+        <link rel="stylesheet" href="{% static 'store/crm.css' %}">
 
     </main>
 

@@ -1,0 +1,23 @@
+{% extends "store/crm_base.html" %}
+{% block title %}Coupons | Bow & Meow CRM{% endblock %}
+{% block content %}
+<section class="coupon-crm">
+    <header><div><span>PROMOTIONS</span><h1>Coupons & offers</h1><p>Create controlled percentage discounts customers can apply at cart or checkout.</p></div></header>
+    <div class="coupon-crm-grid">
+        <form method="post" class="coupon-create">{% csrf_token %}
+            <h2>Create a coupon</h2>
+            <label>Coupon code<input name="code" placeholder="WELCOME20" required></label>
+            <div><label>Discount %<input type="number" name="discount_percent" min="1" max="100" required></label><label>Minimum order ₹<input type="number" name="minimum_order" min="0" step="0.01" value="0"></label></div>
+            <div><label>Maximum saving ₹<input type="number" name="maximum_discount" min="0" step="0.01" placeholder="No limit"></label><label>Total uses allowed<input type="number" name="usage_limit" min="1" placeholder="Unlimited"></label></div>
+            <button>Create coupon</button>
+        </form>
+        <div class="coupon-list">
+            <h2>Available coupons</h2>
+            {% for coupon in coupons %}<article class="{% if not coupon.is_active %}paused{% endif %}"><div class="coupon-mark">%</div><div><strong>{{ coupon.code }}</strong><span>{{ coupon.discount_percent }}% off · Min ₹{{ coupon.minimum_order|floatformat:0 }}{% if coupon.maximum_discount %} · Save up to ₹{{ coupon.maximum_discount|floatformat:0 }}{% endif %}</span><small>{{ coupon.times_used }} use{{ coupon.times_used|pluralize }}{% if coupon.usage_limit %} / {{ coupon.usage_limit }}{% endif %}</small></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle"><input type="hidden" name="coupon_id" value="{{ coupon.id }}"><button>{% if coupon.is_active %}Pause{% else %}Activate{% endif %}</button></form></article>{% empty %}<div class="coupon-empty">No coupons yet. Create your first offer.</div>{% endfor %}
+        </div>
+    </div>
+</section>
+<style>
+.coupon-crm{max-width:1180px;margin:auto}.coupon-crm header{margin-bottom:28px}.coupon-crm header span{color:#708e4d;font-size:11px;font-weight:900;letter-spacing:.15em}.coupon-crm h1{margin:7px 0;font-size:42px;color:#173225}.coupon-crm header p{color:#6f7972}.coupon-crm-grid{display:grid;grid-template-columns:380px 1fr;gap:24px}.coupon-create,.coupon-list{padding:25px;border:1px solid #dfe4db;border-radius:22px;background:#fff;box-shadow:0 12px 35px rgba(30,59,43,.07)}.coupon-create h2,.coupon-list h2{margin-top:0}.coupon-create label{display:grid;gap:7px;margin-top:14px;color:#44534a;font-size:12px;font-weight:800}.coupon-create>div{display:grid;grid-template-columns:1fr 1fr;gap:10px}.coupon-create input{width:100%;padding:12px;border:1px solid #d6ddd2;border-radius:10px}.coupon-create>button{width:100%;margin-top:19px;padding:13px;border:0;border-radius:11px;background:#1d4b37;color:#fff;font-weight:900;cursor:pointer}.coupon-list article{display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid #e7ebe4}.coupon-list article:last-child{border-bottom:0}.coupon-mark{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:#e8f4dc;color:#326341;font-size:20px;font-weight:900}.coupon-list article>div:nth-child(2){display:grid;gap:4px}.coupon-list span,.coupon-list small{color:#758078;font-size:11px}.coupon-list article form button{padding:9px 12px;border:1px solid #d9e0d5;border-radius:9px;background:#f6f8f4;color:#385542;font-weight:800;cursor:pointer}.coupon-list article.paused{opacity:.55}.coupon-empty{padding:40px;text-align:center;color:#7a837d}@media(max-width:850px){.coupon-crm-grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}

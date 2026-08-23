@@ -1,0 +1,792 @@
+{% extends "store/base.html" %}
+
+{% block title %}
+{{ page_title }} | Bow & Meow
+{% endblock %}
+
+{% block content %}
+
+<div class="category-page">
+
+    <section class="category-hero">
+        <div class="category-shell category-hero-inner">
+
+            <div>
+                <span class="category-eyebrow">
+                    {% if page_type == "dog" %}
+                        🐶 SHOP FOR DOGS
+                    {% elif page_type == "cat" %}
+                        🐱 SHOP FOR CATS
+                    {% else %}
+                        💊 PET HEALTH
+                    {% endif %}
+                </span>
+
+                <h1>{{ page_title }}</h1>
+
+                <p>
+                    {% if page_type == "dog" %}
+                        Popular dog food and everyday essentials, with best-selling picks shown first.
+                    {% elif page_type == "cat" %}
+                        Popular cat food and everyday essentials, with best-selling picks shown first.
+                    {% else %}
+                        Health and wellness essentials for everyday pet care.
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="category-hero-count">
+                <strong>{{ product_count }}</strong>
+                <span>products</span>
+            </div>
+
+        </div>
+    </section>
+
+
+    {% if products %}
+
+    <section class="category-top-picks">
+        <div class="category-shell">
+
+            <div class="category-heading">
+                <div>
+                    <span class="category-eyebrow">⭐ START HERE</span>
+                    <h2>Popular picks</h2>
+                    <p>Best-selling and featured products are placed upfront so you can shop faster.</p>
+                </div>
+            </div>
+
+            <div class="top-picks-scroll">
+
+                {% for product in products|slice:":4" %}
+
+                    <article class="category-product-card top-pick-card">
+
+                        <a
+                            href="{% url 'product_detail' product.id %}"
+                            class="category-product-image"
+                        >
+                            {% if product.display_image_url %}
+                                <img
+                                    src="{{ product.display_image_url }}"
+                                    alt="{{ product.name }}"
+                                    loading="lazy"
+                                >
+                            {% else %}
+                                <div class="category-placeholder">
+                                    {% if page_type == "dog" %}🐶{% elif page_type == "cat" %}🐱{% else %}🐾{% endif %}
+                                </div>
+                            {% endif %}
+
+                            {% if product.sold_count %}
+                                <span class="product-badge bestseller-badge">
+                                    🔥 Best seller
+                                </span>
+                            {% elif product.is_featured %}
+                                <span class="product-badge featured-badge">
+                                    ★ Featured
+                                </span>
+                            {% endif %}
+                        </a>
+
+                        <div class="category-product-body">
+
+                            <span class="category-product-brand">
+                                {{ product.brand|default:"Bow & Meow" }}
+                            </span>
+
+                            <h3>
+                                <a href="{% url 'product_detail' product.id %}">
+                                    {{ product.name }}
+                                </a>
+                            </h3>
+
+                            {% if product.life_stage %}
+                                <small class="product-life-stage">
+                                    {{ product.get_life_stage_display }}
+                                </small>
+                            {% endif %}
+
+                            <div class="category-price-row">
+                                <strong>₹{{ product.price }}</strong>
+
+                                {% if product.original_price %}
+                                    <del>₹{{ product.original_price }}</del>
+                                {% endif %}
+                            </div>
+
+                            <div class="product-stock-line">
+                                {% if product.stock > 0 %}
+                                    <span class="stock-dot"></span>
+                                    {{ product.stock }} available
+                                {% else %}
+                                    Out of stock
+                                {% endif %}
+                            </div>
+
+                            <a
+                                href="{% url 'product_detail' product.id %}"
+                                class="category-shop-btn"
+                            >
+                                View options →
+                            </a>
+
+                        </div>
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+    </section>
+
+    {% endif %}
+
+
+    <section class="category-catalogue" id="all-products">
+
+        <div class="category-shell">
+
+            <div class="category-toolbar">
+
+                <div>
+                    <span class="category-eyebrow">ALL PRODUCTS</span>
+                    <h2>Shop {{ page_title }}</h2>
+                </div>
+
+                <form method="GET" class="category-controls">
+
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ query }}"
+                        placeholder="Search in this category..."
+                    >
+
+                    <select name="product_type">
+                        <option value="">All product types</option>
+                        {% for value,label in product_types %}<option value="{{ value }}" {% if product_type_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+
+                    <select name="care_area">
+                        <option value="">All care areas</option>
+                        {% for value,label in care_areas %}{% if value %}<option value="{{ value }}" {% if care_area_filter == value %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}
+                    </select>
+
+                    <select name="brand">
+                        <option value="">All brands</option>
+                        {% for brand in available_brands %}<option value="{{ brand }}" {% if brand_filter == brand %}selected{% endif %}>{{ brand }}</option>{% endfor %}
+                    </select>
+
+                    <select name="sort" onchange="this.form.submit()">
+
+                        <option
+                            value="featured"
+                            {% if sort == "featured" %}selected{% endif %}
+                        >
+                            Popular first
+                        </option>
+
+                        <option
+                            value="price_low"
+                            {% if sort == "price_low" %}selected{% endif %}
+                        >
+                            Price: Low to High
+                        </option>
+
+                        <option
+                            value="price_high"
+                            {% if sort == "price_high" %}selected{% endif %}
+                        >
+                            Price: High to Low
+                        </option>
+
+                        <option
+                            value="name"
+                            {% if sort == "name" %}selected{% endif %}
+                        >
+                            Name A–Z
+                        </option>
+
+                    </select>
+
+                    <button type="submit">
+                        Search
+                    </button>
+
+                </form>
+
+            </div>
+
+
+            <div class="category-products-grid">
+
+                {% for product in products %}
+
+                    <article class="category-product-card">
+
+                        <a
+                            href="{% url 'product_detail' product.id %}"
+                            class="category-product-image"
+                        >
+
+                            {% if product.display_image_url %}
+
+                                <img
+                                    src="{{ product.display_image_url }}"
+                                    alt="{{ product.name }}"
+                                    loading="lazy"
+                                >
+
+                            {% else %}
+
+                                <div class="category-placeholder">
+                                    {% if page_type == "dog" %}🐶{% elif page_type == "cat" %}🐱{% else %}🐾{% endif %}
+                                </div>
+
+                            {% endif %}
+
+                            {% if product.sold_count %}
+                                <span class="product-badge bestseller-badge">
+                                    🔥 Best seller
+                                </span>
+                            {% elif product.is_featured %}
+                                <span class="product-badge featured-badge">
+                                    ★ Featured
+                                </span>
+                            {% endif %}
+
+                        </a>
+
+
+                        <div class="category-product-body">
+
+                            <span class="category-product-brand">
+                                {{ product.brand|default:"Bow & Meow" }}
+                            </span>
+
+                            <h3>
+                                <a href="{% url 'product_detail' product.id %}">
+                                    {{ product.name }}
+                                </a>
+                            </h3>
+
+                            <div class="category-price-row">
+                                <strong>₹{{ product.price }}</strong>
+
+                                {% if product.original_price %}
+                                    <del>₹{{ product.original_price }}</del>
+                                {% endif %}
+                            </div>
+
+                            <div class="product-stock-line">
+                                {% if product.stock > 0 %}
+                                    <span class="stock-dot"></span>
+                                    In stock
+                                {% else %}
+                                    Out of stock
+                                {% endif %}
+                            </div>
+
+                            <a
+                                href="{% url 'product_detail' product.id %}"
+                                class="category-shop-btn"
+                            >
+                                View product
+                            </a>
+
+                        </div>
+
+                    </article>
+
+                {% empty %}
+
+                    <div class="category-empty">
+                        <span>🐾</span>
+                        <h3>No matching products yet.</h3>
+                        <p>Try another search or come back soon.</p>
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% if page_obj.paginator.num_pages > 1 %}
+            <nav class="catalog-pagination" aria-label="Product pages">
+                {% if page_obj.has_previous %}
+                    <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}page={{ page_obj.previous_page_number }}#all-products">Previous</a>
+                {% endif %}
+                <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}page={{ page_obj.next_page_number }}#all-products">Next</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+.category-page {
+    background: #fbfaf6;
+    min-height: 100vh;
+    color: #1c241f;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+}
+
+.catalog-pagination{display:flex;align-items:center;justify-content:center;gap:18px;margin:34px 0 10px}.catalog-pagination a{display:inline-flex;align-items:center;justify-content:center;min-width:112px;min-height:44px;padding:0 18px;border:1px solid #cfd9cf;border-radius:12px;background:#fff;color:#1f5a40;font-weight:850;text-decoration:none}.catalog-pagination a:hover{background:#1f5a40;color:#fff}.catalog-pagination span{color:#667269;font-size:13px;font-weight:750}
+
+.category-shell {
+    width: min(1400px, calc(100% - 48px));
+    margin: 0 auto;
+}
+
+.category-hero {
+    padding: 54px 0 44px;
+    background:
+        radial-gradient(circle at 85% 10%, rgba(205, 237, 126, .45), transparent 32%),
+        linear-gradient(135deg, #f7f7ef, #fffaf5);
+    border-bottom: 1px solid #e8e7df;
+}
+
+.category-hero-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 30px;
+}
+
+.category-eyebrow {
+    display: inline-block;
+    color: #1f5a42;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .14em;
+}
+
+.category-hero h1,
+.category-heading h2,
+.category-toolbar h2 {
+    margin: 8px 0 8px;
+    line-height: 1.08;
+}
+
+.category-hero h1 {
+    font-size: clamp(38px, 5vw, 68px);
+}
+
+.category-hero p,
+.category-heading p {
+    max-width: 680px;
+    margin: 0;
+    color: #667069;
+    line-height: 1.6;
+}
+
+.category-hero-count {
+    min-width: 120px;
+    padding: 18px 22px;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid #e5e4dc;
+    text-align: center;
+}
+
+.category-hero-count strong,
+.category-hero-count span {
+    display: block;
+}
+
+.category-hero-count strong {
+    font-size: 30px;
+}
+
+.category-hero-count span {
+    color: #758078;
+    font-size: 12px;
+}
+
+.category-top-picks,
+.category-catalogue {
+    padding: 42px 0;
+}
+
+.category-heading {
+    margin-bottom: 20px;
+}
+
+.category-heading h2,
+.category-toolbar h2 {
+    font-size: clamp(28px, 3vw, 40px);
+}
+
+.top-picks-scroll {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.category-catalogue {
+    background: #fff;
+}
+
+.category-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.category-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.category-controls input,
+.category-controls select,
+.category-controls button {
+    min-height: 44px;
+    border-radius: 12px;
+    border: 1px solid #d9ddd8;
+    background: #fff;
+    padding: 0 13px;
+    font: inherit;
+}
+
+.category-controls input {
+    min-width: 260px;
+}
+
+.category-controls button {
+    border: none;
+    background: #1f5a42;
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 0 20px;
+}
+
+.category-products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.category-product-card {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid #e8e6df;
+    border-radius: 20px;
+    background: #fff;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.category-product-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 35px rgba(35, 54, 43, .08);
+}
+
+.category-product-image {
+    position: relative;
+    display: flex;
+    height: 260px;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: #faf9f5;
+    text-decoration: none;
+}
+
+.category-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.category-placeholder {
+    font-size: 74px;
+}
+
+.product-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.bestseller-badge {
+    background: #fff1dc;
+    color: #914f00;
+}
+
+.featured-badge {
+    background: #e7f3de;
+    color: #27583e;
+}
+
+.category-product-body {
+    padding: 18px;
+}
+
+.category-product-brand {
+    display: block;
+    margin-bottom: 7px;
+    color: #718078;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.category-product-body h3 {
+    min-height: 48px;
+    margin: 0 0 10px;
+    font-size: 16px;
+    line-height: 1.45;
+}
+
+.category-product-body h3 a {
+    color: #17231d;
+    text-decoration: none;
+}
+
+.product-life-stage {
+    display: block;
+    margin-bottom: 9px;
+    color: #69736d;
+}
+
+.category-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.category-price-row strong {
+    font-size: 21px;
+}
+
+.category-price-row del {
+    color: #939a95;
+    font-size: 12px;
+}
+
+.product-stock-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 9px 0 15px;
+    color: #5f6b64;
+    font-size: 12px;
+}
+
+.stock-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #2d8b57;
+}
+
+.category-shop-btn {
+    display: flex;
+    min-height: 43px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    background: #20392c;
+    color: #fff;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.category-empty {
+    grid-column: 1 / -1;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.category-empty span {
+    font-size: 60px;
+}
+
+
+/* Tablet */
+@media (max-width: 1100px) {
+
+    .top-picks-scroll,
+    .category-products-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .category-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .category-controls {
+        width: 100%;
+    }
+
+    .category-controls input {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+
+/* Mobile */
+@media (max-width: 760px) {
+
+    .category-shell {
+        width: min(100% - 24px, 1400px);
+    }
+
+    .category-hero {
+        padding: 30px 0;
+    }
+
+    .category-hero-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .category-hero-inner > div:first-child,
+    .category-heading,
+    .category-toolbar,
+    .category-controls {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .category-hero-count {
+        display: none;
+    }
+
+    .category-hero h1 {
+        font-size: 38px;
+    }
+
+    .category-top-picks,
+    .category-catalogue {
+        padding: 28px 0;
+    }
+
+    .top-picks-scroll {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        max-width: 100%;
+        scroll-snap-type: x mandatory;
+        padding-bottom: 8px;
+        scrollbar-width: none;
+        overscroll-behavior-inline: contain;
+    }
+
+    .top-picks-scroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    .top-pick-card {
+        flex: 0 0 78%;
+        scroll-snap-align: start;
+    }
+
+    .category-products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .category-product-image {
+        height: 180px;
+        padding: 12px;
+    }
+
+    .category-product-body {
+        padding: 13px;
+    }
+
+    .category-product-body h3 {
+        min-height: 56px;
+        font-size: 14px;
+    }
+
+    .category-price-row strong {
+        font-size: 18px;
+    }
+
+    .category-controls {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .category-controls input,
+    .category-controls select,
+    .category-controls button {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .catalog-pagination {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+}
+
+
+/* Small phones */
+@media (max-width: 420px) {
+
+    .category-products-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .category-product-image {
+        height: 155px;
+    }
+
+    .category-product-body {
+        padding: 11px;
+    }
+
+    .category-product-body h3 {
+        font-size: 13px;
+    }
+
+    .category-shop-btn {
+        min-height: 40px;
+        font-size: 12px;
+    }
+
+    .product-badge {
+        top: 8px;
+        left: 8px;
+        padding: 5px 7px;
+        font-size: 8px;
+    }
+}
+
+</style>
+
+{% endblock %}

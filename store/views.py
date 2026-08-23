@@ -2,7 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Product, ProductVariant, Order, OrderItem
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.views.decorators.http import require_POST
+from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Product, Order, OrderItem, Pet
 from django.contrib.auth.models import User
 from django.db.models import Sum
@@ -15,6 +20,8 @@ from django.db.models import Avg
 from .models import Product, Order, OrderItem, Pet, Review
 from .models import Product, Order, OrderItem, Pet, Review, Wishlist
 from .models import Address
+from django.db.models import Sum, Q
+from .models import ProductImage
 import razorpay
 import os
 import requests
@@ -35,10 +42,12 @@ import re
 from django.db import transaction
 import uuid
 from decimal import Decimal, InvalidOperation
+from PIL import Image as PillowImage, UnidentifiedImageError
 from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
+from django.core.paginator import Paginator
 from brevo.core.api_error import ApiError
 from .models import (
     Product,
@@ -46,21 +55,130 @@ from .models import (
     FeedingGuide,
     Order,
     OrderItem,
+    Coupon,
 )
 def home(request):
-    products = Product.objects.filter(is_available=True)
+
+    base_products = (
+        Product.objects
+        .filter(
+            is_available=True,
+            is_archived=False,
+            stock__gt=0
+        )
+        .prefetch_related("variants")
+        .annotate(
+            sold_count=Sum(
+                "orderitem__quantity",
+                filter=Q(
+                    orderitem__order__status__in=[
+                        "confirmed",
+                        "shipped",
+                        "delivered",
+                    ]
+                )
+            )
+        )
+    )
+
+
+    # ==========================================
+    # BEST SELLERS
+    # ==========================================
+
+    best_sellers = (
+        base_products
+        .order_by(
+            "-sold_count",
+            "-is_featured",
+            "-id"
+        )[:6]
+    )
+
+
+    # ==========================================
+    # POPULAR DOG PRODUCTS
+    # ==========================================
+
+    popular_dogs = (
+        base_products
+        .filter(
+            Q(pet_type="dog")
+            |
+            Q(category__startswith="dog_")
+        )
+        .order_by(
+            "-sold_count",
+            "-is_featured",
+            "-id"
+        )[:8]
+    )
+
+
+    # ==========================================
+    # POPULAR CAT PRODUCTS
+    # ==========================================
+
+    popular_cats = (
+        base_products
+        .filter(
+            Q(pet_type="cat")
+            |
+            Q(category__startswith="cat_")
+        )
+        .order_by(
+            "-sold_count",
+            "-is_featured",
+            "-id"
+        )[:8]
+    )
+
+    offers = (
+        base_products
+        .filter(original_price__isnull=False, original_price__gt=F("price"))
+        .order_by("price", "-is_featured", "-id")[:8]
+    )
+
+
+    # Keep this for your existing lower product section
+    products = (
+        base_products
+        .order_by(
+            "-is_featured",
+            "-id"
+        )
+    )
+
+
+    context = {
+
+        "products":
+            products,
+
+        "best_sellers":
+            best_sellers,
+
+        "popular_dogs":
+            popular_dogs,
+
+        "popular_cats":
+            popular_cats,
+
+        "offers":
+            offers,
+    }
+
 
     return render(
         request,
         "store/home.html",
-        {"products": products}
+        context
     )
-
 def send_brevo_email(to_email, to_name, subject, html_content):
 
     api_key = os.getenv("BREVO_API_KEY")
     sender_email = os.getenv("BREVO_SENDER_EMAIL")
-    sender_name = os.getenv("BREVO_SENDER_NAME", "Bows & Meows")
+    sender_name = os.getenv("BREVO_SENDER_NAME", "Bow & Meow")
 
     if not api_key:
         print("BREVO ERROR: BREVO_API_KEY missing")
@@ -119,6 +237,78 @@ def _sync_product_stock(product):
         product.stock = total_stock
         product.is_available = total_stock > 0
         product.save(update_fields=["stock", "is_available"])
+
+
+def _reserve_order_inventory(order):
+    """Deduct an order's stock once, using row locks."""
+    with transaction.atomic():
+        locked_order = Order.objects.select_for_update().get(id=order.id)
+        if locked_order.inventory_reserved:
+            return locked_order
+
+        affected = set()
+        for item in locked_order.items.select_related("product", "variant"):
+            if item.variant_id:
+                variant = ProductVariant.objects.select_for_update().get(id=item.variant_id)
+                if not variant.is_available or item.quantity > variant.stock:
+                    raise ValueError(
+                        f"Not enough stock for {item.product.name} {item.variant_size}"
+                    )
+                variant.stock -= item.quantity
+                variant.is_available = variant.stock > 0
+                variant.save(update_fields=["stock", "is_available"])
+                affected.add(item.product_id)
+            else:
+                product = Product.objects.select_for_update().get(id=item.product_id)
+                if not product.is_available or item.quantity > product.stock:
+                    raise ValueError(f"Not enough stock for {product.name}")
+                product.stock -= item.quantity
+                product.is_available = product.stock > 0
+                product.save(update_fields=["stock", "is_available"])
+
+        for product_id in affected:
+            _sync_product_stock(Product.objects.get(id=product_id))
+
+        locked_order.inventory_reserved = True
+        locked_order.save(update_fields=["inventory_reserved"])
+        return locked_order
+
+
+def _restore_order_inventory(order):
+    """Return reserved quantities once. Safe to call repeatedly."""
+    with transaction.atomic():
+        locked_order = Order.objects.select_for_update().get(id=order.id)
+        if not locked_order.inventory_reserved:
+            return locked_order
+
+        affected = set()
+        for item in locked_order.items.select_related("product", "variant"):
+            if item.variant_id:
+                variant = ProductVariant.objects.select_for_update().filter(id=item.variant_id).first()
+                if variant:
+                    variant.stock += item.quantity
+                    variant.is_available = True
+                    variant.save(update_fields=["stock", "is_available"])
+                    affected.add(item.product_id)
+            else:
+                product = Product.objects.select_for_update().get(id=item.product_id)
+                product.stock += item.quantity
+                product.is_available = True
+                product.save(update_fields=["stock", "is_available"])
+
+        for product_id in affected:
+            _sync_product_stock(Product.objects.get(id=product_id))
+
+        locked_order.inventory_reserved = False
+        locked_order.save(update_fields=["inventory_reserved"])
+        return locked_order
+
+
+def _request_can_access_order(request, order):
+    return (
+        request.user.is_authenticated
+        and order.user_id == request.user.id
+    ) or order.id in request.session.get("order_access_ids", [])
 
 
 def _cart_line_key(product_id, variant_id=None):
@@ -238,7 +428,7 @@ def _build_cart_items(request):
     invalid = []
     for line_key, entry in cart.items():
         product = Product.objects.filter(id=entry["product_id"]).first()
-        if not product:
+        if not product or product.is_archived or not product.is_available:
             invalid.append(line_key)
             continue
         variant = None
@@ -269,8 +459,59 @@ def _build_cart_items(request):
     return cart_items, total
 
 
+def _cart_pricing(request, subtotal):
+    pricing = {
+        "subtotal": subtotal,
+        "discount": Decimal("0.00"),
+        "total": subtotal,
+        "coupon": None,
+        "coupon_error": "",
+    }
+    code = str(request.session.get("coupon_code", "")).strip().upper()
+    if not code:
+        return pricing
+    coupon = Coupon.objects.filter(code__iexact=code).first()
+    if not coupon:
+        request.session.pop("coupon_code", None)
+        pricing["coupon_error"] = "That coupon no longer exists."
+        return pricing
+    error = coupon.validation_error(subtotal)
+    if error:
+        # Do not keep an expired, exhausted or otherwise invalid coupon
+        # attached to the checkout session. Minimum-spend coupons can remain
+        # so they become valid if the customer adds more products.
+        if not error.startswith("Spend at least"):
+            request.session.pop("coupon_code", None)
+            request.session.modified = True
+        pricing["coupon_error"] = error
+        return pricing
+    discount = coupon.discount_for(subtotal)
+    pricing.update({"coupon": coupon, "discount": discount, "total": subtotal - discount})
+    return pricing
+
+
+def _available_coupons(subtotal):
+    """Return currently usable offers, putting coupons eligible now first."""
+    offers = []
+    for coupon in Coupon.objects.filter(is_active=True).order_by("minimum_order", "-discount_percent"):
+        error = coupon.validation_error(subtotal)
+        # Keep minimum-spend offers visible so customers know how to unlock them;
+        # hide expired, future and exhausted promotions.
+        if error and not error.startswith("Spend at least"):
+            continue
+        offers.append({"coupon": coupon, "eligible": not error, "message": error})
+    return offers[:6]
+
+
+@require_POST
 def add_to_cart(request, product_id):
-    product = get_object_or_404(Product, id=product_id, is_available=True)
+    product = get_object_or_404(Product, id=product_id, is_available=True, is_archived=False)
+    if product.requires_prescription:
+        messages.warning(
+            request,
+            "This veterinary medicine requires a valid prescription. Please contact us before ordering.",
+        )
+        return redirect("product_detail", product_id=product.id)
     cart = _normalize_cart(request)
     variant_id = request.GET.get("variant") or request.POST.get("variant")
     variant = None
@@ -293,7 +534,7 @@ def add_to_cart(request, product_id):
             "quantity": current + 1,
         }
 
-    replace_key = request.GET.get("replace")
+    replace_key = request.POST.get("replace") or request.GET.get("replace")
     if replace_key and replace_key != line_key and replace_key in cart:
         del cart[replace_key]
 
@@ -302,23 +543,91 @@ def add_to_cart(request, product_id):
     return redirect("cart")
 
 
+@require_POST
+def buy_now(request, product_id):
+    """Start a focused checkout containing only the selected product/variant."""
+    product = get_object_or_404(
+        Product,
+        id=product_id,
+        is_available=True,
+        is_archived=False,
+    )
+    if product.requires_prescription:
+        messages.warning(
+            request,
+            "This veterinary medicine requires a valid prescription. Please contact us before ordering.",
+        )
+        return redirect("product_detail", product_id=product.id)
+
+    variant_id = request.POST.get("variant")
+    variant = None
+    if variant_id:
+        variant = get_object_or_404(ProductVariant, id=variant_id, product=product)
+        if not variant.is_available or variant.stock <= 0:
+            messages.error(request, "That package size is currently unavailable.")
+            return redirect("product_detail", product_id=product.id)
+    elif product.variants.exists():
+        messages.error(request, "Please choose a package size before buying.")
+        return redirect("product_detail", product_id=product.id)
+    elif product.stock <= 0:
+        return redirect("product_detail", product_id=product.id)
+
+    line_key = _cart_line_key(product.id, variant.id if variant else None)
+    request.session["cart"] = {
+        line_key: {
+            "product_id": product.id,
+            "variant_id": variant.id if variant else None,
+            "quantity": 1,
+        }
+    }
+    request.session.pop("coupon_code", None)
+    request.session.modified = True
+    return redirect("checkout")
+
+
 def cart(request):
-    cart_items, total = _build_cart_items(request)
-    return render(request, "store/cart.html", {"cart_items": cart_items, "total": total})
+    cart_items, subtotal = _build_cart_items(request)
+    pricing = _cart_pricing(request, subtotal)
+    return render(request, "store/cart.html", {
+        "cart_items": cart_items,
+        "available_coupons": _available_coupons(subtotal),
+        **pricing,
+    })
 
 
+@require_POST
+def apply_coupon(request):
+    code = request.POST.get("coupon_code", "").strip().upper()
+    if request.POST.get("remove"):
+        request.session.pop("coupon_code", None)
+        messages.success(request, "Coupon removed.")
+        return redirect(request.POST.get("next") or "cart")
+    _, subtotal = _build_cart_items(request)
+    coupon = Coupon.objects.filter(code__iexact=code).first()
+    error = "Please enter a valid coupon code." if not coupon else coupon.validation_error(subtotal)
+    if error:
+        messages.error(request, error)
+    else:
+        request.session["coupon_code"] = coupon.code
+        request.session.modified = True
+        messages.success(request, f"{coupon.code} applied — you save {coupon.discount_percent}%.")
+    return redirect(request.POST.get("next") or "cart")
+
+
+@require_POST
 def remove_from_cart(request, product_id):
     cart = _normalize_cart(request)
-    variant_id = request.GET.get("variant")
+    variant_id = request.POST.get("variant") or request.GET.get("variant")
     cart.pop(_cart_line_key(product_id, variant_id), None)
     request.session["cart"] = cart
     request.session.modified = True
     return redirect("cart")
 
 
+@require_POST
 def increase_quantity(request, product_id):
     cart = _normalize_cart(request)
-    variant_id = request.GET.get("variant")
+    variant_id = request.POST.get("variant") or request.GET.get("variant")
     line_key = _cart_line_key(product_id, variant_id)
     entry = cart.get(line_key)
     if not entry:
@@ -335,9 +644,10 @@ def increase_quantity(request, product_id):
     return redirect("cart")
 
 
+@require_POST
 def decrease_quantity(request, product_id):
     cart = _normalize_cart(request)
-    variant_id = request.GET.get("variant")
+    variant_id = request.POST.get("variant") or request.GET.get("variant")
     line_key = _cart_line_key(product_id, variant_id)
     entry = cart.get(line_key)
     if entry:
@@ -356,7 +666,7 @@ def send_order_confirmation(order):
         return
 
     subject = (
-        f"Bows & Meows - Order #{order.id} Confirmed"
+        f"Bow & Meow - Order #{order.id} Confirmed"
     )
 
     html_content = render_to_string(
@@ -368,13 +678,13 @@ def send_order_confirmation(order):
 
     text_content = (
         f"Hi {order.customer_name},\n\n"
-        f"Thank you for shopping with Bows & Meows!\n\n"
+        f"Thank you for shopping with Bow & Meow!\n\n"
         f"Order #{order.id}\n"
         f"Total: ₹{order.total_amount}\n"
         f"Payment: {order.get_payment_method_display()}\n"
         f"Delivery Address: {order.address}\n\n"
         f"Thank you,\n"
-        f"Bows & Meows"
+        f"Bow & Meow"
     )
 
     send_brevo_email(
@@ -421,7 +731,7 @@ def send_order_status_email(order):
         f"Status: {order.get_status_display()}\n"
         f"Total: ₹{order.total_amount}\n\n"
         f"Thank you,\n"
-        f"Bows & Meows"
+        f"Bow & Meow"
     )
 
     send_brevo_email(
@@ -432,7 +742,9 @@ def send_order_status_email(order):
     )
 
 def checkout(request):
-    cart_items, total = _build_cart_items(request)
+    cart_items, subtotal = _build_cart_items(request)
+    pricing = _cart_pricing(request, subtotal)
+    total = pricing["total"]
     if not cart_items:
         return redirect("cart")
 
@@ -454,6 +766,8 @@ def checkout(request):
             return redirect("cart")
 
         for item in cart_items:
+            if Product.objects.filter(id=item["product"].id, is_archived=True).exists():
+                return redirect("cart")
             if item["variant"]:
                 fresh = ProductVariant.objects.filter(id=item["variant"].id, product=item["product"]).first()
                 if not fresh or not fresh.is_available or item["quantity"] > fresh.stock:
@@ -465,7 +779,7 @@ def checkout(request):
                     })
             else:
                 fresh = Product.objects.get(id=item["product"].id)
-                if item["quantity"] > fresh.stock:
+                if fresh.is_archived or not fresh.is_available or item["quantity"] > fresh.stock:
                     return render(request, "store/checkout.html", {
                         "cart_items": cart_items, "total": total,
                         "default_address": default_address, "addresses": addresses,
@@ -507,7 +821,19 @@ def checkout(request):
                 payment_method=payment_method,
                 payment_status="pending",
                 total_amount=total,
+                subtotal_amount=subtotal,
+                discount_amount=pricing["discount"],
+                coupon_code=pricing["coupon"].code if pricing["coupon"] else "",
             )
+
+            order_access_ids = request.session.get("order_access_ids", [])
+            order_access_ids = [
+                stored_id for stored_id in order_access_ids
+                if isinstance(stored_id, int)
+            ]
+            if order.id not in order_access_ids:
+                order_access_ids.append(order.id)
+            request.session["order_access_ids"] = order_access_ids[-20:]
 
             for item in cart_items:
                 OrderItem.objects.create(
@@ -519,35 +845,13 @@ def checkout(request):
                     price=item["unit_price"],
                 )
 
-            if payment_method == "cod":
-                affected = set()
-                for item in cart_items:
-                    if item["variant"]:
-                        variant = ProductVariant.objects.select_for_update().get(
-                            id=item["variant"].id, product=item["product"]
-                        )
-                        if item["quantity"] > variant.stock:
-                            raise ValueError(f"Not enough stock for {item['product'].name} {variant.size}")
-                        variant.stock -= item["quantity"]
-                        if variant.stock <= 0:
-                            variant.stock = 0
-                            variant.is_available = False
-                        variant.save()
-                        affected.add(item["product"].id)
-                    else:
-                        product = Product.objects.select_for_update().get(id=item["product"].id)
-                        if item["quantity"] > product.stock:
-                            raise ValueError(f"Not enough stock for {product.name}")
-                        product.stock -= item["quantity"]
-                        if product.stock <= 0:
-                            product.stock = 0
-                            product.is_available = False
-                        product.save()
+            _reserve_order_inventory(order)
 
-                for pid in affected:
-                    _sync_product_stock(Product.objects.get(id=pid))
+            if pricing["coupon"]:
+                Coupon.objects.filter(pk=pricing["coupon"].pk).update(times_used=F("times_used") + 1)
 
         request.session.pop("checkout_token", None)
+        request.session.pop("coupon_code", None)
 
         if payment_method == "online":
             client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
@@ -560,8 +864,9 @@ def checkout(request):
                     "payment_capture": 1,
                 })
             except Exception:
+                _restore_order_inventory(order)
                 order.payment_status = "failed"
-                order.save()
+                order.save(update_fields=["payment_status"])
                 return render(request, "store/payment_failed.html", {
                     "order": order,
                     "error": "We couldn't start the payment. Please try again."
@@ -584,7 +889,8 @@ def checkout(request):
 
     return render(request, "store/checkout.html", {
         "cart_items": cart_items,
-        "total": total,
+        "available_coupons": _available_coupons(subtotal),
+        **pricing,
         "default_address": default_address,
         "addresses": addresses,
         "checkout_token": checkout_token,
@@ -592,33 +898,27 @@ def checkout(request):
 
 def order_success(request, order_id):
     order = get_object_or_404(Order, id=order_id)
+    if not _request_can_access_order(request, order):
+        return redirect("home")
+
+    display_subtotal = order.subtotal_amount
+    if not display_subtotal:
+        display_subtotal = order.total_amount + order.discount_amount
 
     return render(
         request,
         "store/order_success.html",
-        {"order": order}
+        {"order": order, "display_subtotal": display_subtotal}
     )
 
 def register_view(request):
 
     if request.method == "POST":
 
-        username = request.POST.get("username")
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-
-        if User.objects.filter(
-            username=username
-        ).exists():
-
-            return render(
-                request,
-                "store/register.html",
-                {
-                    "error":
-                    "Username already exists"
-                }
-            )
+        email = request.POST.get("email", "").strip().lower()
+        password = request.POST.get("password") or request.POST.get("password1", "")
+        password2 = request.POST.get("password2", password)
+        full_name = request.POST.get("full_name", "").strip()
 
         if User.objects.filter(email__iexact=email).exists():
             return render(
@@ -627,13 +927,36 @@ def register_view(request):
                 {"error": "An account with this email already exists."}
                 )
 
+        if password != password2:
+            return render(request, "store/register.html", {
+                "error": "The passwords do not match.", "email_value": email, "full_name_value": full_name,
+            })
+        try:
+            validate_password(password)
+        except ValidationError as exc:
+            return render(request, "store/register.html", {
+                "error": " ".join(exc.messages), "email_value": email, "full_name_value": full_name,
+            })
+
+        base_username = re.sub(r"[^a-zA-Z0-9._-]", "", email.split("@")[0]) or "petparent"
+        username = base_username[:140]
+        suffix = 1
+        while User.objects.filter(username=username).exists():
+            suffix += 1
+            username = f"{base_username[:130]}-{suffix}"
+
         user = User.objects.create_user(
                         username=username,
                         email=email,
                         password=password
                     )
+        if full_name:
+            names = full_name.split(None, 1)
+            user.first_name = names[0]
+            user.last_name = names[1] if len(names) > 1 else ""
+            user.save(update_fields=["first_name", "last_name"])
 
-        login(request, user)
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
         return redirect("home")
 
@@ -644,8 +967,11 @@ def register_view(request):
 
 def login_view(request):
     if request.method == "POST":
-        username = request.POST.get("username")
+        identifier = (request.POST.get("identifier") or request.POST.get("username") or "").strip()
         password = request.POST.get("password")
+
+        matched_user = User.objects.filter(email__iexact=identifier).first()
+        username = matched_user.username if matched_user else identifier
 
         user = authenticate(
             request,
@@ -655,10 +981,18 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
+            if request.POST.get("remember_me"):
+                request.session.set_expiry(60 * 60 * 24 * 30)
+            else:
+                request.session.set_expiry(0)
 
-            next_url = request.GET.get("next")
+            next_url = request.POST.get("next") or request.GET.get("next")
 
-            if next_url:
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
                 return redirect(next_url)
 
             return redirect("home")
@@ -666,12 +1000,13 @@ def login_view(request):
         return render(
             request,
             "store/login.html",
-            {"error": "Invalid username or password"}
+            {"error": "We couldn't match that email and password.", "identifier_value": identifier}
         )
 
     return render(request, "store/login.html")
 
 
+@require_POST
 def logout_view(request):
     logout(request)
     return redirect("home")
@@ -695,6 +1030,12 @@ def my_pets(request):
 @login_required
 def add_pet(request):
     if request.method == "POST":
+        pet_image = request.FILES.get("image")
+        if pet_image:
+            try:
+                _validate_uploaded_product_image(pet_image)
+            except ValueError as exc:
+                return render(request, "store/add_pet.html", {"error": str(exc)})
         Pet.objects.create(
             owner=request.user,
             name=request.POST.get("name"),
@@ -702,12 +1043,42 @@ def add_pet(request):
             breed=request.POST.get("breed"),
             age=request.POST.get("age") or None,
             weight=request.POST.get("weight") or None,
-            notes=request.POST.get("notes")
+            notes=request.POST.get("notes"),
+            image=pet_image,
         )
 
         return redirect("my_pets")
 
     return render(request, "store/add_pet.html")
+
+
+@login_required
+def edit_pet(request, pet_id):
+    pet = get_object_or_404(Pet, id=pet_id, owner=request.user)
+
+    if request.method == "POST":
+        pet_image = request.FILES.get("image")
+        if pet_image:
+            try:
+                _validate_uploaded_product_image(pet_image)
+            except ValueError as exc:
+                return render(request, "store/edit_pet.html", {"pet": pet, "error": str(exc)})
+
+        pet.name = request.POST.get("name", "").strip()
+        pet.pet_type = request.POST.get("pet_type")
+        pet.breed = request.POST.get("breed", "").strip()
+        pet.age = request.POST.get("age") or None
+        pet.weight = request.POST.get("weight") or None
+        pet.notes = request.POST.get("notes", "").strip()
+        if request.POST.get("remove_image") == "on":
+            pet.image = None
+        elif pet_image:
+            pet.image = pet_image
+        pet.save()
+        messages.success(request, f"{pet.name}'s profile was updated.")
+        return redirect("my_pets")
+
+    return render(request, "store/edit_pet.html", {"pet": pet})
 
 @login_required
 def my_orders(request):
@@ -720,6 +1091,70 @@ def my_orders(request):
         "store/my_orders.html",
         {"orders": orders}
     )
+
+
+@login_required
+@require_POST
+def reorder(request, order_id):
+    order = get_object_or_404(
+        Order.objects.prefetch_related("items__product", "items__variant"),
+        id=order_id,
+        user=request.user,
+    )
+    new_cart = {}
+    skipped = []
+    adjusted = []
+
+    for item in order.items.all():
+        product = item.product
+        if product.is_archived or not product.is_available or product.requires_prescription:
+            skipped.append(product.name)
+            continue
+
+        variant = item.variant
+        if item.variant_size:
+            if not variant or variant.product_id != product.id:
+                variant = product.variants.filter(size__iexact=item.variant_size).first()
+            if not variant or not variant.is_available or variant.stock <= 0:
+                skipped.append(f"{product.name} ({item.variant_size})")
+                continue
+            stock = variant.stock
+        else:
+            # Products that now require a package choice cannot be safely
+            # substituted for an old non-variant order line.
+            if product.variants.exists():
+                skipped.append(product.name)
+                continue
+            variant = None
+            stock = product.stock
+
+        if stock <= 0:
+            skipped.append(product.name)
+            continue
+        quantity = min(item.quantity, stock)
+        if quantity < item.quantity:
+            adjusted.append(f"{product.name} (quantity changed to {quantity})")
+        line_key = _cart_line_key(product.id, variant.id if variant else None)
+        new_cart[line_key] = {
+            "product_id": product.id,
+            "variant_id": variant.id if variant else None,
+            "quantity": quantity,
+        }
+
+    if not new_cart:
+        messages.error(request, "None of the products in this order are currently available to reorder.")
+        return redirect("order_detail", order_id=order.id)
+
+    request.session["cart"] = new_cart
+    request.session.pop("coupon_code", None)
+    request.session.pop("checkout_token", None)
+    request.session.modified = True
+    if skipped:
+        messages.warning(request, "Unavailable items were left out: " + ", ".join(skipped) + ".")
+    if adjusted:
+        messages.warning(request, "Stock changed for: " + ", ".join(adjusted) + ".")
+    messages.success(request, f"Order BM-{order.id:04d} was added to your cart. Please confirm current prices before paying.")
+    return redirect("checkout")
 @login_required
 def order_detail(request, order_id):
     order = get_object_or_404(
@@ -770,6 +1205,43 @@ def crm_dashboard(request):
         "store/crm_dashboard.html",
         context
     )
+
+
+@login_required
+def crm_coupons(request):
+    if not request.user.is_staff:
+        return redirect("home")
+    if request.method == "POST":
+        action = request.POST.get("action", "create")
+        if action == "toggle":
+            coupon = get_object_or_404(Coupon, pk=request.POST.get("coupon_id"))
+            coupon.is_active = not coupon.is_active
+            coupon.save(update_fields=["is_active"])
+            messages.success(request, f"{coupon.code} {'activated' if coupon.is_active else 'paused'}.")
+        else:
+            try:
+                percent = int(request.POST.get("discount_percent", 0))
+                if not 1 <= percent <= 100:
+                    raise ValueError
+                Coupon.objects.create(
+                    code=request.POST.get("code", "").strip().upper(),
+                    discount_percent=percent,
+                    minimum_order=Decimal(request.POST.get("minimum_order") or "0"),
+                    maximum_discount=(
+                        Decimal(request.POST["maximum_discount"])
+                        if request.POST.get("maximum_discount")
+                        and Decimal(request.POST["maximum_discount"]) > 0
+                        else None
+                    ),
+                    usage_limit=int(request.POST["usage_limit"]) if request.POST.get("usage_limit") else None,
+                )
+                messages.success(request, "Coupon created and ready to use.")
+            except (ValueError, InvalidOperation):
+                messages.error(request, "Enter valid coupon values. Discount must be between 1% and 100%.")
+            except Exception:
+                messages.error(request, "That coupon code already exists or could not be saved.")
+        return redirect("crm_coupons")
+    return render(request, "store/crm_coupons.html", {"coupons": Coupon.objects.all()})
 
 @login_required
 def crm_customers(request):
@@ -832,6 +1304,14 @@ def crm_inventory(request):
     search_query = request.GET.get("q")
     category_filter = request.GET.get("category")
     low_stock = request.GET.get("low_stock")
+    archive_filter = request.GET.get("archive", "active")
+
+    if archive_filter == "archived":
+        products = products.filter(is_archived=True)
+    elif archive_filter == "all":
+        pass
+    else:
+        products = products.filter(is_archived=False)
 
     if search_query:
         products = products.filter(
@@ -853,6 +1333,7 @@ def crm_inventory(request):
         "search_query": search_query or "",
         "category_filter": category_filter or "",
         "low_stock": low_stock or "",
+        "archive_filter": archive_filter,
     }
 
     return render(
@@ -874,14 +1355,22 @@ def crm_inventory_edit(request, product_id):
         product.name = request.POST.get("name")
         product.brand = request.POST.get("brand", "").strip()
         product.pet_type = request.POST.get("pet_type", "")
+        product.product_type = request.POST.get("product_type", "")
+        product.care_area = request.POST.get("care_area", "")
         product.category = request.POST.get("category")
         product.life_stage = request.POST.get("life_stage", "")
         product.flavour = request.POST.get("flavour", "").strip()
         product.key_benefits = request.POST.get("key_benefits", "").strip()
+        product.target_species = request.POST.get("target_species", "").strip()
+        product.active_ingredients = request.POST.get("active_ingredients", "").strip()
+        product.usage_warning = request.POST.get("usage_warning", "").strip()
+        product.requires_prescription = request.POST.get("requires_prescription") == "on"
         product.price = request.POST.get("price")
         product.original_price = request.POST.get("original_price") or None
         product.stock = request.POST.get("stock") or 0
         product.description = request.POST.get("description", "").strip()
+        for field in ("manufacturer_name", "manufacturer_address", "country_of_origin", "marketed_by", "ingredients", "directions", "specifications"):
+            setattr(product, field, request.POST.get(field, "").strip())
         product.is_available = request.POST.get("is_available") == "on"
         product.is_featured = request.POST.get("is_featured") == "on"
         new_image = request.FILES.get("image")
@@ -907,11 +1396,10 @@ def crm_inventory_edit(request, product_id):
             variant.sku = skus[i].strip() or None
             variant.is_available = int(variant.stock) > 0
             new_variant_image = request.FILES.get(
-            f"existing_variant_image_{variant.id}"
-        )
-
-        if new_variant_image:
-            variant.image = new_variant_image
+                f"existing_variant_image_{variant.id}"
+            )
+            if new_variant_image:
+                variant.image = new_variant_image
             variant.save()
 
         delete_ids = request.POST.getlist("delete_variant")
@@ -1098,53 +1586,13 @@ def crm_order_status(request, order_id):
     old_status = order.status
 
     if new_status == "cancelled" and old_status != "cancelled":
-        affected = set()
-        with transaction.atomic():
-            for item in order.items.all():
-                if item.variant_id:
-                    variant = ProductVariant.objects.select_for_update().filter(id=item.variant_id).first()
-                    if variant:
-                        variant.stock += item.quantity
-                        variant.is_available = True
-                        variant.save()
-                        affected.add(item.product_id)
-                else:
-                    product = Product.objects.select_for_update().get(id=item.product_id)
-                    product.stock += item.quantity
-                    product.is_available = True
-                    product.save()
-            for pid in affected:
-                _sync_product_stock(Product.objects.get(id=pid))
+        _restore_order_inventory(order)
 
     elif old_status == "cancelled" and new_status != "cancelled":
-        for item in order.items.all():
-            if item.variant_id:
-                variant = ProductVariant.objects.filter(id=item.variant_id).first()
-                if not variant or variant.stock < item.quantity:
-                    return redirect("crm_orders")
-            elif item.product.stock < item.quantity:
-                return redirect("crm_orders")
-
-        affected = set()
-        with transaction.atomic():
-            for item in order.items.all():
-                if item.variant_id:
-                    variant = ProductVariant.objects.select_for_update().get(id=item.variant_id)
-                    variant.stock -= item.quantity
-                    if variant.stock <= 0:
-                        variant.stock = 0
-                        variant.is_available = False
-                    variant.save()
-                    affected.add(item.product_id)
-                else:
-                    product = Product.objects.select_for_update().get(id=item.product_id)
-                    product.stock -= item.quantity
-                    if product.stock <= 0:
-                        product.stock = 0
-                        product.is_available = False
-                    product.save()
-            for pid in affected:
-                _sync_product_stock(Product.objects.get(id=pid))
+        try:
+            _reserve_order_inventory(order)
+        except ValueError:
+            return redirect("crm_orders")
 
     order.status = new_status
     if order.payment_method == "cod":
@@ -1318,6 +1766,9 @@ def crm_inventory_add(request):
                 ""
             ),
 
+            product_type=request.POST.get("product_type", ""),
+            care_area=request.POST.get("care_area", ""),
+
             category=request.POST.get(
                 "category"
             ),
@@ -1336,6 +1787,25 @@ def crm_inventory_add(request):
                 "key_benefits",
                 ""
             ).strip(),
+
+            target_species=request.POST.get(
+                "target_species",
+                ""
+            ).strip(),
+
+            active_ingredients=request.POST.get(
+                "active_ingredients",
+                ""
+            ).strip(),
+
+            usage_warning=request.POST.get(
+                "usage_warning",
+                ""
+            ).strip(),
+
+            requires_prescription=(
+                request.POST.get("requires_prescription") == "on"
+            ),
 
             price=request.POST.get(
                 "price"
@@ -1359,6 +1829,13 @@ def crm_inventory_add(request):
                 "description",
                 ""
             ).strip(),
+            manufacturer_name=request.POST.get("manufacturer_name", "").strip(),
+            manufacturer_address=request.POST.get("manufacturer_address", "").strip(),
+            country_of_origin=request.POST.get("country_of_origin", "").strip(),
+            marketed_by=request.POST.get("marketed_by", "").strip(),
+            ingredients=request.POST.get("ingredients", "").strip(),
+            directions=request.POST.get("directions", "").strip(),
+            specifications=request.POST.get("specifications", "").strip(),
 
             image=request.FILES.get(
                 "image"
@@ -1437,73 +1914,29 @@ def crm_inventory_add(request):
             )
 
 
-            variant_image = request.FILES.get(
-                f"variant_image_{i}"
+            variant_image = request.FILES.get(f"variant_image_{i}")
+            variant_price = prices[i]
+            variant_mrp = (
+                mrps[i]
+                if i < len(mrps) and mrps[i]
+                else None
             )
-            variant = ProductVariant.objects.create(
+            sku = (
+                skus[i].strip()
+                if i < len(skus) and skus[i].strip()
+                else None
+            )
 
+            ProductVariant.objects.create(
                 product=product,
-
                 size=size,
-
-                price=(
-                    row.get(
-                        "variant_price"
-                    )
-                    or 0
-                ),
-
-                original_price=(
-                    row.get(
-                        "variant_mrp"
-                    )
-                    or None
-                ),
-
-                stock=(
-                    row.get(
-                        "variant_stock"
-                    )
-                    or 0
-                ),
-
+                image=variant_image,
+                price=variant_price,
+                original_price=variant_mrp,
+                stock=variant_stock,
                 sku=sku,
-
-                is_available=(
-                    int(
-                        row.get(
-                            "variant_stock"
-                        )
-                        or 0
-                    ) > 0
-                ),
+                is_available=int(variant_stock) > 0,
             )
-            if variant_image_url:
-
-                try:
-
-                    downloaded_variant_image = (
-                        download_product_image(
-                            variant_image_url,
-                            prefix=sku
-                        )
-                    )
-
-                    if downloaded_variant_image:
-
-                        variant.image.save(
-                            downloaded_variant_image.name,
-                            downloaded_variant_image,
-                            save=True
-                        )
-
-                except Exception as image_error:
-
-                    errors.append(
-                        f"Row {row_number}: "
-                        f"Variant image failed - "
-                        f"{image_error}"
-                    )
 
         # ==========================================
         # FEEDING GUIDE
@@ -1573,9 +2006,11 @@ def crm_inventory_add(request):
             )
 
 
-        return redirect(
-            "crm_inventory"
+        messages.success(
+            request,
+            f"Product #{product.id} created. Its bulk main-image filename is {product.id}-main.jpg.",
         )
+        return redirect("crm_inventory_edit", product_id=product.id)
 
 
     return render(
@@ -1660,8 +2095,18 @@ def download_product_image(
             extension = ".jpg"
 
 
+    # ImageField names include their upload directory and are limited to
+    # 100 characters by default. Supplier SKUs/product codes can be much
+    # longer, so keep a compact, filesystem-safe prefix before adding the
+    # random suffix and extension.
+    safe_prefix = re.sub(
+        r"[^A-Za-z0-9_-]+",
+        "-",
+        str(prefix),
+    ).strip("-_")[:48] or "product"
+
     filename = (
-        f"{prefix}-"
+        f"{safe_prefix}-"
         f"{uuid.uuid4().hex[:12]}"
         f"{extension}"
     )
@@ -1671,16 +2116,81 @@ def download_product_image(
         response.content,
         name=filename
     )
+
+
+@login_required
+@require_POST
+def crm_inventory_archive(request, product_id):
+    if not request.user.is_staff:
+        return redirect("home")
+    product = get_object_or_404(Product, id=product_id)
+    product.is_archived = True
+    product.save(update_fields=["is_archived"])
+    messages.success(request, f"Product #{product.id} archived. Its history and images were preserved.")
+    return redirect("crm_inventory")
+
+
+@login_required
+@require_POST
+def crm_inventory_restore(request, product_id):
+    if not request.user.is_staff:
+        return redirect("home")
+    product = get_object_or_404(Product, id=product_id)
+    product.is_archived = False
+    product.save(update_fields=["is_archived"])
+    messages.success(request, f"Product #{product.id} restored to inventory.")
+    return redirect("crm_inventory")
+
+
+def _validate_uploaded_product_image(upload):
+    if upload.size > 5 * 1024 * 1024:
+        raise ValueError("Image is larger than 5 MB.")
+    try:
+        PillowImage.open(upload).verify()
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValueError("File is not a valid image.") from exc
+    finally:
+        upload.seek(0)
 @login_required
 def crm_inventory_bulk_import(request):
 
     if not request.user.is_staff:
         return redirect("home")
 
-    result = None
-    errors = []
 
-    if request.method == "POST":
+    errors = []
+    preview = None
+    result = None
+
+    action = request.POST.get(
+        "action"
+    )
+
+
+    # ==========================================
+    # CANCEL PREVIEW
+    # ==========================================
+
+    if action == "cancel":
+
+        request.session.pop(
+            "bulk_import_rows",
+            None
+        )
+
+        return redirect(
+            "crm_inventory_bulk_import"
+        )
+
+
+    # ==========================================
+    # STEP 1 — PREVIEW CSV
+    # ==========================================
+
+    if (
+        request.method == "POST"
+        and action == "preview"
+    ):
 
         uploaded_file = request.FILES.get(
             "csv_file"
@@ -1708,17 +2218,302 @@ def crm_inventory_bulk_import(request):
                     )
                 )
 
-                created_products = 0
-                created_variants = 0
-                updated_products = 0
+                rows = list(reader)
 
-                product_cache = {}
 
+                # Save CSV data temporarily
+                # so Confirm doesn't need another upload.
+
+                request.session[
+                    "bulk_import_rows"
+                ] = rows
+
+                request.session.modified = True
+
+
+                new_product_codes = set()
+                existing_product_codes = set()
+
+                new_variants = 0
+                existing_variants = 0
+
+                invalid_count = 0
+
+                seen_skus = set()
+
+                product_preview = {}
+
+
+                for row_number, row in enumerate(
+                    rows,
+                    start=2
+                ):
+
+                    name = (
+                        row.get(
+                            "name",
+                            ""
+                        ).strip()
+                    )
+
+                    product_code = (
+                        row.get(
+                            "product_code",
+                            ""
+                        ).strip()
+                    )
+
+                    brand = (
+                        row.get(
+                            "brand",
+                            ""
+                        ).strip()
+                    )
+
+                    size = (
+                        row.get(
+                            "size",
+                            ""
+                        ).strip()
+                    )
+
+                    sku = (
+                        row.get(
+                            "sku",
+                            ""
+                        ).strip()
+                    )
+
+                    variant_price = (
+                        row.get(
+                            "variant_price",
+                            ""
+                        ).strip()
+                    )
+
+
+                    row_valid = True
+
+
+                    if not name:
+
+                        errors.append(
+                            f"Row {row_number}: "
+                            "Product name is missing."
+                        )
+
+                        row_valid = False
+
+
+                    if not product_code:
+
+                        errors.append(
+                            f"Row {row_number}: "
+                            "Product code is missing."
+                        )
+
+                        row_valid = False
+
+
+                    if not size:
+
+                        errors.append(
+                            f"Row {row_number}: "
+                            "Variant size is missing."
+                        )
+
+                        row_valid = False
+
+
+                    if not sku:
+
+                        errors.append(
+                            f"Row {row_number}: "
+                            "SKU is missing."
+                        )
+
+                        row_valid = False
+
+
+                    if not variant_price:
+
+                        errors.append(
+                            f"Row {row_number}: "
+                            "Variant price is missing."
+                        )
+
+                        row_valid = False
+
+
+                    # Duplicate SKU inside same CSV
+
+                    if sku:
+
+                        if sku in seen_skus:
+
+                            errors.append(
+                                f"Row {row_number}: "
+                                f"Duplicate SKU in CSV: "
+                                f"{sku}"
+                            )
+
+                            row_valid = False
+
+                        else:
+
+                            seen_skus.add(
+                                sku
+                            )
+
+
+                    if not row_valid:
+
+                        invalid_count += 1
+                        continue
+
+
+                    # =================================
+                    # PRODUCT PREVIEW
+                    # =================================
+
+                    if product_code not in product_preview:
+
+                        existing_product = (
+                            Product.objects
+                            .filter(
+                                name=name,
+                                brand=brand
+                            )
+                            .exists()
+                        )
+
+                        if existing_product:
+
+                            existing_product_codes.add(
+                                product_code
+                            )
+
+                        else:
+
+                            new_product_codes.add(
+                                product_code
+                            )
+
+
+                        product_preview[
+                            product_code
+                        ] = {
+                            "code":
+                                product_code,
+
+                            "name":
+                                name,
+
+                            "brand":
+                                brand,
+
+                            "variant_count":
+                                0,
+                        }
+
+
+                    product_preview[
+                        product_code
+                    ][
+                        "variant_count"
+                    ] += 1
+
+
+                    # =================================
+                    # VARIANT PREVIEW
+                    # =================================
+
+                    if (
+                        ProductVariant.objects
+                        .filter(
+                            sku=sku
+                        )
+                        .exists()
+                    ):
+
+                        existing_variants += 1
+
+                    else:
+
+                        new_variants += 1
+
+
+                preview = {
+
+                    "new_products":
+                        len(
+                            new_product_codes
+                        ),
+
+                    "existing_products":
+                        len(
+                            existing_product_codes
+                        ),
+
+                    "new_variants":
+                        new_variants,
+
+                    "existing_variants":
+                        existing_variants,
+
+                    "invalid_count":
+                        invalid_count,
+
+                    "products":
+                        list(
+                            product_preview.values()
+                        ),
+                }
+
+
+            except Exception as e:
+
+                errors.append(
+                    f"Could not read CSV: {e}"
+                )
+
+
+    # ==========================================
+    # STEP 2 — CONFIRM IMPORT
+    # ==========================================
+
+    elif (
+        request.method == "POST"
+        and action == "confirm"
+    ):
+
+        rows = request.session.get(
+            "bulk_import_rows"
+        )
+
+
+        if not rows:
+
+            errors.append(
+                "Import preview expired. "
+                "Please upload the CSV again."
+            )
+
+        else:
+
+            created_products = 0
+            created_variants = 0
+            updated_variants = 0
+
+            product_cache = {}
+
+
+            try:
 
                 with transaction.atomic():
 
                     for row_number, row in enumerate(
-                        reader,
+                        rows,
                         start=2
                     ):
 
@@ -1736,6 +2531,13 @@ def crm_inventory_bulk_import(request):
                             ).strip()
                         )
 
+                        brand = (
+                            row.get(
+                                "brand",
+                                ""
+                            ).strip()
+                        )
+
                         size = (
                             row.get(
                                 "size",
@@ -1749,12 +2551,32 @@ def crm_inventory_bulk_import(request):
                                 ""
                             ).strip()
                         )
+
+
+                        if (
+                            not name
+                            or not product_code
+                            or not size
+                            or not sku
+                        ):
+                            continue
+
+
+                        feeding_guide_raw = (
+                            row.get(
+                                "feeding_guide",
+                                ""
+                            ).strip()
+                        )
+
+
                         product_image_url = (
                             row.get(
                                 "product_image_url",
                                 ""
                             ).strip()
                         )
+
 
                         variant_image_url = (
                             row.get(
@@ -1764,48 +2586,8 @@ def crm_inventory_bulk_import(request):
                         )
 
 
-                        if not name:
-
-                            errors.append(
-                                f"Row {row_number}: "
-                                "Product name is missing."
-                            )
-
-                            continue
-
-
-                        if not product_code:
-
-                            errors.append(
-                                f"Row {row_number}: "
-                                "Product code is missing."
-                            )
-
-                            continue
-
-
-                        if not size:
-
-                            errors.append(
-                                f"Row {row_number}: "
-                                "Variant size is missing."
-                            )
-
-                            continue
-
-
-                        if not sku:
-
-                            errors.append(
-                                f"Row {row_number}: "
-                                "SKU is missing."
-                            )
-
-                            continue
-
-
                         # =================================
-                        # GET / CREATE PRODUCT
+                        # PRODUCT
                         # =================================
 
                         if product_code in product_cache:
@@ -1822,140 +2604,206 @@ def crm_inventory_bulk_import(request):
                                 Product.objects
                                 .filter(
                                     name=name,
-                                    brand=row.get(
-                                        "brand",
-                                        ""
-                                    ).strip()
+                                    brand=brand
                                 )
                                 .first()
                             )
 
 
-                        if product:
+                            if not product:
 
-                            updated_products += 1
+                                product = (
+                                    Product.objects.create(
 
-                        else:
+                                        name=name,
 
-                            product = Product.objects.create(
+                                        brand=brand,
 
-                                name=name,
+                                        pet_type=row.get(
+                                            "pet_type",
+                                            ""
+                                        ).strip(),
 
-                                brand=row.get(
-                                    "brand",
-                                    ""
-                                ).strip(),
+                                        category=row.get(
+                                            "category",
+                                            ""
+                                        ).strip(),
 
-                                pet_type=row.get(
-                                    "pet_type",
-                                    ""
-                                ).strip(),
+                                        life_stage=row.get(
+                                            "life_stage",
+                                            ""
+                                        ).strip(),
 
-                                category=row.get(
-                                    "category",
-                                    ""
-                                ).strip(),
+                                        flavour=row.get(
+                                            "flavour",
+                                            ""
+                                        ).strip(),
 
-                                life_stage=row.get(
-                                    "life_stage",
-                                    ""
-                                ).strip(),
+                                        description=row.get(
+                                            "description",
+                                            ""
+                                        ).strip(),
 
-                                flavour=row.get(
-                                    "flavour",
-                                    ""
-                                ).strip(),
+                                        manufacturer_name=row.get("manufacturer_name", "").strip(),
+                                        manufacturer_address=row.get("manufacturer_address", "").replace(" | ", "\n").strip(),
+                                        country_of_origin=row.get("country_of_origin", "").strip(),
+                                        marketed_by=row.get("marketed_by", "").strip(),
+                                        ingredients=row.get("ingredients", "").replace(" | ", "\n").strip(),
+                                        directions=row.get("directions", "").replace(" | ", "\n").strip(),
+                                        specifications=row.get("specifications", "").replace(" | ", "\n").strip(),
 
-                                description=row.get(
-                                    "description",
-                                    ""
-                                ).strip(),
+                                        key_benefits=row.get(
+                                            "key_benefits",
+                                            ""
+                                        ).replace(
+                                            " | ",
+                                            "\n"
+                                        ),
 
-                                key_benefits=row.get(
-                                    "key_benefits",
-                                    ""
-                                ).replace(
-                                    " | ",
-                                    "\n"
-                                ),
+                                        price=(
+                                            row.get(
+                                                "base_price"
+                                            )
+                                            or 0
+                                        ),
 
-                                price=(
-                                    row.get("base_price")
-                                    or 0
-                                ),
+                                        original_price=(
+                                            row.get(
+                                                "base_mrp"
+                                            )
+                                            or None
+                                        ),
 
-                                original_price=(
-                                    row.get("base_mrp")
-                                    or None
-                                ),
+                                        stock=0,
 
-                                stock=0,
+                                        is_featured=(
+                                            row.get(
+                                                "featured",
+                                                ""
+                                            ).lower()
+                                            in [
+                                                "yes",
+                                                "true",
+                                                "1",
+                                            ]
+                                        ),
 
-                                is_featured=(
-                                    row.get(
-                                        "featured",
-                                        ""
-                                    ).lower()
-                                    in ["yes", "true", "1"]
-                                ),
+                                        is_available=True,
+                                    )
+                                )
 
-                                is_available=(
-                                    row.get(
-                                        "available",
-                                        "yes"
-                                    ).lower()
-                                    in ["yes", "true", "1"]
-                                ),
-                            )
-
-                            created_products += 1
+                                created_products += 1
 
 
-                        # ==========================================
-                        # PRODUCT IMAGE
-                        # ==========================================
+                            # MAIN PRODUCT IMAGE
 
-                        if (
-                            product_image_url
-                            and not product.image
-                        ):
+                            if (
+                                product_image_url
+                                and not product.image
+                            ):
+
+                                try:
+
+                                    image_file = (
+                                        download_product_image(
+                                            product_image_url,
+                                            prefix=
+                                                product_code
+                                        )
+                                    )
+
+                                    if image_file:
+
+                                        product.image.save(
+                                            image_file.name,
+                                            image_file,
+                                            save=True
+                                        )
+
+                                except Exception as image_error:
+
+                                    errors.append(
+                                        f"Row {row_number}: "
+                                        f"Product image failed - "
+                                        f"{image_error}"
+                                    )
+
+
+                            product_cache[
+                                product_code
+                            ] = product
+
+
+                        # =================================
+                        # FEEDING GUIDE
+                        # =================================
+
+                        if feeding_guide_raw:
 
                             try:
 
-                                downloaded_image = (
-                                    download_product_image(
-                                        product_image_url,
-                                        prefix=product_code
-                                    )
+                                guide_parts = (
+                                    feeding_guide_raw
+                                    .split("|")
                                 )
 
-                                if downloaded_image:
+                                for guide_part in guide_parts:
 
-                                    product.image.save(
-                                        downloaded_image.name,
-                                        downloaded_image,
-                                        save=True
+                                    guide_part = (
+                                        guide_part.strip()
                                     )
 
-                            except Exception as image_error:
+                                    if not guide_part:
+                                        continue
+
+
+                                    weight_range, grams = (
+                                        guide_part.split(
+                                            ":",
+                                            1
+                                        )
+                                    )
+
+
+                                    min_weight, max_weight = (
+                                        weight_range.split(
+                                            "-",
+                                            1
+                                        )
+                                    )
+
+
+                                    FeedingGuide.objects.update_or_create(
+
+                                        product=product,
+
+                                        min_weight=
+                                            min_weight.strip(),
+
+                                        max_weight=
+                                            max_weight.strip(),
+
+                                        defaults={
+                                            "daily_grams":
+                                                grams.strip()
+                                        }
+                                    )
+
+
+                            except Exception as feeding_error:
 
                                 errors.append(
                                     f"Row {row_number}: "
-                                    f"Product image failed - "
-                                    f"{image_error}"
+                                    f"Feeding guide failed - "
+                                    f"{feeding_error}"
                                 )
 
-
-                        # KEEP THIS AFTER THE IMAGE CODE
-                        product_cache[
-                            product_code
-                        ] = product
 
                         # =================================
                         # VARIANT
                         # =================================
 
-                        existing_variant = (
+                        variant = (
                             ProductVariant.objects
                             .filter(
                                 sku=sku
@@ -1964,54 +2812,57 @@ def crm_inventory_bulk_import(request):
                         )
 
 
-                        if existing_variant:
-
-                            existing_variant.size = (
-                                size
+                        variant_stock = int(
+                            row.get(
+                                "variant_stock"
                             )
+                            or 0
+                        )
 
-                            existing_variant.price = (
+
+                        if variant:
+
+                            variant.size = size
+
+                            variant.price = (
                                 row.get(
                                     "variant_price"
                                 )
                                 or 0
                             )
 
-                            existing_variant.original_price = (
+                            variant.original_price = (
                                 row.get(
                                     "variant_mrp"
                                 )
                                 or None
                             )
 
-                            existing_variant.stock = (
-                                row.get(
-                                    "variant_stock"
-                                )
-                                or 0
+                            variant.stock = (
+                                variant_stock
                             )
 
-                            existing_variant.is_available = (
-                                int(
-                                    existing_variant.stock
-                                ) > 0
+                            variant.is_available = (
+                                variant_stock > 0
                             )
+
+
                             if variant_image_url:
 
                                 try:
 
-                                    downloaded_variant_image = (
+                                    image_file = (
                                         download_product_image(
                                             variant_image_url,
                                             prefix=sku
                                         )
                                     )
 
-                                    if downloaded_variant_image:
+                                    if image_file:
 
-                                        existing_variant.image.save(
-                                            downloaded_variant_image.name,
-                                            downloaded_variant_image,
+                                        variant.image.save(
+                                            image_file.name,
+                                            image_file,
                                             save=False
                                         )
 
@@ -2022,58 +2873,86 @@ def crm_inventory_bulk_import(request):
                                         f"Variant image failed - "
                                         f"{image_error}"
                                     )
-                            existing_variant.save()
+
+
+                            variant.save()
+
+                            updated_variants += 1
 
 
                         else:
 
-                            ProductVariant.objects.create(
+                            variant = (
+                                ProductVariant.objects.create(
 
-                                product=product,
+                                    product=product,
 
-                                size=size,
+                                    size=size,
 
-                                price=(
-                                    row.get(
-                                        "variant_price"
-                                    )
-                                    or 0
-                                ),
-
-                                original_price=(
-                                    row.get(
-                                        "variant_mrp"
-                                    )
-                                    or None
-                                ),
-
-                                stock=(
-                                    row.get(
-                                        "variant_stock"
-                                    )
-                                    or 0
-                                ),
-
-                                sku=sku,
-
-                                is_available=(
-                                    int(
+                                    price=(
                                         row.get(
-                                            "variant_stock"
+                                            "variant_price"
                                         )
                                         or 0
-                                    ) > 0
-                                ),
+                                    ),
+
+                                    original_price=(
+                                        row.get(
+                                            "variant_mrp"
+                                        )
+                                        or None
+                                    ),
+
+                                    stock=
+                                        variant_stock,
+
+                                    sku=sku,
+
+                                    is_available=(
+                                        variant_stock > 0
+                                    ),
+                                )
                             )
+
+
+                            if variant_image_url:
+
+                                try:
+
+                                    image_file = (
+                                        download_product_image(
+                                            variant_image_url,
+                                            prefix=sku
+                                        )
+                                    )
+
+                                    if image_file:
+
+                                        variant.image.save(
+                                            image_file.name,
+                                            image_file,
+                                            save=True
+                                        )
+
+                                except Exception as image_error:
+
+                                    errors.append(
+                                        f"Row {row_number}: "
+                                        f"Variant image failed - "
+                                        f"{image_error}"
+                                    )
+
 
                             created_variants += 1
 
 
                     # =================================
-                    # RECALCULATE TOTAL PRODUCT STOCK
+                    # RECALCULATE PRODUCT STOCK
                     # =================================
 
-                    for product in product_cache.values():
+                    for product in (
+                        product_cache.values()
+                    ):
 
                         total_stock = sum(
                             variant.stock
@@ -2092,21 +2971,28 @@ def crm_inventory_bulk_import(request):
                         product.save(
                             update_fields=[
                                 "stock",
-                                "is_available"
+                                "is_available",
                             ]
                         )
 
 
                 result = {
+
                     "products":
                         created_products,
 
                     "variants":
                         created_variants,
 
-                    "updated_products":
-                        updated_products,
+                    "updated_variants":
+                        updated_variants,
                 }
+
+
+                request.session.pop(
+                    "bulk_import_rows",
+                    None
+                )
 
 
             except Exception as e:
@@ -2120,6 +3006,7 @@ def crm_inventory_bulk_import(request):
         request,
         "store/crm_inventory_bulk_import.html",
         {
+            "preview": preview,
             "result": result,
             "errors": errors,
         }
@@ -2128,7 +3015,9 @@ def product_detail(request, product_id):
 
     product = get_object_or_404(
         Product,
-        id=product_id
+        id=product_id,
+        is_archived=False,
+        is_available=True,
     )
 
     reviews = (
@@ -2187,6 +3076,17 @@ def product_detail(request, product_id):
         .order_by("min_weight")
     )
 
+    related_filter = Q(category=product.category)
+    if product.brand:
+        related_filter |= Q(brand__iexact=product.brand)
+    related_products = (
+        Product.objects.filter(is_available=True, is_archived=False)
+        .exclude(pk=product.pk)
+        .filter(related_filter)
+        .prefetch_related("variants")
+        .order_by("-is_featured", "-id")[:8]
+    )
+
     context = {
         "product": product,
         "reviews": reviews,
@@ -2198,6 +3098,7 @@ def product_detail(request, product_id):
 
         "feeding_guides":
             feeding_guides,
+        "related_products": related_products,
     }
 
     return render(
@@ -2208,7 +3109,7 @@ def product_detail(request, product_id):
 
 @login_required
 def add_review(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
+    product = get_object_or_404(Product, id=product_id, is_archived=False)
 
     if request.method == "POST":
         rating = int(request.POST.get("rating"))
@@ -2233,8 +3134,9 @@ def search_products(request):
     query = request.GET.get("q", "").strip()
 
     products = Product.objects.filter(
-        is_available=True
-    )
+        is_available=True,
+        is_archived=False,
+    ).prefetch_related("variants")
 
     if query:
         products = products.filter(
@@ -2250,70 +3152,376 @@ def search_products(request):
         }
     )
 
-def _category_products_page(request, *, page_title, page_type, category_prefix=None, categories=None):
-    products = Product.objects.filter(is_available=True)
+def _category_products_page(
+    request,
+    *,
+    page_title,
+    page_type,
+    category=None,
+    category_prefix=None,
+    categories=None,
+    pet_types=None,
+    fixed_product_type=None,
+):
 
-    if category_prefix:
-        products = products.filter(category__startswith=category_prefix)
-    if categories:
-        products = products.filter(category__in=categories)
+    products = Product.objects.filter(
+        is_available=True,
+        is_archived=False,
+    ).prefetch_related("variants")
 
-    query = request.GET.get("q", "").strip()
-    sort = request.GET.get("sort", "featured")
+
+    # ==========================================
+    # CATEGORY FILTER
+    # ==========================================
+
+    if category:
+
+        products = products.filter(
+            category=category
+        )
+
+
+    elif category_prefix and pet_types:
+        products = products.filter(
+            Q(category__startswith=category_prefix) | Q(pet_type__in=pet_types)
+        )
+
+    elif category_prefix:
+
+        products = products.filter(
+            category__startswith=category_prefix
+        )
+
+
+    elif categories and pet_types:
+        products = products.filter(
+            Q(category__in=categories) | Q(pet_type__in=pet_types)
+        )
+
+    elif categories:
+
+        products = products.filter(
+            category__in=categories
+        )
+
+    elif pet_types:
+        products = products.filter(pet_type__in=pet_types)
+
+    if fixed_product_type:
+        products = products.filter(product_type=fixed_product_type)
+
+
+    # ==========================================
+    # BEST SELLER DATA
+    # ==========================================
+
+    products = products.annotate(
+
+        sold_count=Sum(
+
+            "orderitem__quantity",
+
+            filter=Q(
+
+                orderitem__order__status__in=[
+                    "confirmed",
+                    "shipped",
+                    "delivered",
+                ]
+
+            )
+
+        )
+
+    )
+
+
+    # ==========================================
+    # SEARCH
+    # ==========================================
+
+    query = request.GET.get(
+        "q",
+        ""
+    ).strip()
+
 
     if query:
-        products = products.filter(name__icontains=query)
+
+        products = products.filter(
+
+            Q(
+                name__icontains=query
+            )
+
+            |
+
+            Q(
+                brand__icontains=query
+            )
+
+            |
+
+            Q(
+                flavour__icontains=query
+            )
+
+        )
+
+    product_type = request.GET.get("product_type", "").strip()
+    care_area = request.GET.get("care_area", "").strip()
+    brand = request.GET.get("brand", "").strip()
+
+    if product_type and not fixed_product_type:
+        products = products.filter(product_type=product_type)
+    if care_area:
+        products = products.filter(care_area=care_area)
+    if brand:
+        products = products.filter(brand=brand)
+
+
+    # ==========================================
+    # SORT
+    # ==========================================
+
+    sort = request.GET.get(
+        "sort",
+        "featured"
+    )
+
 
     if sort == "price_low":
-        products = products.order_by("price", "name")
+
+        products = products.order_by(
+            "price",
+            "name"
+        )
+
+
     elif sort == "price_high":
-        products = products.order_by("-price", "name")
+
+        products = products.order_by(
+            "-price",
+            "name"
+        )
+
+
     elif sort == "name":
-        products = products.order_by("name")
+
+        products = products.order_by(
+            "name"
+        )
+
+
     else:
-        products = products.order_by("-is_featured", "-id")
 
-    return render(request, "store/category_products.html", {
-        "products": products,
-        "page_title": page_title,
-        "page_type": page_type,
-        "product_count": products.count(),
-        "query": query,
-        "sort": sort,
-    })
+        # Best sellers first
+        # Then featured products
+        # Then newest products
+
+        products = products.order_by(
+            "-sold_count",
+            "-is_featured",
+            "-id"
+        )
 
 
-def dog_products(request):
-    return _category_products_page(
+    product_count = products.count()
+    paginator = Paginator(products, 48)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    filter_params = request.GET.copy()
+    filter_params.pop("page", None)
+
+    context = {
+
+        "products":
+            page_obj,
+
+        "page_title":
+            page_title,
+
+        "page_type":
+            page_type,
+
+        "product_count":
+            product_count,
+
+        "page_obj": page_obj,
+        "filter_query": filter_params.urlencode(),
+
+        "query":
+            query,
+
+        "sort":
+            sort,
+
+        "product_type_filter": product_type,
+        "care_area_filter": care_area,
+        "brand_filter": brand,
+        "product_types": Product.PRODUCT_TYPE_CHOICES,
+        "care_areas": Product.CARE_AREA_CHOICES,
+        "available_brands": Product.objects.filter(
+            is_available=True,
+            is_archived=False,
+        ).exclude(brand="").values_list(
+            "brand", flat=True
+        ).distinct().order_by("brand"),
+    }
+
+
+    return render(
         request,
+        "store/category_products.html",
+        context,
+    )
+def dog_products(request):
+
+    return _category_products_page(
+
+        request,
+
         category_prefix="dog_",
+        pet_types=["dog", "both"],
+
         page_title="Dog Food & Essentials",
+
         page_type="dog",
     )
 
 
 def cat_products(request):
+
     return _category_products_page(
+
         request,
+
         category_prefix="cat_",
+        pet_types=["cat", "both"],
+
         page_title="Cat Food & Essentials",
+
         page_type="cat",
     )
 
-
 def medicine_products(request):
+
     return _category_products_page(
+
         request,
-        categories=["medicine", "supplement", "skin_coat", "dental", "joint_care", "digestive"],
-        page_title="Pet Health & Wellness",
+
+        categories=[
+            "medicine",
+            "parasite_control",
+            "heart_care",
+            "kidney_care",
+            "respiratory_care",
+        ],
+
+        page_title="Veterinary Pharmacy",
+
         page_type="medicine",
     )
 
+
+def wellness_products(request):
+    return _category_products_page(
+        request,
+        categories=[
+            "supplement",
+            "skin_coat",
+            "dental",
+            "joint_care",
+            "digestive",
+        ],
+        page_title="Health & Supplements",
+        page_type="wellness",
+    )
+
+
+def grooming_products(request):
+    return _category_products_page(
+        request,
+        categories=[
+            "dog_grooming",
+            "cat_grooming",
+            "grooming_shampoo",
+            "hygiene",
+            "training_pads",
+            "dental",
+        ],
+        page_title="Grooming & Hygiene",
+        page_type="grooming",
+    )
+
+
+def bird_products(request):
+    return _category_products_page(
+        request,
+        categories=[
+            "bird_food",
+            "bird_supplement",
+            "bird_health",
+            "exotic_health",
+        ],
+        pet_types=["bird"],
+        page_title="Bird & Exotic Pet Care",
+        page_type="bird",
+    )
+
+
+def small_pet_products(request):
+    return _category_products_page(request, pet_types=["small_pet", "exotic"], page_title="Small Pet Care", page_type="small_pet")
+
+
+def farm_animal_products(request):
+    return _category_products_page(request, pet_types=["farm"], page_title="Farm Animal Care", page_type="farm")
+
+
+def fish_reptile_products(request):
+    return _category_products_page(request, pet_types=["fish_reptile"], page_title="Fish & Reptile Care", page_type="fish_reptile")
+
+
+def vaccination_products(request):
+    return _category_products_page(request, fixed_product_type="vaccine", page_title="Vaccination", page_type="vaccine")
+
+
+def _trust_page(request, page_key):
+    return render(request, "store/trust_pages.html", {"page_key": page_key})
+
+
+def contact_page(request):
+    return _trust_page(request, "contact")
+
+
+def faq_page(request):
+    return _trust_page(request, "faq")
+
+
+def shipping_policy(request):
+    return _trust_page(request, "shipping")
+
+
+def returns_policy(request):
+    return _trust_page(request, "returns")
+
+
+def veterinary_disclaimer(request):
+    return _trust_page(request, "veterinary")
+
+
+def privacy_policy(request):
+    return _trust_page(request, "privacy")
+
+
+def terms_page(request):
+    return _trust_page(request, "terms")
 @login_required
 def wishlist(request):
     items = Wishlist.objects.filter(
-        user=request.user
-    ).select_related("product").order_by("-created_at")
+        user=request.user,
+        product__is_archived=False,
+        product__is_available=True,
+    ).select_related("product").prefetch_related("product__variants").order_by("-created_at")
 
     return render(
         request,
@@ -2323,8 +3531,9 @@ def wishlist(request):
 
 
 @login_required
+@require_POST
 def toggle_wishlist(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
+    product = get_object_or_404(Product, id=product_id, is_archived=False, is_available=True)
 
     wishlist_item = Wishlist.objects.filter(
         user=request.user,
@@ -2449,6 +3658,7 @@ def edit_address(request, address_id):
     return render(request, "store/edit_address.html", {"address": address})
 
 @login_required
+@require_POST
 def delete_address(request, address_id):
     address = get_object_or_404(
         Address,
@@ -2475,8 +3685,9 @@ def verify_payment(request):
     order = get_object_or_404(Order, id=order_id)
 
     if saved_razorpay_order_id != razorpay_order_id:
+        _restore_order_inventory(order)
         order.payment_status = "failed"
-        order.save()
+        order.save(update_fields=["payment_status"])
         return render(request, "store/payment_failed.html", {"order": order})
 
     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
@@ -2489,35 +3700,13 @@ def verify_payment(request):
         })
 
         if order.payment_status != "paid":
-            affected = set()
             with transaction.atomic():
-                for item in order.items.select_related("product", "variant").all():
-                    if item.variant_id:
-                        variant = ProductVariant.objects.select_for_update().get(id=item.variant_id)
-                        if item.quantity > variant.stock:
-                            raise ValueError(f"Not enough stock for {item.product.name} {item.variant_size}")
-                        variant.stock -= item.quantity
-                        if variant.stock <= 0:
-                            variant.stock = 0
-                            variant.is_available = False
-                        variant.save()
-                        affected.add(item.product_id)
-                    else:
-                        product = Product.objects.select_for_update().get(id=item.product_id)
-                        if item.quantity > product.stock:
-                            raise ValueError(f"Not enough stock for {product.name}")
-                        product.stock -= item.quantity
-                        if product.stock <= 0:
-                            product.stock = 0
-                            product.is_available = False
-                        product.save()
-
-                for pid in affected:
-                    _sync_product_stock(Product.objects.get(id=pid))
-
-                order.payment_status = "paid"
-                order.status = "confirmed"
-                order.save()
+                locked_order = Order.objects.select_for_update().get(id=order.id)
+                if not locked_order.inventory_reserved:
+                    raise ValueError("This order no longer has reserved inventory.")
+                locked_order.payment_status = "paid"
+                locked_order.status = "confirmed"
+                locked_order.save(update_fields=["payment_status", "status"])
 
             send_order_confirmation(order)
 
@@ -2527,24 +3716,30 @@ def verify_payment(request):
         return redirect("order_success", order_id=order.id)
 
     except (razorpay.errors.SignatureVerificationError, ValueError):
+        _restore_order_inventory(order)
         order.payment_status = "failed"
-        order.save()
+        order.save(update_fields=["payment_status"])
         return render(request, "store/payment_failed.html", {"order": order})
 
-@login_required
+@require_POST
 def retry_payment(request, order_id):
-
-    order = get_object_or_404(
-        Order,
-        id=order_id,
-        user=request.user
-    )
+    order = get_object_or_404(Order, id=order_id)
+    if not _request_can_access_order(request, order):
+        return redirect("home")
 
     if order.payment_status == "paid":
         return redirect(
             "order_success",
             order_id=order.id
         )
+
+    try:
+        _reserve_order_inventory(order)
+    except ValueError:
+        return render(request, "store/payment_failed.html", {
+            "order": order,
+            "error": "One or more items are no longer available in the requested quantity.",
+        })
 
     client = razorpay.Client(
         auth=(
@@ -2555,15 +3750,24 @@ def retry_payment(request, order_id):
 
     amount_in_paise = int(order.total_amount * 100)
 
-    razorpay_order = client.order.create({
-        "amount": amount_in_paise,
-        "currency": "INR",
-        "receipt": f"retry_bows_meows_{order.id}",
-        "payment_capture": 1,
-    })
+    try:
+        razorpay_order = client.order.create({
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "receipt": f"retry_bows_meows_{order.id}",
+            "payment_capture": 1,
+        })
+    except Exception:
+        _restore_order_inventory(order)
+        order.payment_status = "failed"
+        order.save(update_fields=["payment_status"])
+        return render(request, "store/payment_failed.html", {
+            "order": order,
+            "error": "We couldn't restart the payment. Please try again.",
+        })
 
     order.payment_status = "pending"
-    order.save()
+    order.save(update_fields=["payment_status"])
 
     request.session["current_order_id"] = order.id
     request.session["razorpay_order_id"] = razorpay_order["id"]
@@ -2578,18 +3782,16 @@ def retry_payment(request, order_id):
             "amount": amount_in_paise,
         }
     )
-@login_required
+@require_POST
 def payment_failed_view(request, order_id):
-
-    order = get_object_or_404(
-        Order,
-        id=order_id,
-        user=request.user
-    )
+    order = get_object_or_404(Order, id=order_id)
+    if not _request_can_access_order(request, order):
+        return redirect("home")
 
     if order.payment_status != "paid":
+        _restore_order_inventory(order)
         order.payment_status = "failed"
-        order.save()
+        order.save(update_fields=["payment_status"])
 
     return render(
         request,
@@ -2598,17 +3800,478 @@ def payment_failed_view(request, order_id):
     )
 
 
-@login_required
+@require_POST
 def payment_cancelled(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if not _request_can_access_order(request, order):
+        return redirect("home")
 
-    order = get_object_or_404(
-        Order,
-        id=order_id,
-        user=request.user
-    )
+    if order.payment_status != "paid":
+        _restore_order_inventory(order)
+        order.payment_status = "failed"
+        order.save(update_fields=["payment_status"])
 
     return render(
         request,
         "store/payment_cancelled.html",
         {"order": order}
+    )
+
+@login_required
+def crm_bulk_images(request):
+
+    if not request.user.is_staff:
+        return redirect("home")
+
+    products = (
+        Product.objects
+        .prefetch_related(
+            "variants",
+            "gallery_images"
+        )
+        .order_by(
+            "brand",
+            "name"
+        )
+    )
+
+    query = request.GET.get(
+        "q",
+        ""
+    ).strip()
+
+    brand = request.GET.get(
+        "brand",
+        ""
+    ).strip()
+
+    missing_only = (
+        request.GET.get(
+            "missing"
+        )
+        == "1"
+    )
+
+
+    if query:
+
+        products = products.filter(
+
+            Q(
+                name__icontains=query
+            )
+
+            |
+
+            Q(
+                brand__icontains=query
+            )
+        )
+
+
+    if brand:
+
+        products = products.filter(
+            brand=brand
+        )
+
+
+    if missing_only:
+
+        products = products.filter(
+            image__isnull=True
+        )
+
+
+    brands = (
+        Product.objects
+        .exclude(
+            brand=""
+        )
+        .values_list(
+            "brand",
+            flat=True
+        )
+        .distinct()
+        .order_by(
+            "brand"
+        )
+    )
+
+
+    if request.method == "POST":
+
+        action = request.POST.get(
+            "action"
+        )
+
+        if action == "batch_upload":
+            uploads = request.FILES.getlist("batch_images")
+            replace_existing = request.POST.get("replace_existing") == "on"
+            imported = 0
+            skipped = 0
+            unmatched = []
+
+            for upload in uploads:
+                try:
+                    _validate_uploaded_product_image(upload)
+                    stem = os.path.splitext(os.path.basename(upload.name))[0]
+                    product_match = re.fullmatch(
+                        r"(\d+)-(main|ingredients|nutrition|feeding)",
+                        stem,
+                        flags=re.IGNORECASE,
+                    )
+
+                    if product_match:
+                        product_id = int(product_match.group(1))
+                        image_type = product_match.group(2).lower()
+                        product = Product.objects.filter(id=product_id).first()
+                        if not product:
+                            unmatched.append(upload.name)
+                            continue
+                        if image_type == "main":
+                            if product.image and not replace_existing:
+                                skipped += 1
+                                continue
+                            if product.image:
+                                product.image.delete(save=False)
+                            product.image.save(upload.name, upload, save=True)
+                        else:
+                            existing = ProductImage.objects.filter(
+                                product=product,
+                                image_type=image_type,
+                            ).first()
+                            if existing and not replace_existing:
+                                skipped += 1
+                                continue
+                            if existing:
+                                existing.image.delete(save=False)
+                                existing.image.save(upload.name, upload, save=True)
+                            else:
+                                ProductImage.objects.create(
+                                    product=product,
+                                    image=upload,
+                                    image_type=image_type,
+                                    sort_order={"ingredients": 1, "nutrition": 2, "feeding": 3}[image_type],
+                                )
+                        imported += 1
+                        continue
+
+                    variant = ProductVariant.objects.filter(
+                        sku__iexact=stem
+                    ).first()
+                    if not variant:
+                        unmatched.append(upload.name)
+                        continue
+                    if variant.image and not replace_existing:
+                        skipped += 1
+                        continue
+                    if variant.image:
+                        variant.image.delete(save=False)
+                    variant.image.save(upload.name, upload, save=True)
+                    imported += 1
+                except ValueError as exc:
+                    unmatched.append(f"{upload.name} ({exc})")
+
+            if imported:
+                messages.success(request, f"Imported {imported} image(s) successfully.")
+            if skipped:
+                messages.warning(request, f"Skipped {skipped} existing image(s). Enable replacement to overwrite them.")
+            if unmatched:
+                preview = ", ".join(unmatched[:8])
+                suffix = " …" if len(unmatched) > 8 else ""
+                messages.error(request, f"Could not match {len(unmatched)} file(s): {preview}{suffix}")
+            if not uploads:
+                messages.warning(request, "Choose one or more image files first.")
+            return redirect("crm_bulk_images")
+
+
+        # ==============================
+        # REMOVE IMAGE
+        # ==============================
+
+        if action == "remove":
+
+            image_kind = request.POST.get(
+                "image_kind"
+            )
+
+            object_id = request.POST.get(
+                "object_id"
+            )
+
+
+            if image_kind == "main":
+
+                product = get_object_or_404(
+                    Product,
+                    id=object_id
+                )
+
+                if product.image:
+                    product.image.delete(
+                        save=False
+                    )
+
+                product.image = None
+
+                product.save(
+                    update_fields=[
+                        "image"
+                    ]
+                )
+
+
+            elif image_kind == "gallery":
+
+                gallery_image = (
+                    get_object_or_404(
+                        ProductImage,
+                        id=object_id
+                    )
+                )
+
+                gallery_image.image.delete(
+                    save=False
+                )
+
+                gallery_image.delete()
+
+
+            return redirect(
+                request.path
+            )
+
+
+        # ==============================
+        # SAVE / REPLACE IMAGES
+        # ==============================
+
+        for product in products:
+
+            # MAIN IMAGE
+
+            main_url = (
+                request.POST.get(
+                    f"main_image_{product.id}",
+                    ""
+                ).strip()
+            )
+            main_upload = request.FILES.get(
+                f"main_upload_{product.id}"
+            )
+
+
+            if main_upload or main_url:
+
+                try:
+
+                    image_file = main_upload or download_product_image(
+                        main_url,
+                        prefix=f"product-{product.id}"
+                    )
+
+                    if image_file:
+
+                        if product.image:
+                            product.image.delete(
+                                save=False
+                            )
+
+                        product.image.save(
+                            image_file.name,
+                            image_file,
+                            save=True
+                        )
+
+                except Exception as e:
+
+                    print(
+                        "MAIN IMAGE ERROR:",
+                        product.id,
+                        e
+                    )
+
+
+            # =================================
+            # GALLERY IMAGE TYPES
+            # =================================
+
+            image_types = [
+                "ingredients",
+                "nutrition",
+                "feeding",
+            ]
+
+
+            for image_type in image_types:
+
+                image_url = (
+                    request.POST.get(
+                        f"{image_type}_image_{product.id}",
+                        ""
+                    ).strip()
+                )
+                image_upload = request.FILES.get(
+                    f"{image_type}_upload_{product.id}"
+                )
+
+
+                if not image_upload and not image_url:
+                    continue
+
+
+                try:
+
+                    image_file = image_upload or download_product_image(
+                        image_url,
+                        prefix=f"{product.id}-{image_type}"
+                    )
+
+
+                    if not image_file:
+                        continue
+
+
+                    existing = (
+                        ProductImage.objects
+                        .filter(
+                            product=product,
+                            image_type=image_type
+                        )
+                        .first()
+                    )
+
+
+                    if existing:
+
+                        if existing.image:
+
+                            existing.image.delete(
+                                save=False
+                            )
+
+                        existing.image.save(
+                            image_file.name,
+                            image_file,
+                            save=True
+                        )
+
+
+                    else:
+
+                        ProductImage.objects.create(
+
+                            product=product,
+
+                            image=image_file,
+
+                            image_type=image_type,
+
+                            sort_order={
+                                "ingredients": 1,
+                                "nutrition": 2,
+                                "feeding": 3,
+                            }.get(
+                                image_type,
+                                10
+                            ),
+                        )
+
+
+                except Exception as e:
+
+                    print(
+                        "GALLERY IMAGE ERROR:",
+                        product.id,
+                        image_type,
+                        e
+                    )
+
+
+        return redirect(
+            "crm_bulk_images"
+        )
+
+
+    product_rows = []
+
+
+    for product in products:
+
+        gallery_map = {
+
+            image.image_type: image
+
+            for image
+            in product.gallery_images.all()
+
+        }
+
+
+        image_count = 0
+
+
+        if product.image:
+            image_count += 1
+
+
+        for image_type in [
+            "ingredients",
+            "nutrition",
+            "feeding",
+        ]:
+
+            if image_type in gallery_map:
+                image_count += 1
+
+
+        product_rows.append({
+
+            "product":
+                product,
+
+            "ingredients_image":
+                gallery_map.get(
+                    "ingredients"
+                ),
+
+            "nutrition_image":
+                gallery_map.get(
+                    "nutrition"
+                ),
+
+            "feeding_image":
+                gallery_map.get(
+                    "feeding"
+                ),
+
+            "image_count":
+                image_count,
+        })
+
+
+    context = {
+
+        "product_rows":
+            product_rows,
+
+        "brands":
+            brands,
+
+        "query":
+            query,
+
+        "selected_brand":
+            brand,
+
+        "missing_only":
+            missing_only,
+    }
+
+
+    return render(
+        request,
+        "store/crm_bulk_images.html",
+        context
     )

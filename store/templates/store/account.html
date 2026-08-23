@@ -1,80 +1,20 @@
-{% load static %}
-
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <title>My Account | Bows & Meows</title>
-    <link rel="stylesheet" href="{% static 'store/style.css' %}">
-</head>
-
-<body>
-
-<div class="account-page">
-
-    <h1>Hello, {{ request.user.username }}</h1>
-
-    <p>
-        Welcome to your Bows & Meows account.
-    </p>
-
-    <div class="account-cards">
-
-    <a href="{% url 'my_orders' %}" class="account-card-link">
-
-        <div class="account-card">
-            <h3>📦 My Orders</h3>
-            <p>View previous orders.</p>
-        </div>
-
-    </a>
-    <a href="{% url 'my_addresses' %}"
-   class="account-card-link">
-
-    <div class="account-card">
-
-        <h3>📍 My Addresses</h3>
-
-        <p>
-            Manage your delivery addresses.
-        </p>
-
-    </div>
-
-</a>
-
-    <a href="{% url 'my_pets' %}" class="account-card-link">
-
-        <div class="account-card">
-            <h3>🐾 My Pets</h3>
-            <p>Add and manage your pets.</p>
-        </div>
-
-    </a>
-
-        <a href="{% url 'wishlist' %}" class="account-card-link">
-
-            <div class="account-card">
-
-                <h3>❤️ Saved Products</h3>
-
-                <p>
-                    Your favourite products.
-                </p>
-
-            </div>
-
-        </a>
-
-    </div>
-
-    <a href="{% url 'logout' %}" class="logout-btn">
-        Logout
-    </a>
-
+{% extends "store/base.html" %}
+{% block title %}My Account | Bow & Meow{% endblock %}
+{% block content %}
+<section class="bm-account-page"><div class="bm-account-shell">
+{% include "store/includes/account_nav.html" %}
+<header class="bm-account-hero"><div class="bm-account-hero-copy"><span class="bm-account-kicker">🐾 MY BOW & MEOW</span><h1>Hello, {{ request.user.username }}</h1><p>Everything you need to care for your pets and manage your shopping, all in one place.</p></div><div class="bm-account-avatar" aria-hidden="true"><span>🐾</span></div></header>
+<div class="bm-account-heading"><div><span>YOUR ACCOUNT</span><h2>What would you like to do?</h2></div><p>View orders, manage delivery details, and keep your pet profiles up to date.</p></div>
+<div class="bm-account-grid">
+<a href="{% url 'my_orders' %}" class="bm-account-card bm-account-orders"><span class="bm-account-icon">📦</span><div><h3>My Orders</h3><p>View purchases, payment status and delivery progress.</p><strong>View orders <span>→</span></strong></div></a>
+<a href="{% url 'my_addresses' %}" class="bm-account-card bm-account-addresses"><span class="bm-account-icon">📍</span><div><h3>My Addresses</h3><p>Add or update the addresses you use at checkout.</p><strong>Manage addresses <span>→</span></strong></div></a>
+<a href="{% url 'my_pets' %}" class="bm-account-card bm-account-pets"><span class="bm-account-icon">🐶</span><div><h3>My Pets</h3><p>Save pet details for more useful product guidance.</p><strong>Manage pets <span>→</span></strong></div></a>
+<a href="{% url 'wishlist' %}" class="bm-account-card bm-account-saved"><span class="bm-account-icon">♥</span><div><h3>Saved Products</h3><p>Return to the food, treats and essentials you love.</p><strong>View saved items <span>→</span></strong></div></a>
 </div>
-
-</body>
-
-</html>
+<div class="bm-account-footer"><div><strong>Need something for your best friend?</strong><span>Explore everyday favourites selected for dogs and cats.</span></div><a href="{% url 'home' %}#best-sellers" class="bm-account-shop">Shop best sellers</a><form method="POST" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="bm-account-logout">Log out</button></form></div>
+</div></section>
+<style>
+.bm-account-page{min-height:72vh;padding:48px 20px 72px;background:radial-gradient(circle at 8% 8%,rgba(218,239,170,.42),transparent 26%),radial-gradient(circle at 92% 88%,rgba(255,219,171,.35),transparent 24%),#f8f7f1}.bm-account-shell{max-width:1180px;margin:0 auto}.bm-account-hero{position:relative;display:flex;align-items:center;justify-content:space-between;min-height:230px;padding:44px 52px;overflow:hidden;border-radius:30px;color:#fff;background:linear-gradient(120deg,#173e2e 0%,#245d43 62%,#4d7c51 100%);box-shadow:0 22px 50px rgba(26,68,48,.18)}.bm-account-hero:before{content:"";position:absolute;width:330px;height:330px;right:-70px;top:-145px;border:55px solid rgba(255,255,255,.08);border-radius:50%}.bm-account-hero-copy{position:relative;z-index:1;max-width:650px}.bm-account-kicker{font-size:12px;font-weight:900;letter-spacing:.16em;color:#dff1a9}.bm-account-hero h1{margin:13px 0 10px;font-size:clamp(36px,5vw,58px);line-height:1;letter-spacing:-.045em}.bm-account-hero p{max-width:590px;margin:0;color:rgba(255,255,255,.78);font-size:16px;line-height:1.65}.bm-account-avatar{position:relative;z-index:1;display:grid;place-items:center;flex:0 0 112px;height:112px;border:1px solid rgba(255,255,255,.22);border-radius:30px;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.25);transform:rotate(5deg);backdrop-filter:blur(8px)}.bm-account-avatar span{font-size:50px;transform:rotate(-5deg)}.bm-account-heading{display:flex;justify-content:space-between;align-items:end;gap:30px;margin:45px 4px 20px}.bm-account-heading span{color:#628044;font-size:11px;font-weight:900;letter-spacing:.16em}.bm-account-heading h2{margin:7px 0 0;color:#18231d;font-size:29px;letter-spacing:-.025em}.bm-account-heading p{max-width:430px;margin:0;color:#6d756f;line-height:1.6}.bm-account-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.bm-account-card{position:relative;display:grid;grid-template-columns:68px 1fr;gap:20px;min-height:190px;padding:30px;overflow:hidden;border:1px solid #e6e7df;border-radius:24px;background:rgba(255,255,255,.92);color:inherit;text-decoration:none;box-shadow:0 10px 30px rgba(31,54,42,.07);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}.bm-account-card:after{content:"";position:absolute;width:110px;height:110px;right:-50px;bottom:-55px;border-radius:50%;background:var(--card-glow)}.bm-account-card:hover{transform:translateY(-5px);border-color:#cbd9bd;box-shadow:0 18px 38px rgba(31,74,51,.13)}.bm-account-icon{display:grid;place-items:center;width:62px;height:62px;border-radius:19px;background:var(--card-soft);font-size:29px}.bm-account-card h3{margin:3px 0 8px;color:#1c2922;font-size:21px}.bm-account-card p{max-width:360px;margin:0 0 20px;color:#6e7771;font-size:14px;line-height:1.55}.bm-account-card strong{color:#245c42;font-size:13px}.bm-account-card strong span{display:inline-block;margin-left:4px;transition:transform .2s ease}.bm-account-card:hover strong span{transform:translateX(4px)}.bm-account-orders{--card-soft:#edf5df;--card-glow:rgba(190,220,128,.22)}.bm-account-addresses{--card-soft:#fff0dc;--card-glow:rgba(244,183,105,.19)}.bm-account-pets{--card-soft:#e6f2ee;--card-glow:rgba(99,175,145,.18)}.bm-account-saved{--card-soft:#f8e9e8;--card-glow:rgba(221,130,125,.16)}.bm-account-footer{display:flex;align-items:center;gap:16px;margin-top:24px;padding:24px 28px;border:1px solid #e4e5dc;border-radius:22px;background:#fff}.bm-account-footer>div{display:flex;flex:1;flex-direction:column;gap:4px}.bm-account-footer strong{color:#1e2e25;font-size:15px}.bm-account-footer span{color:#788079;font-size:13px}.bm-account-shop,.bm-account-logout{display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:0 18px;border-radius:12px;font-size:12px;font-weight:850;text-decoration:none;cursor:pointer}.bm-account-shop{background:#245c42;color:#fff;border:1px solid #245c42}.bm-account-logout{border:1px solid #d9ddd8;background:#fff;color:#3f4b44}
+@media(max-width:760px){.bm-account-page{padding:24px 14px 48px}.bm-account-hero{min-height:250px;padding:30px 25px;border-radius:24px}.bm-account-avatar{display:none}.bm-account-heading{display:block;margin-top:34px}.bm-account-heading p{margin-top:10px}.bm-account-grid{grid-template-columns:1fr}.bm-account-card{min-height:0;padding:24px;grid-template-columns:56px 1fr}.bm-account-icon{width:52px;height:52px;border-radius:16px;font-size:24px}.bm-account-footer{align-items:stretch;flex-direction:column}.bm-account-shop,.bm-account-logout,.bm-account-footer form{width:100%}}
+</style>
+{% endblock %}

@@ -1,7 +1,7 @@
 {% extends "store/crm_base.html" %}
 
 {% block title %}
-Edit Product | Bows & Meows CRM
+Edit Product | Bow & Meow CRM
 {% endblock %}
 
 {% block content %}
@@ -10,9 +10,12 @@ Edit Product | Bows & Meows CRM
 
     <div class="crm-heading">
         <div>
-            <span>INVENTORY</span>
+            <span>INVENTORY · PRODUCT #{{ product.id }}</span>
             <h1>Edit Product</h1>
             <p>{{ product.name }}</p>
+            <div class="crm-product-upload-hint">
+                Bulk image filename: <code>{{ product.id }}-main.jpg</code>
+            </div>
         </div>
 
         <a href="{% url 'crm_inventory' %}" class="crm-admin-btn">
@@ -44,7 +47,18 @@ Edit Product | Bows & Meows CRM
                 <option value="dog" {% if product.pet_type == "dog" %}selected{% endif %}>Dog</option>
                 <option value="cat" {% if product.pet_type == "cat" %}selected{% endif %}>Cat</option>
                 <option value="both" {% if product.pet_type == "both" %}selected{% endif %}>Dog & Cat</option>
+                <option value="bird" {% if product.pet_type == "bird" %}selected{% endif %}>Bird</option>
+                <option value="exotic" {% if product.pet_type == "exotic" %}selected{% endif %}>Exotic Pet</option>
+                <option value="small_pet" {% if product.pet_type == "small_pet" %}selected{% endif %}>Small Pet</option>
+                <option value="farm" {% if product.pet_type == "farm" %}selected{% endif %}>Farm Animal</option>
+                <option value="fish_reptile" {% if product.pet_type == "fish_reptile" %}selected{% endif %}>Fish & Reptile</option>
             </select>
+
+            <label>Product Type</label>
+            <select name="product_type" required><option value="">Select Type</option><option value="food" {% if product.product_type == "food" %}selected{% endif %}>Food</option><option value="medicine" {% if product.product_type == "medicine" %}selected{% endif %}>Medicine</option><option value="supplement" {% if product.product_type == "supplement" %}selected{% endif %}>Supplement</option><option value="treat" {% if product.product_type == "treat" %}selected{% endif %}>Treat</option><option value="supply" {% if product.product_type == "supply" %}selected{% endif %}>Supply & Accessory</option><option value="grooming" {% if product.product_type == "grooming" %}selected{% endif %}>Grooming & Hygiene</option><option value="vaccine" {% if product.product_type == "vaccine" %}selected{% endif %}>Vaccination</option></select>
+
+            <label>Care Area</label>
+            <select name="care_area"><option value="">General / Not Applicable</option>{% for value,label in product.CARE_AREA_CHOICES %}{% if value %}<option value="{{ value }}" {% if product.care_area == value %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}</select>
 
             <label>Category</label>
             <select name="category" required>
@@ -55,6 +69,24 @@ Edit Product | Bows & Meows CRM
                     <option value="dog_grooming" {% if product.category == "dog_grooming" %}selected{% endif %}>Dog Grooming</option>
                     <option value="dog_accessory" {% if product.category == "dog_accessory" %}selected{% endif %}>Dog Accessories</option>
                     <option value="dog_health" {% if product.category == "dog_health" %}selected{% endif %}>Dog Health</option>
+                </optgroup>
+                <optgroup label="Veterinary Pharmacy">
+                    <option value="medicine" {% if product.category == "medicine" %}selected{% endif %}>Prescription / Veterinary Medicine</option>
+                    <option value="parasite_control" {% if product.category == "parasite_control" %}selected{% endif %}>Flea, Tick & Deworming</option>
+                    <option value="heart_care" {% if product.category == "heart_care" %}selected{% endif %}>Heart Care</option>
+                    <option value="kidney_care" {% if product.category == "kidney_care" %}selected{% endif %}>Kidney & Urinary Care</option>
+                    <option value="respiratory_care" {% if product.category == "respiratory_care" %}selected{% endif %}>Respiratory Care</option>
+                </optgroup>
+                <optgroup label="Grooming & Hygiene">
+                    <option value="grooming_shampoo" {% if product.category == "grooming_shampoo" %}selected{% endif %}>Shampoo & Coat Care</option>
+                    <option value="hygiene" {% if product.category == "hygiene" %}selected{% endif %}>Hygiene & Cleaning</option>
+                    <option value="training_pads" {% if product.category == "training_pads" %}selected{% endif %}>Training Pads</option>
+                </optgroup>
+                <optgroup label="Birds & Exotic Pets">
+                    <option value="bird_food" {% if product.category == "bird_food" %}selected{% endif %}>Bird Food</option>
+                    <option value="bird_supplement" {% if product.category == "bird_supplement" %}selected{% endif %}>Bird Supplements</option>
+                    <option value="bird_health" {% if product.category == "bird_health" %}selected{% endif %}>Bird Health</option>
+                    <option value="exotic_health" {% if product.category == "exotic_health" %}selected{% endif %}>Exotic Pet Health</option>
                 </optgroup>
 
                 <optgroup label="Cat">
@@ -103,6 +135,29 @@ Edit Product | Bows & Meows CRM
                 rows="4"
                 placeholder="Digestive support&#10;Healthy skin & coat&#10;Complete nutrition"
             >{{ product.key_benefits }}</textarea>
+
+            <label>Target Species</label>
+            <input type="text" name="target_species" value="{{ product.target_species }}" placeholder="Dogs, cats, budgies, exotic birds...">
+
+            <label>Active Ingredients</label>
+            <textarea name="active_ingredients" rows="3">{{ product.active_ingredients }}</textarea>
+
+            <label>Usage & Safety Warning</label>
+            <textarea name="usage_warning" rows="3">{{ product.usage_warning }}</textarea>
+
+            <h2 class="crm-form-section-title">Detailed Product Information</h2>
+            <label>Ingredients</label><textarea name="ingredients" rows="4">{{ product.ingredients }}</textarea>
+            <label>Directions for use</label><textarea name="directions" rows="4">{{ product.directions }}</textarea>
+            <label>Specifications</label><textarea name="specifications" rows="4">{{ product.specifications }}</textarea>
+            <label>Manufacturer name</label><input name="manufacturer_name" value="{{ product.manufacturer_name }}">
+            <label>Manufacturer address</label><textarea name="manufacturer_address" rows="3">{{ product.manufacturer_address }}</textarea>
+            <label>Marketed by</label><input name="marketed_by" value="{{ product.marketed_by }}">
+            <label>Country of origin</label><input name="country_of_origin" value="{{ product.country_of_origin }}">
+
+            <label class="checkbox-label">
+                <input type="checkbox" name="requires_prescription" {% if product.requires_prescription %}checked{% endif %}>
+                Veterinary prescription required
+            </label>
 
             <h2 class="crm-form-section">Pricing & Inventory</h2>
 
@@ -331,7 +386,7 @@ Edit Product | Bows & Meows CRM
 
             <p class="variant-help">
                 Optional. Add the product's real feeding recommendation by pet weight.
-                Bows & Meows will use this to estimate how long each pack lasts.
+                Bow & Meow will use this to estimate how long each pack lasts.
             </p>
 
             <div id="existing-feeding-guide-container">
@@ -449,6 +504,10 @@ Edit Product | Bows & Meows CRM
     </div>
 
 </section>
+
+<style>
+.crm-product-upload-hint{display:inline-flex;gap:6px;align-items:center;margin-top:12px;padding:9px 12px;border:1px solid #d9e4d1;border-radius:10px;background:#f5f9f1;color:#53635a;font-size:12px}.crm-product-upload-hint code{color:#173f2e;font-weight:900}
+</style>
 
 
 <script>

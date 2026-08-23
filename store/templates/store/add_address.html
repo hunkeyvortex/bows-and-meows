@@ -1,7 +1,7 @@
 {% extends "store/base.html" %}
 
 {% block title %}
-Add Address | Bows & Meows
+Add Address | Bow & Meow
 {% endblock %}
 
 {% block content %}
@@ -12,9 +12,12 @@ Add Address | Bows & Meows
 {% endif %}
 <section class="account-page">
 
+    {% include "store/includes/account_nav.html" %}
+
     <div class="section-heading">
         <span>DELIVERY</span>
         <h1>Add Address</h1>
+        <p>Add a secure delivery location for a quicker checkout.</p>
     </div>
 
     <form method="POST" class="address-form">
@@ -89,4 +92,4 @@ Add Address | Bows & Meows
 
 </section>
 
-{% endblock %}
+{% include "store/includes/flow_theme.html" %}{% endblock %}

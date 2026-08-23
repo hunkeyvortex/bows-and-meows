@@ -1,7 +1,7 @@
 {% extends "store/crm_base.html" %}
 
 {% block title %}
-Add Product | Bows & Meows CRM
+Add Product | Bow & Meow CRM
 {% endblock %}
 
 {% block content %}
@@ -44,7 +44,18 @@ Add Product | Bows & Meows CRM
                 <option value="dog">Dog</option>
                 <option value="cat">Cat</option>
                 <option value="both">Dog & Cat</option>
+                <option value="bird">Bird</option>
+                <option value="exotic">Exotic Pet</option>
+                <option value="small_pet">Small Pet</option>
+                <option value="farm">Farm Animal</option>
+                <option value="fish_reptile">Fish & Reptile</option>
             </select>
+
+            <label>Product Type</label>
+            <select name="product_type" required><option value="">Select Type</option><option value="food">Food</option><option value="medicine">Medicine</option><option value="supplement">Supplement</option><option value="treat">Treat</option><option value="supply">Supply & Accessory</option><option value="grooming">Grooming & Hygiene</option><option value="vaccine">Vaccination</option></select>
+
+            <label>Care Area</label>
+            <select name="care_area"><option value="">General / Not Applicable</option><option value="allergy">Allergy Relief</option><option value="antibiotic">Antibiotic</option><option value="anxiety">Anxiety Care</option><option value="cancer">Cancer Care</option><option value="cardiac">Cardiac Care</option><option value="deworming">Deworming</option><option value="diabetes">Diabetes Care</option><option value="eye_ear">Eye & Ear Care</option><option value="flea_tick">Flea & Tick Care</option><option value="digestive">Digestive Care</option><option value="joint">Hip & Joint Care</option><option value="immunity">Immunity Support</option><option value="liver">Liver Care</option><option value="prenatal">Pre & Post Natal Care</option><option value="respiratory">Respiratory Care</option><option value="skin_coat">Skin & Coat Care</option><option value="renal">Renal & Urinary Care</option><option value="wound_pain">Wound & Pain Relief</option><option value="dental">Dental & Oral Care</option><option value="nutrition">Everyday Nutrition</option></select>
 
             <label>Category</label>
             <select name="category" required>
@@ -56,6 +67,27 @@ Add Product | Bows & Meows CRM
                     <option value="dog_grooming">Dog Grooming</option>
                     <option value="dog_accessory">Dog Accessories</option>
                     <option value="dog_health">Dog Health</option>
+                </optgroup>
+
+                <optgroup label="Veterinary Pharmacy">
+                    <option value="medicine">Prescription / Veterinary Medicine</option>
+                    <option value="parasite_control">Flea, Tick & Deworming</option>
+                    <option value="heart_care">Heart Care</option>
+                    <option value="kidney_care">Kidney & Urinary Care</option>
+                    <option value="respiratory_care">Respiratory Care</option>
+                </optgroup>
+
+                <optgroup label="Grooming & Hygiene">
+                    <option value="grooming_shampoo">Shampoo & Coat Care</option>
+                    <option value="hygiene">Hygiene & Cleaning</option>
+                    <option value="training_pads">Training Pads</option>
+                </optgroup>
+
+                <optgroup label="Birds & Exotic Pets">
+                    <option value="bird_food">Bird Food</option>
+                    <option value="bird_supplement">Bird Supplements</option>
+                    <option value="bird_health">Bird Health</option>
+                    <option value="exotic_health">Exotic Pet Health</option>
                 </optgroup>
 
                 <optgroup label="Cat">
@@ -104,6 +136,29 @@ Add Product | Bows & Meows CRM
                 rows="4"
                 placeholder="Digestive support&#10;Healthy skin & coat&#10;Complete nutrition"
             ></textarea>
+
+            <label>Target Species</label>
+            <input type="text" name="target_species" placeholder="Dogs, cats, budgies, exotic birds...">
+
+            <label>Active Ingredients</label>
+            <textarea name="active_ingredients" rows="3" placeholder="Enter exactly as printed on the package"></textarea>
+
+            <label>Usage & Safety Warning</label>
+            <textarea name="usage_warning" rows="3" placeholder="Veterinary guidance, dosage caution or safety information"></textarea>
+
+            <h2 class="crm-form-section-title">Detailed Product Information</h2>
+            <label>Ingredients</label><textarea name="ingredients" rows="4" placeholder="Ingredients or analytical constituents"></textarea>
+            <label>Directions for use</label><textarea name="directions" rows="4" placeholder="Feeding, dosage or usage directions"></textarea>
+            <label>Specifications</label><textarea name="specifications" rows="4" placeholder="One specification per line"></textarea>
+            <label>Manufacturer name</label><input name="manufacturer_name">
+            <label>Manufacturer address</label><textarea name="manufacturer_address" rows="3"></textarea>
+            <label>Marketed by</label><input name="marketed_by">
+            <label>Country of origin</label><input name="country_of_origin">
+
+            <label class="checkbox-label">
+                <input type="checkbox" name="requires_prescription">
+                Veterinary prescription required
+            </label>
 
             <h2 class="crm-form-section">
                 Pricing & Inventory
@@ -226,7 +281,7 @@ Add Product | Bows & Meows CRM
             </h2>
 
             <p class="variant-help">
-                Optional. Use this for food products so Bows & Meows
+                Optional. Use this for food products so Bow & Meow
                 can recommend the best package size for each pet.
             </p>
 

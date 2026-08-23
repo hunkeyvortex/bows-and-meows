@@ -1,89 +1,761 @@
 {% extends "store/base.html" %}
+{% load static %}
 
 {% block title %}
-Bows & Meows | Pet Food, Care & Essentials
+Bow & Meow | Pet Food, Care & Essentials
 {% endblock %}
 
 {% block content %}
 
 <div class="store-v2">
 
-    <section class="v2-hero">
-        <div class="v2-shell v2-hero-grid">
 
-            <div class="v2-hero-copy">
-                <span class="v2-eyebrow">PET CARE, WITHOUT THE CLUTTER</span>
+<style>
+/* =========================================================
+   CLEAN HOMEPAGE HERO V3
+   Unique bm3-* classes to avoid old CSS collisions.
+   ========================================================= */
 
-                <h1>
-                    Better choices for
-                    <span>happier pets.</span>
-                </h1>
+.bm3-hero {
+    position: relative;
+    width: 100%;
+    height: 450px;
+    overflow: hidden;
+    background: #f7f7f1;
+    border-bottom: 1px solid #e8e9e3;
+    transition: height .35s ease;
+}
 
-                <p>
-                    Food, wellness and everyday essentials for dogs and cats —
-                    selected to make pet parenting simpler.
-                </p>
+.bm3-hero.is-offer-active { height: min(33.333vw, 600px); }
 
-                <div class="v2-hero-actions">
-                    <a href="{% url 'dog_products' %}" class="v2-btn v2-btn-primary">
-                        Shop for Dogs
-                    </a>
-                    <a href="{% url 'cat_products' %}" class="v2-btn v2-btn-secondary">
-                        Shop for Cats
-                    </a>
-                </div>
+.bm3-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(18px);
+    transition: opacity .45s ease, transform .45s ease, visibility .45s;
+}
 
-                <div class="v2-hero-proof">
-                    <div>
-                        <strong>Genuine</strong>
-                        <span>Trusted products</span>
-                    </div>
-                    <div>
-                        <strong>Secure</strong>
-                        <span>Razorpay checkout</span>
-                    </div>
-                    <div>
-                        <strong>Personal</strong>
-                        <span>Pet profiles & saved picks</span>
-                    </div>
-                </div>
+.bm3-slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.bm3-offer-slide {
+    background: #f5f3e8;
+}
+
+.bm3-banner-link,
+.bm3-banner-link img {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.bm3-banner-link img {
+    object-fit: contain;
+    object-position: center;
+}
+
+.bm3-brand-offer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    margin-top: 14px;
+    padding: 8px 13px;
+    border: 1px solid #cdddbf;
+    border-radius: 12px;
+    background: #eef5e5;
+    color: #184b35;
+}
+
+.bm3-brand-offer strong { font-size: 16px; }
+.bm3-brand-offer small { font-size: 10px; font-weight: 750; }
+
+.bm3-brand {
+    display: grid;
+    grid-template-columns: 43% 57%;
+    background:
+        linear-gradient(90deg, #faf9f1 0 43%, #fff 43% 100%);
+}
+
+.bm3-brand-copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 30px 34px 28px max(4vw, 52px);
+}
+
+.bm3-eyebrow {
+    color: #1f5b42;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .14em;
+}
+
+.bm3-brand h1 {
+    margin: 8px 0 10px;
+    max-width: 560px;
+    color: #17221c;
+    font-size: clamp(40px, 3.9vw, 58px);
+    line-height: .97;
+    letter-spacing: -.045em;
+}
+
+.bm3-brand h1 span {
+    display: block;
+    color: #205c43;
+}
+
+.bm3-brand-copy > p {
+    max-width: 500px;
+    margin: 0;
+    color: #667169;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.bm3-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.bm3-actions a,
+.bm3-campaign-copy a {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 17px;
+    border-radius: 11px;
+    font-size: 11px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.bm3-primary,
+.bm3-campaign-copy a {
+    background: #205b43;
+    color: #fff;
+}
+
+.bm3-secondary {
+    border: 1px solid #d8ddd8;
+    background: #fff;
+    color: #205b43;
+}
+
+.bm3-proof {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 18px;
+    color: #56635b;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.bm3-brand-photo {
+    position: relative;
+    overflow: hidden;
+}
+
+.bm3-brand-photo > img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: center 48%;
+}
+
+.bm3-photo-badge {
+    position: absolute;
+    top: 22px;
+    right: 22px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 13px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 12px 28px rgba(0,0,0,.08);
+}
+
+.bm3-photo-badge > span {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 10px;
+    background: #d9f27d;
+}
+
+.bm3-photo-badge strong,
+.bm3-photo-badge small {
+    display: block;
+}
+
+.bm3-photo-badge strong {
+    font-size: 10px;
+}
+
+.bm3-photo-badge small {
+    margin-top: 2px;
+    color: #747b76;
+    font-size: 8px;
+}
+
+/* Campaign slides */
+.bm3-campaign {
+    display: grid;
+    grid-template-columns: 40% 60%;
+    align-items: center;
+    padding: 28px 52px;
+}
+
+.bm3-dog {
+    background:
+        radial-gradient(circle at 77% 45%, #e6f4b6 0, #f4f9de 29%, transparent 58%),
+        linear-gradient(120deg, #f8f8ef, #fff);
+}
+
+.bm3-cat {
+    background:
+        radial-gradient(circle at 77% 45%, #eadcf6 0, #f7f0fb 29%, transparent 58%),
+        linear-gradient(120deg, #fbf8fd, #fff);
+}
+
+.bm3-loved {
+    background:
+        radial-gradient(circle at 77% 45%, #ffe7ad 0, #fff5dc 29%, transparent 58%),
+        linear-gradient(120deg, #fffaf1, #fff);
+}
+
+.bm3-campaign-copy {
+    position: relative;
+    z-index: 3;
+}
+
+.bm3-campaign-copy .bm3-eyebrow {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.bm3-campaign-copy h2 {
+    margin: 0;
+    color: #17231c;
+    font-size: 39px;
+    line-height: .98;
+    letter-spacing: -.035em;
+}
+
+.bm3-campaign-copy p {
+    max-width: 290px;
+    margin: 12px 0 17px;
+    color: #68736b;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.bm3-packs {
+    display: flex;
+    height: 290px;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+
+.bm3-packs img {
+    width: 30%;
+    height: 218px;
+    object-fit: contain;
+    filter: drop-shadow(0 16px 14px rgba(0,0,0,.14));
+}
+
+.bm3-packs img:nth-child(1) {
+    margin-right: -30px;
+    transform: translateY(14px) rotate(-5deg) scale(.88);
+}
+
+.bm3-packs img:nth-child(2) {
+    position: relative;
+    z-index: 3;
+    width: 36%;
+    height: 265px;
+    transform: translateY(-2px);
+}
+
+.bm3-packs img:nth-child(3) {
+    margin-left: -30px;
+    transform: translateY(14px) rotate(5deg) scale(.9);
+}
+
+.bm3-pill {
+    position: absolute;
+    right: 28px;
+    bottom: 24px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.92);
+    color: #20563f;
+    font-size: 9px;
+    font-weight: 900;
+    box-shadow: 0 8px 20px rgba(0,0,0,.06);
+}
+
+/* Slider controls */
+.bm3-arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 20;
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid #e2e6e0;
+    border-radius: 50%;
+    background: rgba(255,255,255,.95);
+    color: #205a42;
+    box-shadow: 0 6px 16px rgba(0,0,0,.09);
+    font-size: 23px;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.bm3-prev { left: 14px; }
+.bm3-next { right: 14px; }
+
+.bm3-dots {
+    position: absolute;
+    z-index: 20;
+    left: 50%;
+    bottom: 11px;
+    display: flex;
+    gap: 6px;
+    transform: translateX(-50%);
+}
+
+.bm3-dot {
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(32,91,67,.25);
+    cursor: pointer;
+}
+
+.bm3-dot.is-active {
+    width: 22px;
+    border-radius: 999px;
+    background: #205b43;
+}
+
+/* Lock Best Sellers to 6 cards on desktop */
+@media (min-width: 1100px) {
+    .home-best-section .home-product-scroll {
+        display: grid !important;
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        gap: 14px !important;
+    }
+    .home-best-section .home-product-image {
+        height: 180px !important;
+        padding: 12px !important;
+    }
+}
+
+/* Mobile */
+    @media (max-width: 760px) {
+    .bm3-hero {
+        height: 440px;
+    }
+
+    .bm3-hero.is-offer-active { height: 33.333vw; min-height: 120px; }
+
+    .bm3-brand {
+        grid-template-columns: 1fr;
+        grid-template-rows: 205px 235px;
+    }
+
+    .bm3-brand-copy {
+        padding: 18px 18px 14px;
+    }
+
+    .bm3-brand h1 {
+        margin: 5px 0 8px;
+        font-size: 31px;
+    }
+
+    .bm3-brand-copy > p {
+        font-size: 11px;
+    }
+
+    .bm3-brand-offer { margin-top: 8px; padding: 5px 9px; }
+    .bm3-brand-offer strong { font-size: 12px; }
+    .bm3-brand-offer small { display: none; }
+
+    .bm3-proof {
+        display: none;
+    }
+
+    .bm3-actions {
+        margin-top: 11px;
+    }
+
+    .bm3-actions a {
+        min-height: 35px;
+        padding: 0 11px;
+        font-size: 9px;
+    }
+
+    .bm3-brand-photo > img {
+        object-position: center 46%;
+    }
+
+    .bm3-photo-badge {
+        top: 10px;
+        right: 10px;
+        transform: scale(.78);
+        transform-origin: top right;
+    }
+
+    .bm3-campaign {
+        grid-template-columns: 42% 58%;
+        padding: 18px;
+    }
+
+    .bm3-campaign-copy h2 {
+        font-size: 25px;
+    }
+
+    .bm3-campaign-copy p {
+        margin: 8px 0 12px;
+        font-size: 9px;
+    }
+
+    .bm3-campaign-copy a {
+        min-height: 34px;
+        padding: 0 11px;
+        font-size: 9px;
+    }
+
+    .bm3-packs {
+        height: 240px;
+    }
+
+    .bm3-packs img {
+        height: 145px;
+    }
+
+    .bm3-packs img:nth-child(2) {
+        height: 185px;
+    }
+
+    .bm3-pill {
+        display: none;
+    }
+}
+
+@media (max-width: 430px) {
+    .bm3-hero {
+        height: 410px;
+    }
+
+    .bm3-brand {
+        grid-template-rows: 190px 220px;
+    }
+
+    .bm3-brand h1 {
+        font-size: 28px;
+    }
+
+    .bm3-campaign {
+        padding: 14px 12px;
+    }
+
+    .bm3-campaign-copy h2 {
+        font-size: 21px;
+    }
+
+    .bm3-packs img {
+        height: 115px;
+    }
+
+    .bm3-packs img:nth-child(2) {
+        height: 150px;
+    }
+}
+</style>
+
+<div class="bm3-hero" id="bm3-hero">
+
+    <!-- 1. Main brand slide -->
+    <section class="bm3-slide bm3-brand is-active">
+        <div class="bm3-brand-copy">
+            <span class="bm3-eyebrow"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg> BOW & MEOW</span>
+            <h1>Better pet care, <span>made simple.</span></h1>
+            <p>
+                Food, treats, wellness and everyday essentials for happier dogs and cats.
+            </p>
+
+            <div class="bm3-brand-offer">
+                <strong>FLAT 20% OFF</strong>
+                <small>You care for your pet. We care for your budget.</small>
             </div>
 
-            <div class="v2-hero-art" aria-label="Dog and cat care illustration">
-                <div class="v2-hero-orbit v2-orbit-one"></div>
-                <div class="v2-hero-orbit v2-orbit-two"></div>
-
-                <div class="v2-pet-stage">
-                    <div class="v2-pet-pair">🐶 <span>🐱</span></div>
-                    <p>Good days start with good care.</p>
-                </div>
-
-                <div class="v2-floating-card v2-floating-top">
-                    <span>★</span>
-                    <div>
-                        <strong>Pet-parent approved</strong>
-                        <small>Everyday essentials in one place</small>
-                    </div>
-                </div>
-
-                <div class="v2-floating-card v2-floating-bottom">
-                    <span>📦</span>
-                    <div>
-                        <strong>Order with confidence</strong>
-                        <small>Track status from your account</small>
-                    </div>
-                </div>
+            <div class="bm3-actions">
+                <a href="{% url 'dog_products' %}" class="bm3-primary">Shop Dogs →</a>
+                <a href="{% url 'cat_products' %}" class="bm3-secondary">Shop Cats →</a>
             </div>
 
+            <div class="bm3-proof">
+                <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#check"></use></svg> Genuine products</span>
+                <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#lock"></use></svg> Secure checkout</span>
+                <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#package"></use></svg> Order tracking</span>
+            </div>
+        </div>
+
+        <div class="bm3-brand-photo">
+            <img
+                src="{% static 'store/images/hero-dog-cat.png' %}"
+                alt="Happy dog and cat"
+            >
+            <div class="bm3-photo-badge">
+                <span>★</span>
+                <div>
+                    <strong>Pet-parent approved</strong>
+                    <small>Everyday essentials in one place</small>
+                </div>
+            </div>
         </div>
     </section>
 
+    <!-- 2. Royal Canin offer -->
+    <section class="bm3-slide bm3-offer-slide">
+        <a href="{% url 'dog_products' %}?q=Royal+Canin" class="bm3-banner-link" aria-label="Shop Royal Canin products at 20% off">
+            <img src="{% static 'store/images/campaign/royal-canin-20-off-wide.webp' %}" alt="Royal Canin premium nutrition, flat 20% off">
+        </a>
+    </section>
+
+    <!-- 3. VetLife offer -->
+    <section class="bm3-slide bm3-offer-slide">
+        <a href="{% url 'medicine_products' %}?q=VetLife" class="bm3-banner-link" aria-label="Shop VetLife products at 20% off">
+            <img src="{% static 'store/images/campaign/vetlife-20-off-wide.webp' %}" alt="VetLife pet nutrition, flat 20% off">
+        </a>
+    </section>
+
+    <button class="bm3-arrow bm3-prev" id="bm3-prev" type="button" aria-label="Previous slide">‹</button>
+    <button class="bm3-arrow bm3-next" id="bm3-next" type="button" aria-label="Next slide">›</button>
+
+    <div class="bm3-dots">
+        <button class="bm3-dot is-active" type="button" data-index="0" aria-label="Slide 1"></button>
+        <button class="bm3-dot" type="button" data-index="1" aria-label="Slide 2"></button>
+        <button class="bm3-dot" type="button" data-index="2" aria-label="Slide 3"></button>
+    </div>
+
+</div>
+
+<!-- ==========================================
+     BEST SELLERS
+     ========================================== -->
+
+    <section
+    class="home-commerce-section home-best-section"
+    id="best-sellers"
+>
+
+        <div class="v2-shell">
+
+            <div class="home-commerce-head">
+
+                <div>
+                    <span class="v2-eyebrow">
+                        POPULAR RIGHT NOW
+                    </span>
+
+                    <h2>
+                        Best sellers
+                    </h2>
+
+                    <p>
+                        Products pet parents are choosing most.
+                    </p>
+                </div>
+
+                <a
+                    href="#all-home-products"
+                    class="home-view-all"
+                >
+                    View all →
+                </a>
+
+            </div>
+
+
+            <div class="home-product-scroll">
+
+                {% for product in best_sellers %}
+
+                    {% include "store/includes/home_product_card.html" %}
+
+                {% empty %}
+
+                    <p>
+                        Best sellers will appear here soon.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ==========================================
+        POPULAR DOG PRODUCTS
+        ========================================== -->
+
+    <section class="home-commerce-section">
+
+        <div class="v2-shell">
+
+            <div class="home-commerce-head">
+
+                <div>
+
+                    <span class="v2-eyebrow">
+                        <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#dog"></use></svg> FOR DOGS
+                    </span>
+
+                    <h2>
+                        Popular for dogs
+                    </h2>
+
+                    <p>
+                        Food and essentials dog parents are loving.
+                    </p>
+
+                </div>
+
+                <a
+                    href="{% url 'dog_products' %}"
+                    class="home-view-all"
+                >
+                    Shop Dogs →
+                </a>
+
+            </div>
+
+
+            <div class="home-product-scroll">
+
+                {% for product in popular_dogs %}
+
+                    {% include "store/includes/home_product_card.html" %}
+
+                {% empty %}
+
+                    <p>
+                        Dog products will appear here.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ==========================================
+        POPULAR CAT PRODUCTS
+        ========================================== -->
+
+    <section class="home-commerce-section home-commerce-soft">
+
+        <div class="v2-shell">
+
+            <div class="home-commerce-head">
+
+                <div>
+
+                    <span class="v2-eyebrow">
+                        <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#cat"></use></svg> FOR CATS
+                    </span>
+
+                    <h2>
+                        Popular for cats
+                    </h2>
+
+                    <p>
+                        Favourite food and essentials for cats.
+                    </p>
+
+                </div>
+
+                <a
+                    href="{% url 'cat_products' %}"
+                    class="home-view-all"
+                >
+                    Shop Cats →
+                </a>
+
+            </div>
+
+
+            <div class="home-product-scroll">
+
+                {% for product in popular_cats %}
+
+                    {% include "store/includes/home_product_card.html" %}
+
+                {% empty %}
+
+                    <p>
+                        Cat products will appear here.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="bm-care-destinations">
+        <div class="v2-shell">
+            <div class="v2-section-head">
+                <div><span class="v2-eyebrow">CARE FOR EVERYDAY & BEYOND</span><h2>Health, hygiene and specialist care</h2></div>
+                <p>Purposeful care sections make it easier to find the right product for every pet.</p>
+            </div>
+            <div class="bm-care-grid">
+                <a href="{% url 'medicine_products' %}" class="bm-care-card bm-care-pharmacy"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#medical"></use></svg></span><div><small>VETERINARY CARE</small><h3>Pharmacy</h3><p>Parasite control, heart, kidney and respiratory care.</p><strong>Explore pharmacy →</strong></div></a>
+                <a href="{% url 'wellness_products' %}" class="bm-care-card bm-care-wellness"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span><div><small>DAILY SUPPORT</small><h3>Wellness</h3><p>Supplements, mobility, digestion, dental and coat care.</p><strong>Shop wellness →</strong></div></a>
+                <a href="{% url 'grooming_products' %}" class="bm-care-card bm-care-grooming"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#check"></use></svg></span><div><small>CLEAN & COMFORTABLE</small><h3>Grooming & Hygiene</h3><p>Shampoos, wipes, dental care and training essentials.</p><strong>Shop grooming →</strong></div></a>
+                <a href="{% url 'bird_products' %}" class="bm-care-card bm-care-birds"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#food"></use></svg></span><div><small>BIRDS & EXOTICS</small><h3>Bird Care</h3><p>Food, supplements and specialist health products.</p><strong>Explore bird care →</strong></div></a>
+            </div>
+        </div>
+    </section>
+
+    <style>
+    .bm-care-destinations{padding:58px 0;background:#f7f6ef}.bm-care-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}.bm-care-card{position:relative;display:flex;flex-direction:column;min-height:260px;padding:24px;overflow:hidden;border:1px solid #e1e5dc;border-radius:24px;background:#fff;color:inherit;text-decoration:none;box-shadow:0 12px 30px rgba(29,60,43,.07);transition:.22s ease}.bm-care-card:hover{transform:translateY(-5px);box-shadow:0 20px 40px rgba(29,65,45,.13)}.bm-care-card>span{display:grid;place-items:center;width:58px;height:58px;margin-bottom:28px;border-radius:18px;background:var(--care-soft);font-size:27px}.bm-care-card small{color:#70804d;font-size:8px;font-weight:900;letter-spacing:.13em}.bm-care-card h3{margin:6px 0 9px;color:#1c2d23;font-size:20px}.bm-care-card p{margin:0 0 20px;color:#6e7972;font-size:12px;line-height:1.55}.bm-care-card strong{margin-top:auto;color:#245c42;font-size:11px}.bm-care-pharmacy{--care-soft:#f8e8e5}.bm-care-wellness{--care-soft:#eaf3dc}.bm-care-grooming{--care-soft:#e4f1ef}.bm-care-birds{--care-soft:#fff0d8}@media(max-width:980px){.bm-care-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.bm-care-destinations{padding:42px 0}.bm-care-grid{grid-template-columns:1fr}.bm-care-card{min-height:220px}}
+    </style>
 
     <section class="v2-trust-strip">
         <div class="v2-shell v2-trust-grid">
 
             <div>
-                <span class="v2-trust-icon">✓</span>
+                <span class="v2-trust-icon"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#check"></use></svg></span>
                 <div>
                     <strong>Genuine Products</strong>
                     <small>Reliable pet-care essentials</small>
@@ -91,7 +763,7 @@ Bows & Meows | Pet Food, Care & Essentials
             </div>
 
             <div>
-                <span class="v2-trust-icon">🔒</span>
+                <span class="v2-trust-icon"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#lock"></use></svg></span>
                 <div>
                     <strong>Secure Payments</strong>
                     <small>Protected online checkout</small>
@@ -107,7 +779,7 @@ Bows & Meows | Pet Food, Care & Essentials
             </div>
 
             <div>
-                <span class="v2-trust-icon">📍</span>
+                <span class="v2-trust-icon"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#package"></use></svg></span>
                 <div>
                     <strong>Order Tracking</strong>
                     <small>Follow every order update</small>
@@ -227,7 +899,7 @@ Bows & Meows | Pet Food, Care & Essentials
                     <span class="v2-eyebrow">POPULAR RIGHT NOW</span>
                     <h2>Pet-parent picks</h2>
                 </div>
-                <p>Browse products currently available in the Bows & Meows store.</p>
+                <p>Browse products currently available in the Bow & Meow store.</p>
             </div>
 
             <div class="v2-products-grid">
@@ -239,8 +911,8 @@ Bows & Meows | Pet Food, Care & Essentials
                     <div class="v2-product-media">
 
                         <a href="{% url 'product_detail' product.id %}">
-                            {% if product.image %}
-                                <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                            {% if product.display_image_url %}
+                                <img src="{{ product.display_image_url }}" alt="{{ product.name }}">
                             {% else %}
                                 <div class="v2-product-placeholder">🐾</div>
                             {% endif %}
@@ -272,9 +944,10 @@ Bows & Meows | Pet Food, Care & Essentials
                         </div>
 
                         {% if product.stock > 0 %}
-                            <a href="{% url 'add_to_cart' product.id %}" class="v2-add-cart">
-                                Add to cart
-                            </a>
+                            <form method="POST" action="{% url 'add_to_cart' product.id %}"{% if product.pet_type == 'dog' or product.category|slice:':4' == 'dog_' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' or product.category|slice:':4' == 'cat_' %} data-cart-sound="cat"{% endif %}>
+                                {% csrf_token %}
+                                <button type="submit" class="v2-add-cart">Add to cart</button>
+                            </form>
                         {% else %}
                             <span class="v2-add-cart v2-add-disabled">
                                 Currently unavailable
@@ -333,35 +1006,114 @@ Bows & Meows | Pet Food, Care & Essentials
     {% endif %}
 
 
-    <section class="v2-section" id="offers">
+    <section class="home-commerce-section home-commerce-soft home-offers-section" id="offers">
         <div class="v2-shell">
-
-            <div class="v2-offer-banner">
-
-                <div class="v2-offer-copy">
-                    <span>SMARTER PET SHOPPING</span>
-                    <h2>Everything they need. Less noise for you.</h2>
-                    <p>
-                        Build your basket across food, wellness and daily essentials,
-                        then manage orders from one account.
-                    </p>
-
-                    <a href="#featured-products" class="v2-btn v2-btn-light">
-                        Explore Products
-                    </a>
+            <div class="home-commerce-head">
+                <div>
+                    <span class="v2-eyebrow">CURRENT SAVINGS</span>
+                    <h2>Offers worth fetching</h2>
+                    <p>In-stock products currently priced below MRP.</p>
                 </div>
-
-                <div class="v2-offer-art">
-                    <span>🐕</span>
-                    <div>♥</div>
-                    <span>🐈</span>
-                </div>
-
+                <a href="#best-sellers" class="home-view-all">Browse best sellers →</a>
             </div>
-
+            <div class="home-product-scroll">
+                {% for product in offers %}
+                    {% include "store/includes/home_product_card.html" %}
+                {% empty %}
+                    <div class="home-offers-empty">
+                        <strong>Fresh offers are being prepared.</strong>
+                        <p>Explore our current in-stock favourites in the meantime.</p>
+                        <a href="#best-sellers">Shop best sellers →</a>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     </section>
 
+    <style>
+    #offers{scroll-margin-top:125px}.home-offers-empty{width:100%;padding:34px;border:1px solid #dfe5da;border-radius:22px;background:#fff}.home-offers-empty strong{color:#1d3426;font-size:21px}.home-offers-empty p{margin:7px 0 15px;color:#6c786f}.home-offers-empty a{color:#1f5a40;font-weight:850;text-decoration:none}
+    </style>
+
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const hero = document.getElementById("bm3-hero");
+    if (!hero) return;
+
+    const slides = hero.querySelectorAll(".bm3-slide");
+    const dots = hero.querySelectorAll(".bm3-dot");
+    const prev = document.getElementById("bm3-prev");
+    const next = document.getElementById("bm3-next");
+
+    let current = 0;
+    let timer = null;
+    let touchStartX = 0;
+
+    function show(index) {
+        if (!slides.length) return;
+
+        if (index < 0) index = slides.length - 1;
+        if (index >= slides.length) index = 0;
+
+        slides.forEach((slide, i) => {
+            slide.classList.toggle("is-active", i === index);
+        });
+
+        dots.forEach((dot, i) => {
+            dot.classList.toggle("is-active", i === index);
+        });
+
+        hero.classList.toggle(
+            "is-offer-active",
+            slides[index].classList.contains("bm3-offer-slide")
+        );
+
+        current = index;
+    }
+
+    function restart() {
+        clearInterval(timer);
+        timer = setInterval(() => show(current + 1), 5500);
+    }
+
+    prev.addEventListener("click", function () {
+        show(current - 1);
+        restart();
+    });
+
+    next.addEventListener("click", function () {
+        show(current + 1);
+        restart();
+    });
+
+    dots.forEach(dot => {
+        dot.addEventListener("click", function () {
+            show(Number(dot.dataset.index));
+            restart();
+        });
+    });
+
+    hero.addEventListener("mouseenter", () => clearInterval(timer));
+    hero.addEventListener("mouseleave", restart);
+
+    hero.addEventListener("touchstart", function (event) {
+        touchStartX = event.touches[0].clientX;
+    }, { passive: true });
+
+    hero.addEventListener("touchend", function (event) {
+        const endX = event.changedTouches[0].clientX;
+        const diff = touchStartX - endX;
+
+        if (Math.abs(diff) >= 45) {
+            show(diff > 0 ? current + 1 : current - 1);
+            restart();
+        }
+    }, { passive: true });
+
+    show(0);
+    restart();
+});
+</script>
 
 {% endblock %}

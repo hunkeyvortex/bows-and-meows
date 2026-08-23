@@ -1,6 +1,7 @@
 {% extends "store/base.html" %}
+{% load static %}
 
-{% block title %}{{ page_title }} | Bows & Meows{% endblock %}
+{% block title %}{{ page_title }} | Bow & Meow{% endblock %}
 
 {% block content %}
 <div class="catalog-v3 catalog-v3-{{ page_type|default:'shop' }}">
@@ -27,7 +28,7 @@
                 {% else %}
                     <span class="catalog-v3-kicker">PET HEALTH & WELLNESS</span>
                     <h1>Everyday care starts with <span>trusted essentials.</span></h1>
-                    <p>Browse pet-health products and wellness essentials available in the Bows & Meows store.</p>
+                    <p>Browse pet-health products and wellness essentials available in the Bow & Meow store.</p>
                     <div class="catalog-v3-hero-actions">
                         <a href="#all-products" class="v2-btn v2-btn-primary">Browse Pharmacy</a>
                         <a href="{% url 'home' %}" class="v2-btn v2-btn-secondary">Back to Store</a>
@@ -37,17 +38,17 @@
 
             <div class="catalog-v3-hero-art" aria-hidden="true">
                 {% if page_type == "dog" %}
-                    <div class="catalog-v3-pet-orb catalog-v3-orb-dog">🐕</div>
-                    <div class="catalog-v3-mini-card catalog-v3-mini-one"><span>🥣</span><strong>Daily nutrition</strong></div>
-                    <div class="catalog-v3-mini-card catalog-v3-mini-two"><span>🦴</span><strong>Happy rewards</strong></div>
+                    <div class="catalog-v3-pet-orb catalog-v3-orb-dog"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#dog"></use></svg></div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-one"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#food"></use></svg></span><strong>Daily nutrition</strong></div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-two"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#bone"></use></svg></span><strong>Happy rewards</strong></div>
                 {% elif page_type == "cat" %}
-                    <div class="catalog-v3-pet-orb catalog-v3-orb-cat">🐈</div>
-                    <div class="catalog-v3-mini-card catalog-v3-mini-one"><span>🐟</span><strong>Meals they love</strong></div>
-                    <div class="catalog-v3-mini-card catalog-v3-mini-two"><span>🧶</span><strong>Curious by nature</strong></div>
+                    <div class="catalog-v3-pet-orb catalog-v3-orb-cat"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#cat"></use></svg></div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-one"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#food"></use></svg></span><strong>Meals they love</strong></div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-two"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#ball"></use></svg></span><strong>Curious by nature</strong></div>
                 {% else %}
-                    <div class="catalog-v3-pet-orb catalog-v3-orb-health">✚</div>
-                    <div class="catalog-v3-mini-card catalog-v3-mini-one"><span>✓</span><strong>Wellness essentials</strong></div>
-                    <div class="catalog-v3-mini-card catalog-v3-mini-two"><span>🐾</span><strong>Pet-first care</strong></div>
+                    <div class="catalog-v3-pet-orb catalog-v3-orb-health"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#medical"></use></svg></div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-one"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#check"></use></svg></span><strong>Wellness essentials</strong></div>
+                    <div class="catalog-v3-mini-card catalog-v3-mini-two"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span><strong>Pet-first care</strong></div>
                 {% endif %}
             </div>
         </div>
@@ -55,9 +56,9 @@
 
     <section class="catalog-v3-benefits">
         <div class="v2-shell catalog-v3-benefit-grid">
-            <div><span>✓</span><p><strong>Genuine products</strong><small>Trusted pet essentials</small></p></div>
-            <div><span>🔒</span><p><strong>Secure checkout</strong><small>Protected payments</small></p></div>
-            <div><span>📦</span><p><strong>Order tracking</strong><small>Follow every update</small></p></div>
+            <div><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#check"></use></svg></span><p><strong>Genuine products</strong><small>Trusted pet essentials</small></p></div>
+            <div><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#lock"></use></svg></span><p><strong>Secure checkout</strong><small>Protected payments</small></p></div>
+            <div><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#package"></use></svg></span><p><strong>Order tracking</strong><small>Follow every update</small></p></div>
             <div><span>♡</span><p><strong>Save favourites</strong><small>Come back anytime</small></p></div>
         </div>
     </section>
@@ -80,19 +81,19 @@
 
             <div class="catalog-v3-discovery-grid">
                 {% if page_type == "dog" %}
-                    <a href="#all-products" class="catalog-v3-discovery-card"><span>🥣</span><strong>Dog Food</strong><small>Daily nutrition</small></a>
-                    <a href="{% url 'search_products' %}?q=treat" class="catalog-v3-discovery-card"><span>🦴</span><strong>Treats</strong><small>Rewards & training</small></a>
-                    <a href="{% url 'search_products' %}?q=toy" class="catalog-v3-discovery-card"><span>🎾</span><strong>Toys</strong><small>Play & enrichment</small></a>
-                    <a href="{% url 'medicine_products' %}" class="catalog-v3-discovery-card"><span>💊</span><strong>Wellness</strong><small>Health essentials</small></a>
+                    <a href="#all-products" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#food"></use></svg></span><strong>Dog Food</strong><small>Daily nutrition</small></a>
+                    <a href="{% url 'search_products' %}?q=treat" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#bone"></use></svg></span><strong>Treats</strong><small>Rewards & training</small></a>
+                    <a href="{% url 'search_products' %}?q=toy" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#ball"></use></svg></span><strong>Toys</strong><small>Play & enrichment</small></a>
+                    <a href="{% url 'medicine_products' %}" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#medical"></use></svg></span><strong>Wellness</strong><small>Health essentials</small></a>
                 {% elif page_type == "cat" %}
-                    <a href="#all-products" class="catalog-v3-discovery-card"><span>🐟</span><strong>Cat Food</strong><small>Daily meals</small></a>
-                    <a href="{% url 'search_products' %}?q=treat" class="catalog-v3-discovery-card"><span>🍗</span><strong>Treats</strong><small>Tasty rewards</small></a>
-                    <a href="{% url 'search_products' %}?q=toy" class="catalog-v3-discovery-card"><span>🧶</span><strong>Toys</strong><small>Play & curiosity</small></a>
-                    <a href="{% url 'medicine_products' %}" class="catalog-v3-discovery-card"><span>💊</span><strong>Wellness</strong><small>Health essentials</small></a>
+                    <a href="#all-products" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#food"></use></svg></span><strong>Cat Food</strong><small>Daily meals</small></a>
+                    <a href="{% url 'search_products' %}?q=treat" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#bone"></use></svg></span><strong>Treats</strong><small>Tasty rewards</small></a>
+                    <a href="{% url 'search_products' %}?q=toy" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#ball"></use></svg></span><strong>Toys</strong><small>Play & curiosity</small></a>
+                    <a href="{% url 'medicine_products' %}" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#medical"></use></svg></span><strong>Wellness</strong><small>Health essentials</small></a>
                 {% else %}
-                    <a href="#all-products" class="catalog-v3-discovery-card"><span>💊</span><strong>Pharmacy</strong><small>Available products</small></a>
-                    <a href="{% url 'dog_products' %}" class="catalog-v3-discovery-card"><span>🐕</span><strong>Dog Care</strong><small>Shop for dogs</small></a>
-                    <a href="{% url 'cat_products' %}" class="catalog-v3-discovery-card"><span>🐈</span><strong>Cat Care</strong><small>Shop for cats</small></a>
+                    <a href="#all-products" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#medical"></use></svg></span><strong>Pharmacy</strong><small>Available products</small></a>
+                    <a href="{% url 'dog_products' %}" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#dog"></use></svg></span><strong>Dog Care</strong><small>Shop for dogs</small></a>
+                    <a href="{% url 'cat_products' %}" class="catalog-v3-discovery-card"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#cat"></use></svg></span><strong>Cat Care</strong><small>Shop for cats</small></a>
                     <a href="{% url 'home' %}#featured-products" class="catalog-v3-discovery-card"><span>★</span><strong>Popular Picks</strong><small>Store favourites</small></a>
                 {% endif %}
             </div>
@@ -133,10 +134,10 @@
                     <article class="catalog-v3-product-card">
                         <div class="catalog-v3-product-media">
                             <a href="{% url 'product_detail' product.id %}">
-                                {% if product.image %}
-                                    <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                                {% if product.display_image_url %}
+                                    <img src="{{ product.display_image_url }}" alt="{{ product.name }}" loading="lazy">
                                 {% else %}
-                                    <div class="catalog-v3-product-placeholder">🐾</div>
+                                    <div class="catalog-v3-product-placeholder"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></div>
                                 {% endif %}
                             </a>
 
@@ -159,7 +160,10 @@
                             </div>
 
                             {% if product.stock > 0 %}
-                                <a href="{% url 'add_to_cart' product.id %}" class="catalog-v3-add">Add to cart</a>
+                                <form method="POST" action="{% url 'add_to_cart' product.id %}"{% if product.pet_type == 'dog' or product.category|slice:':4' == 'dog_' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' or product.category|slice:':4' == 'cat_' %} data-cart-sound="cat"{% endif %}>
+                                    {% csrf_token %}
+                                    <button type="submit" class="catalog-v3-add">Add to cart</button>
+                                </form>
                             {% else %}
                                 <span class="catalog-v3-add disabled">Currently unavailable</span>
                             {% endif %}
@@ -167,7 +171,7 @@
                     </article>
                 {% empty %}
                     <div class="catalog-v3-empty">
-                        <span>🐾</span>
+                        <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span>
                         <h3>No matching products found.</h3>
                         <p>Try clearing the search or add products from your CRM inventory.</p>
                         <a href="{{ request.path }}" class="v2-btn v2-btn-primary">Show all products</a>

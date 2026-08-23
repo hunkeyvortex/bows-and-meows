@@ -1,7 +1,8 @@
 {% extends "store/base.html" %}
+{% load static %}
 
 {% block title %}
-{{ product.name }} | Bows & Meows
+{{ product.name }} | Bow & Meow
 
 <style>
 .smart-pack-advisor {
@@ -256,19 +257,87 @@
         <div class="pd-v2-layout">
 
             <div class="pd-v2-media-card">
-                {% if product.image %}
-                    <img
-                        src="{{ product.image.url }}"
-                        alt="{{ product.name }}"
-                        class="pd-v2-main-image"
-                    >
-                {% else %}
-                    <div class="pd-v2-placeholder">🐾</div>
-                {% endif %}
+
+                <div class="pd-gallery">
+
+                    <div class="pd-gallery-main">
+
+                        {% if product.display_image_url %}
+
+                            <img
+                                id="pd-main-image"
+                                src="{{ product.display_image_url }}"
+                                alt="{{ product.name }}"
+                                class="pd-v2-main-image"
+                            >
+
+                        {% else %}
+
+                            <div class="pd-gallery-placeholder">
+                                🐾
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="pd-gallery-thumbs">
+
+                        {% if product.display_image_url %}
+
+                            <button
+                                type="button"
+                                class="pd-thumb active"
+                                data-image="{{ product.display_image_url }}"
+                            >
+
+                                <img
+                                    src="{{ product.display_image_url }}"
+                                    alt="{{ product.name }}"
+                                >
+
+                                <span>Main</span>
+
+                            </button>
+
+                        {% endif %}
+
+
+                        {% for gallery_image in product.gallery_images.all %}
+
+                            <button
+                                type="button"
+                                class="pd-thumb"
+                                data-image="{{ gallery_image.display_image_url }}"
+                            >
+
+                                <img
+                                    src="{{ gallery_image.display_image_url }}"
+                                    alt="{{ gallery_image.get_image_type_display }}"
+                                >
+
+                                <span>
+                                    {{ gallery_image.get_image_type_display }}
+                                </span>
+
+                            </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
 
                 {% if product.is_featured %}
-                    <span class="pd-v2-featured-badge">Featured</span>
+
+                    <span class="pd-v2-featured-badge">
+                        Featured
+                    </span>
+
                 {% endif %}
+
             </div>
 
 
@@ -325,7 +394,7 @@
                 </div>
 
 
-                {% if product.variants.all %}
+                {% if product.has_available_variants %}
                 <div class="pd-v2-variant-section">
 
                     <div class="pd-v2-section-label">
@@ -335,7 +404,7 @@
 
                     <div class="pd-v2-variant-grid">
 
-                        {% for variant in product.variants.all %}
+                        {% for variant in product.available_variants %}
                             <button
                                 type="button"
                                 class="pd-v2-variant-card
@@ -345,7 +414,7 @@
                                 data-variant-id="{{ variant.id }}"
                                 data-size="{{ variant.size }}"
                                 data-price="{{ variant.price }}"
-                                data-image="{% if variant.image %}{{ variant.image.url }}{% endif %}"
+                                data-image="{{ variant.display_image_url }}"
                                 data-mrp="{% if variant.original_price %}{{ variant.original_price }}{% endif %}"
                                 data-stock="{{ variant.stock }}"
                                 {% if not variant.is_available or variant.stock <= 0 %}
@@ -390,12 +459,12 @@
 
 
 
-                {% if product.variants.all and feeding_guides %}
+                {% if product.has_available_variants and feeding_guides %}
                 <section class="smart-pack-advisor" id="smart-pack-advisor">
 
                     <div class="smart-pack-head">
                         <div>
-                            <span class="smart-pack-kicker">🐾 BOWS & MEOWS SMART PACK ADVISOR</span>
+                            <span class="smart-pack-kicker">🐾 BOW & MEOW SMART PACK ADVISOR</span>
                             <h3>Which pack fits your pet best?</h3>
                             <p>
                                 We use your pet's saved weight and this product's feeding guide
@@ -454,7 +523,7 @@
                             <div class="smart-pack-empty">
                                 <strong>Add your pet to unlock personalized pack recommendations.</strong>
                                 <p>
-                                    Save your pet's weight once and Bows & Meows can estimate
+                                    Save your pet's weight once and Bow & Meow can estimate
                                     how long different food packs may last.
                                 </p>
                                 <a href="{% url 'my_pets' %}">
@@ -509,44 +578,68 @@
                 </div>
                 {% endif %}
 
+                {% if product.target_species or product.active_ingredients or product.usage_warning %}
+                <div class="pd-v2-clinical-box">
+                    <h3>Product information</h3>
+                    {% if product.target_species %}<p><strong>Suitable for:</strong> {{ product.target_species }}</p>{% endif %}
+                    {% if product.active_ingredients %}<p><strong>Active ingredients:</strong> {{ product.active_ingredients|linebreaksbr }}</p>{% endif %}
+                    {% if product.usage_warning %}<p><strong>Important:</strong> {{ product.usage_warning|linebreaksbr }}</p>{% endif %}
+                </div>
+                {% endif %}
+
+                {% if product.requires_prescription %}
+                <div class="pd-v2-prescription-notice" role="note">
+                    <span>🩺</span>
+                    <div>
+                        <strong>Veterinary prescription required</strong>
+                        <p>This medicine cannot be purchased through normal checkout. Contact us with a valid prescription and we’ll help you safely.</p>
+                    </div>
+                </div>
+                {% endif %}
+
 
                 <div class="pd-v2-actions">
 
-                    {% if product.stock > 0 %}
+                    {% if product.stock > 0 and not product.requires_prescription %}
 
-                        {% if product.variants.all %}
-                            <button
-                                type="button"
-                                class="pd-v2-cart-btn"
-                                id="variant-cart-button"
-                                data-cart-url="{% url 'add_to_cart' product.id %}"
-                                disabled
-                            >
-                                🛒 Select a size
-                            </button>
+                        {% if product.has_available_variants %}
+                            <form method="POST" action="{% url 'add_to_cart' product.id %}" id="variant-cart-form" class="pd-v2-action-form"{% if product.pet_type == 'dog' or product.category|slice:':4' == 'dog_' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' or product.category|slice:':4' == 'cat_' %} data-cart-sound="cat"{% endif %}>
+                                {% csrf_token %}
+                                <input type="hidden" name="variant" id="variant-cart-input">
+                                <button type="submit" class="pd-v2-cart-btn" id="variant-cart-button" disabled>
+                                    <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#cart"></use></svg><span id="variant-cart-label">Select a size</span>
+                                </button>
+                            </form>
+                            <form method="POST" action="{% url 'buy_now' product.id %}" id="variant-buy-form" class="pd-v2-action-form"{% if product.pet_type == 'dog' or product.category|slice:':4' == 'dog_' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' or product.category|slice:':4' == 'cat_' %} data-cart-sound="cat"{% endif %}>
+                                {% csrf_token %}
+                                <input type="hidden" name="variant" id="variant-buy-input">
+                                <button type="submit" class="pd-v2-buy-btn" id="variant-buy-button" disabled>Buy Now</button>
+                            </form>
                         {% else %}
-                            <a
-                                href="{% url 'add_to_cart' product.id %}"
-                                class="pd-v2-cart-btn"
-                            >
-                                🛒 Add to Cart
-                            </a>
+                            <form method="POST" action="{% url 'add_to_cart' product.id %}" class="pd-v2-action-form"{% if product.pet_type == 'dog' or product.category|slice:':4' == 'dog_' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' or product.category|slice:':4' == 'cat_' %} data-cart-sound="cat"{% endif %}>
+                                {% csrf_token %}
+                                <button type="submit" class="pd-v2-cart-btn"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#cart"></use></svg><span>Add to Cart</span></button>
+                            </form>
+                            <form method="POST" action="{% url 'buy_now' product.id %}" class="pd-v2-action-form"{% if product.pet_type == 'dog' or product.category|slice:':4' == 'dog_' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' or product.category|slice:':4' == 'cat_' %} data-cart-sound="cat"{% endif %}>
+                                {% csrf_token %}
+                                <button type="submit" class="pd-v2-buy-btn">Buy Now</button>
+                            </form>
                         {% endif %}
 
                     {% endif %}
 
 
                     {% if request.user.is_authenticated %}
-                        <a
-                            href="{% url 'toggle_wishlist' product.id %}"
-                            class="pd-v2-wishlist-btn"
-                        >
+                        <form method="POST" action="{% url 'toggle_wishlist' product.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="pd-v2-wishlist-btn">
                             {% if is_saved %}
                                 ♥ Saved
                             {% else %}
                                 ♡ Save Product
                             {% endif %}
-                        </a>
+                            </button>
+                        </form>
                     {% else %}
                         <a
                             href="{% url 'login' %}?next={{ request.path }}"
@@ -561,19 +654,19 @@
 
                 <div class="pd-v2-trust-grid">
                     <div>
-                        <span>✓</span>
+                        <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#check"></use></svg></span>
                         <strong>Genuine Product</strong>
                         <small>Reliable pet-care essentials</small>
                     </div>
 
                     <div>
-                        <span>🔒</span>
+                        <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#lock"></use></svg></span>
                         <strong>Secure Checkout</strong>
                         <small>Protected online payment</small>
                     </div>
 
                     <div>
-                        <span>📦</span>
+                        <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#package"></use></svg></span>
                         <strong>Order Tracking</strong>
                         <small>Follow your order status</small>
                     </div>
@@ -628,10 +721,10 @@
                 <span class="v2-eyebrow">SMART SHOPPING</span>
                 <h3>More useful than a price tag.</h3>
 
-                {% if product.variants.all %}
+                {% if product.has_available_variants %}
                     <p>
                         Compare package sizes and stock here. In the next step,
-                        Bows & Meows will calculate pack value and remember the
+                        Bow & Meow will calculate pack value and remember the
                         exact size you add to your cart.
                     </p>
                 {% else %}
@@ -649,6 +742,32 @@
             </aside>
 
         </div>
+
+
+        {% if product.ingredients or product.directions or product.specifications or product.manufacturer_name or product.manufacturer_address or product.country_of_origin or product.marketed_by %}
+        <section class="bm-product-facts">
+            <div class="bm-product-facts-head">
+                <span>📋 COMPLETE PRODUCT INFORMATION</span>
+                <h2>Everything you should know</h2>
+                <p>Clear product facts help pet parents shop with confidence.</p>
+            </div>
+            <div class="bm-product-facts-grid">
+                <article>
+                    <span>🌿</span><h3>Ingredients & usage</h3>
+                    {% if product.ingredients %}<h4>Ingredients</h4><p>{{ product.ingredients|linebreaksbr }}</p>{% endif %}
+                    {% if product.directions %}<h4>Directions</h4><p>{{ product.directions|linebreaksbr }}</p>{% endif %}
+                    {% if product.specifications %}<h4>Specifications</h4><p>{{ product.specifications|linebreaksbr }}</p>{% endif %}
+                </article>
+                <article>
+                    <span>🏭</span><h3>Manufacturer details</h3>
+                    {% if product.manufacturer_name %}<p><strong>Manufactured by</strong><br>{{ product.manufacturer_name }}</p>{% endif %}
+                    {% if product.manufacturer_address %}<p><strong>Address</strong><br>{{ product.manufacturer_address|linebreaksbr }}</p>{% endif %}
+                    {% if product.marketed_by %}<p><strong>Marketed by</strong><br>{{ product.marketed_by }}</p>{% endif %}
+                    {% if product.country_of_origin %}<p><strong>Country of origin</strong><br>{{ product.country_of_origin }}</p>{% endif %}
+                </article>
+            </div>
+        </section>
+        {% endif %}
 
 
         <section class="pd-v2-reviews" id="reviews">
@@ -767,8 +886,21 @@
 
         </section>
 
+        {% if related_products %}
+        <section class="bm-related-products">
+            <div class="bm-related-head"><div><span>YOU MAY ALSO LIKE</span><h2>Similar products</h2></div><a href="{% url 'search_products' %}?q={{ product.brand|urlencode }}">Explore more →</a></div>
+            <div class="home-product-scroll">
+                {% for related in related_products %}{% include "store/includes/home_product_card.html" with product=related %}{% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
     </div>
 </section>
+
+<style>
+.bm-product-facts{margin-top:26px;padding:30px;border:1px solid #e1e6dd;border-radius:24px;background:linear-gradient(135deg,#fbfcf8,#fff);box-shadow:0 12px 32px rgba(30,59,43,.06)}.bm-product-facts-head>span,.bm-related-head span{color:#668246;font-size:10px;font-weight:900;letter-spacing:.14em}.bm-product-facts-head h2,.bm-related-head h2{margin:7px 0}.bm-product-facts-head p{margin:0;color:#747e77}.bm-product-facts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px}.bm-product-facts-grid article{padding:24px;border:1px solid #e4e8e0;border-radius:18px;background:#fff}.bm-product-facts-grid article>span{font-size:28px}.bm-product-facts-grid h3{display:inline-block;margin:0 0 18px 8px}.bm-product-facts-grid h4{margin:17px 0 6px;color:#315642}.bm-product-facts-grid p{color:#69736c;line-height:1.65}.bm-related-products{margin-top:38px}.bm-related-head{display:flex;align-items:end;justify-content:space-between;margin-bottom:18px}.bm-related-head a{color:#285a40;font-weight:850;text-decoration:none}@media(max-width:720px){.bm-product-facts{padding:21px}.bm-product-facts-grid{grid-template-columns:1fr}.bm-related-head{align-items:start;flex-direction:column;gap:9px}}
+</style>
 
 
 <script>
@@ -776,6 +908,8 @@ const variantButtons = document.querySelectorAll(".pd-v2-variant-card");
 const priceElement = document.querySelector(".pd-v2-price");
 const mrpElement = document.querySelector(".pd-v2-mrp");
 const cartButton = document.getElementById("variant-cart-button");
+const cartLabel = document.getElementById("variant-cart-label");
+const buyButton = document.getElementById("variant-buy-button");
 const selectedVariantInput = document.getElementById("selected-variant-id");
 const variantMessage = document.getElementById("variant-message");
 
@@ -827,10 +961,60 @@ variantButtons.forEach(function (button) {
             variantImage
             && mainProductImage
         ) {
+
             mainProductImage.src =
                 variantImage;
+
+
+            // ======================================
+            // UPDATE MAIN GALLERY THUMBNAIL
+            // ======================================
+
+            const mainGalleryThumb =
+                document.querySelector(
+                    ".pd-thumb"
+                );
+
+            if (mainGalleryThumb) {
+
+                mainGalleryThumb.dataset.image =
+                    variantImage;
+
+                const thumbImage =
+                    mainGalleryThumb.querySelector(
+                        "img"
+                    );
+
+                if (thumbImage) {
+                    thumbImage.src =
+                        variantImage;
+                }
+            }
+
+
+            // ======================================
+            // MAKE MAIN THUMB ACTIVE
+            // ======================================
+
+            galleryThumbs.forEach(
+                function (thumb) {
+
+                    thumb.classList.remove(
+                        "active"
+                    );
+
+                }
+            );
+
+            if (mainGalleryThumb) {
+
+                mainGalleryThumb.classList.add(
+                    "active"
+                );
+            }
         }
-        if (variantMessage) {
+
+if (variantMessage) {
             variantMessage.textContent =
                 stock + " unit(s) available in this size.";
         }
@@ -841,17 +1025,15 @@ variantButtons.forEach(function (button) {
             const selectedSize =
                 button.querySelector("strong").textContent.trim();
 
-            cartButton.textContent =
-                "🛒 Add " + selectedSize + " to Cart";
+            if (cartLabel) cartLabel.textContent =
+                "Add " + selectedSize + " to Cart";
 
-            cartButton.onclick = function () {
-                const baseUrl = cartButton.dataset.cartUrl;
+            const variantCartInput = document.getElementById("variant-cart-input");
+            if (variantCartInput) variantCartInput.value = variantId;
 
-                window.location.href =
-                    baseUrl
-                    + "?variant="
-                    + encodeURIComponent(variantId);
-            };
+            const variantBuyInput = document.getElementById("variant-buy-input");
+            if (variantBuyInput) variantBuyInput.value = variantId;
+            if (buyButton) buyButton.disabled = false;
         }
 
     });
@@ -1396,7 +1578,7 @@ function runSmartPackAdvisor() {
             === recommended.id
         ) {
             badge =
-                "✨ Bows & Meows Pick";
+                "✨ Bow & Meow Pick";
         } else if (
             item.id
             === freshest.id
@@ -1533,6 +1715,74 @@ if (advisorPet) {
         runSmartPackAdvisor
     );
 }
+/* ==========================================
+   PRODUCT GALLERY
+   ========================================== */
+
+const galleryMainImage =
+    document.getElementById(
+        "pd-main-image"
+    );
+
+const galleryThumbs =
+    document.querySelectorAll(
+        ".pd-thumb"
+    );
+
+
+galleryThumbs.forEach(
+    function (thumb) {
+
+        thumb.addEventListener(
+            "click",
+            function () {
+
+                const imageUrl =
+                    thumb.dataset.image;
+
+                if (
+                    galleryMainImage
+                    && imageUrl
+                ) {
+
+                    galleryMainImage.style.opacity =
+                        "0";
+
+                    setTimeout(
+                        function () {
+
+                            galleryMainImage.src =
+                                imageUrl;
+
+                            galleryMainImage.style.opacity =
+                                "1";
+
+                        },
+                        120
+                    );
+                }
+
+
+                galleryThumbs.forEach(
+                    function (otherThumb) {
+
+                        otherThumb.classList.remove(
+                            "active"
+                        );
+
+                    }
+                );
+
+
+                thumb.classList.add(
+                    "active"
+                );
+
+            }
+        );
+
+    }
+);
 
 </script>
 

@@ -1,7 +1,7 @@
 {% extends "store/crm_base.html" %}
 
 {% block title %}
-Inventory | Bows & Meows CRM
+Inventory | Bow & Meow CRM
 {% endblock %}
 
 {% block content %}
@@ -22,6 +22,12 @@ Inventory | Bows & Meows CRM
             class="crm-admin-btn"
         >
             ⇧ Bulk Import
+        </a>
+        <a
+            href="{% url 'crm_bulk_images' %}"
+            class="crm-admin-btn"
+        >
+            🖼 Bulk Images
         </a>
         <a href="{% url 'crm_dashboard' %}" class="crm-admin-btn">
             ← Dashboard
@@ -85,6 +91,12 @@ Inventory | Bows & Meows CRM
 
     </select>
 
+    <select name="archive">
+        <option value="active" {% if archive_filter == "active" %}selected{% endif %}>Active products</option>
+        <option value="archived" {% if archive_filter == "archived" %}selected{% endif %}>Archived products</option>
+        <option value="all" {% if archive_filter == "all" %}selected{% endif %}>All products</option>
+    </select>
+
     <button type="submit">
         Filter
     </button>
@@ -98,6 +110,7 @@ Inventory | Bows & Meows CRM
 
             <thead>
                 <tr>
+                    <th>ID / Image</th>
                     <th>Product</th>
                     <th>Category</th>
                     <th>Price</th>
@@ -112,6 +125,11 @@ Inventory | Bows & Meows CRM
                 {% for product in products %}
 
                 <tr>
+
+                    <td>
+                        <span class="crm-product-id">#{{ product.id }}</span>
+                        <code class="crm-image-filename">{{ product.id }}-main.jpg</code>
+                    </td>
 
                     <td>
                         {{ product.name }}
@@ -138,7 +156,9 @@ Inventory | Bows & Meows CRM
                     </td>
 
                     <td>
-                        {% if product.is_available %}
+                        {% if product.is_archived %}
+                            Archived
+                        {% elif product.is_available %}
                             Yes
                         {% else %}
                             No
@@ -152,6 +172,15 @@ Inventory | Bows & Meows CRM
                         >
                             Edit
                         </a>
+                        {% if product.is_archived %}
+                            <form method="POST" action="{% url 'crm_inventory_restore' product.id %}" class="crm-inline-action">
+                                {% csrf_token %}<button type="submit" class="crm-restore-btn">Restore</button>
+                            </form>
+                        {% else %}
+                            <form method="POST" action="{% url 'crm_inventory_archive' product.id %}" class="crm-inline-action">
+                                {% csrf_token %}<button type="submit" class="crm-archive-btn" onclick="return confirm('Archive this product? It will disappear from the storefront but its history will remain.')">Archive</button>
+                            </form>
+                        {% endif %}
                     </td>
 
                 </tr>
@@ -159,7 +188,7 @@ Inventory | Bows & Meows CRM
                 {% empty %}
 
                 <tr>
-                    <td colspan="6">
+                    <td colspan="7">
                         No products found.
                     </td>
                 </tr>
@@ -173,5 +202,9 @@ Inventory | Bows & Meows CRM
     </div>
 
 </section>
+
+<style>
+.crm-product-id{display:inline-flex;padding:5px 9px;border-radius:999px;background:#173f2e;color:#fff;font-size:11px;font-weight:900}.crm-image-filename{display:block;width:max-content;margin-top:7px;padding:5px 7px;border-radius:7px;background:#eef4e8;color:#375542;font-size:10px}.crm-inline-action{display:inline-block;margin-left:5px}.crm-inline-action button{min-height:31px;padding:0 10px;border-radius:8px;font-size:9px;font-weight:850;cursor:pointer}.crm-archive-btn{border:1px solid #efd2ca;background:#fff3ef;color:#9c493b}.crm-restore-btn{border:1px solid #cce1c4;background:#edf7e9;color:#346534}
+</style>
 
 {% endblock %}

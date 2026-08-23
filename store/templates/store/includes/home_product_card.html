@@ -1,0 +1,143 @@
+<article class="home-product-card">
+
+    <a
+        href="{% url 'product_detail' product.id %}"
+        class="home-product-image"
+    >
+
+        {% if product.display_image_url %}
+
+            <img
+                src="{{ product.display_image_url }}"
+                alt="{{ product.name }}"
+                loading="lazy"
+            >
+
+        {% else %}
+
+            <div class="home-product-placeholder">
+                🐾
+            </div>
+
+        {% endif %}
+
+        {% if product.display_discount_percent %}
+            <span class="home-product-discount">
+                {{ product.display_discount_percent }}% OFF
+            </span>
+        {% endif %}
+
+        {% if product.requires_prescription %}
+            <span class="home-product-rx-badge{% if product.display_discount_percent %} home-product-rx-with-discount{% endif %}">Rx</span>
+        {% endif %}
+
+
+        {% if product.sold_count %}
+
+            <span class="home-product-badge">
+                🔥 Best Seller
+            </span>
+
+        {% elif product.is_featured %}
+
+            <span class="home-product-badge">
+                ★ Featured
+            </span>
+
+        {% endif %}
+
+    </a>
+
+
+    <div class="home-product-info">
+
+        <span class="home-product-brand">
+
+            {% if product.brand %}
+                {{ product.brand }}
+            {% else %}
+                Bow & Meow
+            {% endif %}
+
+        </span>
+
+
+        <h3>
+
+            <a href="{% url 'product_detail' product.id %}">
+                {{ product.name }}
+            </a>
+
+        </h3>
+
+
+        {% if product.life_stage %}
+
+            <small class="home-product-stage">
+                {{ product.get_life_stage_display }}
+            </small>
+
+        {% endif %}
+
+        {% if product.has_available_variants %}
+            <div class="home-product-variants" aria-label="Available sizes">
+                {% for variant in product.card_variants|slice:":4" %}
+                    <span>{{ variant.size }}</span>
+                {% endfor %}
+                {% if product.card_variants|length > 4 %}
+                    <small>+{{ product.card_variants|length|add:"-4" }}</small>
+                {% endif %}
+            </div>
+        {% endif %}
+
+
+        <div class="home-product-price">
+
+            <strong>
+                {% if product.has_available_variants %}<small>From</small>{% endif %}
+                ₹{{ product.display_price|floatformat:0 }}
+            </strong>
+
+            {% if product.display_original_price %}
+
+                <del>
+                    ₹{{ product.display_original_price|floatformat:0 }}
+                </del>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="home-product-stock">
+
+            {% if product.stock > 0 %}
+
+                <span></span>
+                In stock
+
+            {% else %}
+
+                Out of stock
+
+            {% endif %}
+
+        </div>
+
+
+        <a
+            href="{% url 'product_detail' product.id %}"
+            class="home-product-button"
+        >
+            {% if product.requires_prescription %}
+                View requirements
+            {% elif product.has_available_variants %}
+                Choose size
+            {% else %}
+                View product
+            {% endif %}
+        </a>
+
+    </div>
+
+</article>

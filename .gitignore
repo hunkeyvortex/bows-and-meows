@@ -16,6 +16,15 @@ db.sqlite3
 # Uploaded media
 media/
 
+# Generated deployment assets and local catalogue exports
+staticfiles/
+catalog_exports/
+
+# Local development server output
+django-server.log
+django-server-error.log
+*.log
+
 # VS Code
 .vscode/
 

@@ -1,7 +1,7 @@
 {% extends "store/base.html" %}
 
 {% block title %}
-Payment | Bows & Meows
+Payment | Bow & Meow
 {% endblock %}
 
 {% block content %}
@@ -31,6 +31,13 @@ Payment | Bows & Meows
 
 </section>
 
+<form method="POST" action="{% url 'payment_cancelled' order.id %}" id="payment-cancelled-form">
+    {% csrf_token %}
+</form>
+<form method="POST" action="{% url 'payment_failed_view' order.id %}" id="payment-failed-form">
+    {% csrf_token %}
+</form>
+
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
@@ -40,7 +47,7 @@ Payment | Bows & Meows
         "key": "{{ razorpay_key_id }}",
         "amount": "{{ amount }}",
         "currency": "INR",
-        "name": "Bows & Meows",
+        "name": "Bow & Meow",
         "description": "Pet Store Order #{{ order.id }}",
         "order_id": "{{ razorpay_order_id }}",
 
@@ -59,8 +66,7 @@ Payment | Bows & Meows
         "modal": {
             "ondismiss": function () {
 
-                window.location.href =
-                    "{% url 'payment_cancelled' order.id %}";
+                document.getElementById("payment-cancelled-form").submit();
             }
         }
     };
@@ -73,8 +79,7 @@ Payment | Bows & Meows
         "payment.failed",
         function (response) {
 
-            window.location.href =
-                "{% url 'payment_failed_view' order.id %}";
+            document.getElementById("payment-failed-form").submit();
         }
     );
 
@@ -88,4 +93,4 @@ Payment | Bows & Meows
         };
 </script>
 
-{% endblock %}
+{% include "store/includes/flow_theme.html" %}{% endblock %}
