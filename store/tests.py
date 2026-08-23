@@ -69,6 +69,36 @@ class CouponCalculationTests(TestCase):
         self.assertNotContains(self.client.get(reverse("checkout")), "This coupon has reached its usage limit.")
 
 
+class HomepageFoodRankingTests(TestCase):
+    def test_top_selling_food_rejects_misclassified_clothing(self):
+        real_food = Product.objects.create(
+            name="Pedigree Chicken and Vegetables Adult Dog Dry Food",
+            brand="Pedigree",
+            pet_type="dog",
+            category="dog_food",
+            product_type="food",
+            price=Decimal("799.00"),
+            stock=10,
+            is_available=True,
+        )
+        clothing = Product.objects.create(
+            name="Dog Winter Hoodie Shirt",
+            brand="Fashion Paws",
+            pet_type="dog",
+            category="dog_food",
+            product_type="food",
+            price=Decimal("499.00"),
+            stock=10,
+            is_available=True,
+        )
+
+        response = self.client.get(reverse("home"))
+        ranked_ids = [product.id for product in response.context["top_dog_foods"]]
+
+        self.assertIn(real_food.id, ranked_ids)
+        self.assertNotIn(clothing.id, ranked_ids)
+
+
 class StoreSecurityTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(

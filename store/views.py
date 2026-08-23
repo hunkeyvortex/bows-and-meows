@@ -20,7 +20,7 @@ from django.db.models import Avg
 from .models import Product, Order, OrderItem, Pet, Review
 from .models import Product, Order, OrderItem, Pet, Review, Wishlist
 from .models import Address
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Case, When, Value, IntegerField
 from .models import ProductImage
 import razorpay
 import os
@@ -133,26 +133,82 @@ def home(request):
         )[:8]
     )
 
-    # Food-only rankings for the homepage. Completed orders lead the ranking,
-    # while featured and recently added products keep a useful fallback order
-    # until the shop has more sales history.
-    top_dog_foods = (
-        base_products
-        .filter(
-            Q(category="dog_food")
-            | (Q(pet_type="dog") & Q(product_type="food"))
-        )
-        .order_by("-sold_count", "-is_featured", "-id")[:10]
+    # Imported catalogue categories are not always reliable. For this section,
+    # require food language in the product name and rank recognised best-selling
+    # formulas first. The shop's completed sales break ties within that ranking.
+    food_name_terms = (
+        "food", "kibble", "meal", "gravy", "jelly", "chunks",
+        "dry", "wet", "baked", "nutrition",
+    )
+    non_food_terms = (
+        "shirt", "t-shirt", "jacket", "dress", "hoodie", "sweater",
+        "collar", "leash", "harness", "bed", "toy", "bowl", "mat",
+        "shampoo", "tablet", "syrup", "drop", "powder", "lotion",
+        "wipe", "pad", "paste",
     )
 
-    top_cat_foods = (
-        base_products
-        .filter(
-            Q(category="cat_food")
-            | (Q(pet_type="cat") & Q(product_type="food"))
-        )
-        .order_by("-sold_count", "-is_featured", "-id")[:10]
+    dog_priority_terms = (
+        "Pedigree Chicken and Vegetables Adult",
+        "Royal Canin Mini Puppy",
+        "Royal Canin Maxi Adult",
+        "Drools Optimum Performance Adult",
+        "Farmina N&D Pumpkin Lamb",
+        "Purina Pro Plan Chicken Large Breed Adult",
+        "Henlo Baked Chicken",
+        "Royal Canin Maxi Puppy",
+        "Pedigree Chicken and Milk Puppy",
+        "Pedigree Meat and Rice Adult",
     )
+    cat_priority_terms = (
+        "Royal Canin Persian Adult",
+        "Whiskas Ocean Fish Adult",
+        "Me-O Persian Adult",
+        "Purepet Adult Ocean Fish",
+        "Royal Canin Kitten",
+        "Farmina N&D Prime Chicken Adult Cat",
+        "Whiskas Ocean Fish Kitten",
+        "Whiskas Tuna in Jelly",
+        "Whiskas Chicken in Gravy",
+        "Me-O Seafood Adult",
+    )
+
+    def ranked_food_products(pet, category, priority_terms):
+        food_words = Q()
+        for term in food_name_terms:
+            food_words |= Q(name__icontains=term)
+
+        excluded_words = Q()
+        for term in non_food_terms:
+            excluded_words |= Q(name__icontains=term)
+
+        pet_match = (
+            Q(pet_type=pet)
+            | Q(category=category)
+            | Q(name__icontains=pet)
+            | Q(name__icontains="puppy" if pet == "dog" else "kitten")
+        )
+
+        priority_cases = [
+            When(name__icontains=term, then=Value(index))
+            for index, term in enumerate(priority_terms)
+        ]
+
+        return (
+            base_products
+            .filter(pet_match & food_words)
+            .exclude(excluded_words)
+            .annotate(
+                market_rank=Case(
+                    *priority_cases,
+                    default=Value(100),
+                    output_field=IntegerField(),
+                )
+            )
+            .order_by("market_rank", "-sold_count", "-is_featured", "-id")[:10]
+        )
+
+    top_dog_foods = ranked_food_products("dog", "dog_food", dog_priority_terms)
+    top_cat_foods = ranked_food_products("cat", "cat_food", cat_priority_terms)
 
     famous_brands = list(
         Product.objects
