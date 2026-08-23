@@ -1,7 +1,9 @@
 from decimal import Decimal
+from io import StringIO
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
+from django.core.management import call_command
 from django.urls import reverse
 
 from .models import Address, Coupon, Order, OrderItem, Product, ProductVariant, Wishlist
@@ -407,6 +409,127 @@ class CategoryFilteringRegressionTests(TestCase):
         self.assertIn(dog.id, [p.id for p in dog_products])
         self.assertNotIn(cat.id, [p.id for p in dog_products])
         self.assertNotIn(unavailable.id, [p.id for p in dog_products])
+
+
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+)
+class PetCategoryIsolationTests(TestCase):
+    def setUp(self):
+        common = {
+            "brand": "Royal Canin",
+            "product_type": "food",
+            "price": Decimal("700.00"),
+            "stock": 10,
+            "is_available": True,
+        }
+        self.dog_royal = [
+            Product.objects.create(
+                name="Royal Canin Maxi Adult Dog Dry Food",
+                category="dog_food",
+                pet_type="both",  # Reproduces the imported-catalogue leak.
+                **common,
+            ),
+            Product.objects.create(
+                name="Royal Canin Golden Retriever Adult Dog Food",
+                category="dog_food",
+                pet_type="dog",
+                **common,
+            ),
+        ]
+        self.dog_other = Product.objects.create(
+            name="Pedigree Adult Dog Food",
+            brand="Pedigree",
+            category="dog_food",
+            pet_type="dog",
+            product_type="food",
+            price=Decimal("500.00"),
+            stock=10,
+        )
+        self.cat_royal = [
+            Product.objects.create(
+                name="Royal Canin Fit 32 Adult Cat Food",
+                category="cat_food",
+                pet_type="both",
+                **common,
+            ),
+            Product.objects.create(
+                name="Royal Canin Persian Adult Cat Food",
+                category="cat_food",
+                pet_type="cat",
+                **common,
+            ),
+        ]
+        self.cat_other = Product.objects.create(
+            name="Whiskas Adult Cat Food",
+            brand="Whiskas",
+            category="cat_food",
+            pet_type="cat",
+            product_type="food",
+            price=Decimal("400.00"),
+            stock=10,
+        )
+
+    def response_products(self, route_name, **params):
+        response = self.client.get(reverse(route_name), params)
+        catalogue = list(response.context["products"])
+        best_sellers = list(response.context["best_sellers"])
+        return response, catalogue, best_sellers
+
+    def test_unfiltered_dog_and_cat_pages_are_strictly_isolated(self):
+        _, dog_catalogue, dog_best = self.response_products("dog_products")
+        _, cat_catalogue, cat_best = self.response_products("cat_products")
+        dog_visible = {p.id for p in dog_catalogue + dog_best}
+        cat_visible = {p.id for p in cat_catalogue + cat_best}
+        expected_dogs = {p.id for p in self.dog_royal} | {self.dog_other.id}
+        expected_cats = {p.id for p in self.cat_royal} | {self.cat_other.id}
+        self.assertEqual(dog_visible, expected_dogs)
+        self.assertEqual(cat_visible, expected_cats)
+        self.assertTrue({p.id for p in dog_best}.isdisjoint(expected_cats))
+        self.assertTrue({p.id for p in cat_best}.isdisjoint(expected_dogs))
+
+    def test_brand_filter_cannot_cross_pet_category(self):
+        _, dogs, _ = self.response_products("dog_products", brand="Royal Canin")
+        _, cats, _ = self.response_products("cat_products", brand="Royal Canin")
+        self.assertEqual({p.id for p in dogs}, {p.id for p in self.dog_royal})
+        self.assertEqual({p.id for p in cats}, {p.id for p in self.cat_royal})
+
+    def test_food_filter_is_page_aware(self):
+        _, dogs, _ = self.response_products("dog_products", product_type="food")
+        _, cats, _ = self.response_products("cat_products", product_type="food")
+        self.assertEqual({p.id for p in dogs}, {p.id for p in self.dog_royal} | {self.dog_other.id})
+        self.assertEqual({p.id for p in cats}, {p.id for p in self.cat_royal} | {self.cat_other.id})
+
+    def test_search_cannot_cross_pet_category(self):
+        _, dogs, _ = self.response_products("dog_products", q="Royal")
+        _, cats, _ = self.response_products("cat_products", q="Royal")
+        self.assertEqual({p.id for p in dogs}, {p.id for p in self.dog_royal})
+        self.assertEqual({p.id for p in cats}, {p.id for p in self.cat_royal})
+
+    def test_combined_filters_preserve_page_isolation(self):
+        params = {"q": "Royal", "brand": "Royal Canin", "product_type": "food"}
+        _, dogs, _ = self.response_products("dog_products", **params)
+        _, cats, _ = self.response_products("cat_products", **params)
+        self.assertEqual({p.id for p in dogs}, {p.id for p in self.dog_royal})
+        self.assertEqual({p.id for p in cats}, {p.id for p in self.cat_royal})
+
+    def test_taxonomy_audit_is_report_only(self):
+        product = self.dog_royal[0]
+        output = StringIO()
+        call_command("audit_product_taxonomy", stdout=output)
+        product.refresh_from_db()
+        self.assertEqual(product.pet_type, "both")
+        self.assertIn("no records changed", output.getvalue().lower())
+
+    def test_importer_only_infers_missing_pet_type(self):
+        from store.management.commands.import_supertails_catalog import pet_type_for
+
+        self.assertEqual(pet_type_for("dog_food", ""), "dog")
+        self.assertEqual(pet_type_for("cat_food", ""), "cat")
+        self.assertEqual(pet_type_for("dog_food", "both"), "both")
 
 
 class StoreSecurityTests(TestCase):

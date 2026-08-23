@@ -36,6 +36,22 @@ def product_type_for(category):
     return "supply"
 
 
+def pet_type_for(category, supplied_pet_type):
+    """Infer only missing values; never overwrite an explicit supplier value."""
+    supplied = clean(supplied_pet_type, 15)
+    if supplied:
+        return supplied
+    if category.startswith("dog_"):
+        return "dog"
+    if category.startswith("cat_"):
+        return "cat"
+    if category.startswith("bird_"):
+        return "bird"
+    if category == "exotic_health":
+        return "exotic"
+    return "both"
+
+
 class Command(BaseCommand):
     help = "Bulk upsert the complete Supertails CSV catalog with externally hosted supplier imagery."
 
@@ -79,11 +95,12 @@ class Command(BaseCommand):
                 # separate supplier identities and variant sets.
                 if identity_match and not identity_match.supplier_product_id:
                     product = identity_match
+            category = clean(row.get("category"), 50) or "accessory"
             values = {
                 "name": name,
                 "brand": brand,
-                "pet_type": clean(row.get("pet_type"), 15) or "both",
-                "category": clean(row.get("category"), 50) or "accessory",
+                "pet_type": pet_type_for(category, row.get("pet_type")),
+                "category": category,
                 "life_stage": clean(row.get("life_stage"), 20) or "all",
                 "flavour": clean(row.get("flavour"), 100),
                 "description": clean(row.get("description")),
@@ -91,8 +108,8 @@ class Command(BaseCommand):
                 "price": money(row.get("base_price")),
                 "original_price": money(row.get("base_mrp")) if row.get("base_mrp") else None,
                 "stock": stock * len(rows),
-                "product_type": product_type_for(clean(row.get("category"))),
-                "requires_prescription": clean(row.get("category")) == "medicine",
+                "product_type": product_type_for(category),
+                "requires_prescription": category == "medicine",
                 "is_available": True,
                 "is_archived": False,
                 "external_image_url": clean(row.get("product_image_url"), 1000),

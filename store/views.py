@@ -3281,10 +3281,45 @@ INVALID_SALE_PAYMENT_STATUSES = ("failed", "refunded")
 CATEGORY_SALES_HISTORY_THRESHOLD = 10
 CATEGORY_BEST_SELLER_LIMIT = 4
 
-FOOD_CATEGORIES_BY_PAGE = {
-    "dog": ("dog_food",),
-    "cat": ("cat_food",),
-    "bird": ("bird_food",),
+PAGE_ELIGIBILITY = {
+    "dog": {
+        "pet_types": ("dog", "both"),
+        "categories": (
+            "dog_food", "dog_treat", "dog_toy", "dog_grooming",
+            "dog_accessory", "dog_health", "treat", "accessory",
+        ),
+    },
+    "cat": {
+        "pet_types": ("cat", "both"),
+        "categories": (
+            "cat_food", "cat_treat", "cat_toy", "cat_litter",
+            "cat_grooming", "cat_accessory", "cat_health", "treat", "accessory",
+        ),
+    },
+    "bird": {
+        "pet_types": ("bird", "exotic"),
+        "categories": ("bird_food", "bird_supplement", "bird_health", "exotic_health"),
+    },
+}
+
+PAGE_PRODUCT_TYPE_CATEGORIES = {
+    "dog": {
+        "food": ("dog_food",),
+        "treat": ("dog_treat", "treat"),
+        "grooming": ("dog_grooming",),
+        "supply": ("dog_toy", "dog_accessory", "accessory"),
+    },
+    "cat": {
+        "food": ("cat_food",),
+        "treat": ("cat_treat", "treat"),
+        "grooming": ("cat_grooming",),
+        "supply": ("cat_toy", "cat_litter", "cat_accessory", "accessory"),
+    },
+    "bird": {
+        "food": ("bird_food",),
+        "supplement": ("bird_supplement",),
+        "medicine": ("bird_health", "exotic_health"),
+    },
 }
 
 # Static market-popularity signals. These names were matched against products
@@ -3425,7 +3460,16 @@ def _category_products_page(
     # CATEGORY FILTER
     # ==========================================
 
-    if category:
+    page_eligibility = PAGE_ELIGIBILITY.get(page_type)
+
+    if page_eligibility:
+
+        products = products.filter(
+            pet_type__in=page_eligibility["pet_types"],
+            category__in=page_eligibility["categories"],
+        )
+
+    elif category:
 
         products = products.filter(
             category=category
@@ -3522,9 +3566,9 @@ def _category_products_page(
     brand = request.GET.get("brand", "").strip()
 
     if product_type and not fixed_product_type:
-        food_categories = FOOD_CATEGORIES_BY_PAGE.get(page_type)
-        if product_type == "food" and food_categories:
-            products = products.filter(category__in=food_categories)
+        mapped_categories = PAGE_PRODUCT_TYPE_CATEGORIES.get(page_type, {}).get(product_type)
+        if mapped_categories:
+            products = products.filter(category__in=mapped_categories)
         else:
             products = products.filter(product_type=product_type)
     if care_area:
@@ -3750,7 +3794,7 @@ def bird_products(request):
             "bird_health",
             "exotic_health",
         ],
-        pet_types=["bird"],
+        pet_types=["bird", "exotic"],
         page_title="Bird & Exotic Pet Care",
         page_type="bird",
     )
