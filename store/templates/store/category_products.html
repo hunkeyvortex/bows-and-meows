@@ -10,132 +10,23 @@
 
     <section class="category-hero">
         <div class="category-shell category-hero-inner">
-
-            <div>
-                <span class="category-eyebrow">
-                    {% if page_type == "dog" %}
-                        🐶 SHOP FOR DOGS
-                    {% elif page_type == "cat" %}
-                        🐱 SHOP FOR CATS
-                    {% else %}
-                        💊 PET HEALTH
-                    {% endif %}
-                </span>
-
-                <h1>{{ page_title }}</h1>
-
-                <p>
-                    {% if page_type == "dog" %}
-                        Popular dog food and everyday essentials, with best-selling picks shown first.
-                    {% elif page_type == "cat" %}
-                        Popular cat food and everyday essentials, with best-selling picks shown first.
-                    {% else %}
-                        Health and wellness essentials for everyday pet care.
-                    {% endif %}
-                </p>
-            </div>
-
-            <div class="category-hero-count">
-                <strong>{{ product_count }}</strong>
-                <span>products</span>
-            </div>
-
+            <h1>{{ category_heading }}</h1>
+            <span class="category-product-count">{{ product_count }} products</span>
         </div>
     </section>
 
 
-    {% if products %}
+    {% if best_sellers %}
 
     <section class="category-top-picks">
         <div class="category-shell">
 
-            <div class="category-heading">
-                <div>
-                    <span class="category-eyebrow">⭐ START HERE</span>
-                    <h2>Popular picks</h2>
-                    <p>Best-selling and featured products are placed upfront so you can shop faster.</p>
-                </div>
-            </div>
+            <div class="category-heading"><h2>Best sellers</h2></div>
 
             <div class="top-picks-scroll">
 
-                {% for product in products|slice:":4" %}
-
-                    <article class="category-product-card top-pick-card">
-
-                        <a
-                            href="{% url 'product_detail' product.id %}"
-                            class="category-product-image"
-                        >
-                            {% if product.display_image_url %}
-                                <img
-                                    src="{{ product.display_image_url }}"
-                                    alt="{{ product.name }}"
-                                    loading="lazy"
-                                >
-                            {% else %}
-                                <div class="category-placeholder">
-                                    {% if page_type == "dog" %}🐶{% elif page_type == "cat" %}🐱{% else %}🐾{% endif %}
-                                </div>
-                            {% endif %}
-
-                            {% if product.sold_count %}
-                                <span class="product-badge bestseller-badge">
-                                    🔥 Best seller
-                                </span>
-                            {% elif product.is_featured %}
-                                <span class="product-badge featured-badge">
-                                    ★ Featured
-                                </span>
-                            {% endif %}
-                        </a>
-
-                        <div class="category-product-body">
-
-                            <span class="category-product-brand">
-                                {{ product.brand|default:"Boww & Meow" }}
-                            </span>
-
-                            <h3>
-                                <a href="{% url 'product_detail' product.id %}">
-                                    {{ product.name }}
-                                </a>
-                            </h3>
-
-                            {% if product.life_stage %}
-                                <small class="product-life-stage">
-                                    {{ product.get_life_stage_display }}
-                                </small>
-                            {% endif %}
-
-                            <div class="category-price-row">
-                                <strong>₹{{ product.price }}</strong>
-
-                                {% if product.original_price %}
-                                    <del>₹{{ product.original_price }}</del>
-                                {% endif %}
-                            </div>
-
-                            <div class="product-stock-line">
-                                {% if product.stock > 0 %}
-                                    <span class="stock-dot"></span>
-                                    {{ product.stock }} available
-                                {% else %}
-                                    Out of stock
-                                {% endif %}
-                            </div>
-
-                            <a
-                                href="{% url 'product_detail' product.id %}"
-                                class="category-shop-btn"
-                            >
-                                View options →
-                            </a>
-
-                        </div>
-
-                    </article>
-
+                {% for product in best_sellers %}
+                    {% include "store/includes/category_product_card.html" with product=product is_best_seller=True %}
                 {% endfor %}
 
             </div>
@@ -153,8 +44,7 @@
             <div class="category-toolbar">
 
                 <div>
-                    <span class="category-eyebrow">ALL PRODUCTS</span>
-                    <h2>Shop {{ page_title }}</h2>
+                    <h2>{{ all_products_heading }}</h2>
                 </div>
 
                 <form method="GET" class="category-controls">
@@ -225,82 +115,7 @@
             <div class="category-products-grid">
 
                 {% for product in products %}
-
-                    <article class="category-product-card">
-
-                        <a
-                            href="{% url 'product_detail' product.id %}"
-                            class="category-product-image"
-                        >
-
-                            {% if product.display_image_url %}
-
-                                <img
-                                    src="{{ product.display_image_url }}"
-                                    alt="{{ product.name }}"
-                                    loading="lazy"
-                                >
-
-                            {% else %}
-
-                                <div class="category-placeholder">
-                                    {% if page_type == "dog" %}🐶{% elif page_type == "cat" %}🐱{% else %}🐾{% endif %}
-                                </div>
-
-                            {% endif %}
-
-                            {% if product.sold_count %}
-                                <span class="product-badge bestseller-badge">
-                                    🔥 Best seller
-                                </span>
-                            {% elif product.is_featured %}
-                                <span class="product-badge featured-badge">
-                                    ★ Featured
-                                </span>
-                            {% endif %}
-
-                        </a>
-
-
-                        <div class="category-product-body">
-
-                            <span class="category-product-brand">
-                                {{ product.brand|default:"Boww & Meow" }}
-                            </span>
-
-                            <h3>
-                                <a href="{% url 'product_detail' product.id %}">
-                                    {{ product.name }}
-                                </a>
-                            </h3>
-
-                            <div class="category-price-row">
-                                <strong>₹{{ product.price }}</strong>
-
-                                {% if product.original_price %}
-                                    <del>₹{{ product.original_price }}</del>
-                                {% endif %}
-                            </div>
-
-                            <div class="product-stock-line">
-                                {% if product.stock > 0 %}
-                                    <span class="stock-dot"></span>
-                                    In stock
-                                {% else %}
-                                    Out of stock
-                                {% endif %}
-                            </div>
-
-                            <a
-                                href="{% url 'product_detail' product.id %}"
-                                class="category-shop-btn"
-                            >
-                                View product
-                            </a>
-
-                        </div>
-
-                    </article>
+                    {% include "store/includes/category_product_card.html" with product=product is_best_seller=False %}
 
                 {% empty %}
 
@@ -357,17 +172,15 @@
 }
 
 .category-hero {
-    padding: 54px 0 44px;
-    background:
-        radial-gradient(circle at 85% 10%, rgba(205, 237, 126, .45), transparent 32%),
-        linear-gradient(135deg, #f7f7ef, #fffaf5);
+    padding: 24px 0;
+    background: linear-gradient(135deg, #f7f7ef, #fffaf5);
     border-bottom: 1px solid #e8e7df;
 }
 
 .category-hero-inner {
     display: flex;
     justify-content: space-between;
-    align-items: end;
+    align-items: center;
     gap: 30px;
 }
 
@@ -382,12 +195,12 @@
 .category-hero h1,
 .category-heading h2,
 .category-toolbar h2 {
-    margin: 8px 0 8px;
+    margin: 0;
     line-height: 1.08;
 }
 
 .category-hero h1 {
-    font-size: clamp(38px, 5vw, 68px);
+    font-size: clamp(30px, 4vw, 46px);
 }
 
 .category-hero p,
@@ -398,32 +211,15 @@
     line-height: 1.6;
 }
 
-.category-hero-count {
-    min-width: 120px;
-    padding: 18px 22px;
-    border-radius: 18px;
-    background: #fff;
-    border: 1px solid #e5e4dc;
-    text-align: center;
-}
-
-.category-hero-count strong,
-.category-hero-count span {
-    display: block;
-}
-
-.category-hero-count strong {
-    font-size: 30px;
-}
-
-.category-hero-count span {
+.category-product-count {
     color: #758078;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 750;
 }
 
 .category-top-picks,
 .category-catalogue {
-    padding: 42px 0;
+    padding: 30px 0;
 }
 
 .category-heading {
@@ -663,12 +459,12 @@
     }
 
     .category-hero {
-        padding: 30px 0;
+        padding: 17px 0;
     }
 
     .category-hero-inner {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items: center;
+        flex-direction: row;
         min-width: 0;
     }
 
@@ -680,42 +476,33 @@
         max-width: 100%;
     }
 
-    .category-hero-count {
-        display: none;
-    }
-
     .category-hero h1 {
-        font-size: 38px;
+        font-size: 30px;
     }
 
     .category-top-picks,
     .category-catalogue {
-        padding: 28px 0;
+        padding: 22px 0;
     }
 
     .top-picks-scroll {
-        display: flex;
-        gap: 12px;
-        overflow-x: auto;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        overflow: visible;
         max-width: 100%;
-        scroll-snap-type: x mandatory;
-        padding-bottom: 8px;
-        scrollbar-width: none;
-        overscroll-behavior-inline: contain;
-    }
-
-    .top-picks-scroll::-webkit-scrollbar {
-        display: none;
-    }
-
-    .top-pick-card {
-        flex: 0 0 78%;
-        scroll-snap-align: start;
     }
 
     .category-products-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
+        align-items: stretch;
+    }
+
+    .category-product-card {
+        display: flex;
+        height: 100%;
+        flex-direction: column;
     }
 
     .category-product-image {
@@ -724,12 +511,31 @@
     }
 
     .category-product-body {
+        display: flex;
+        min-width: 0;
+        flex: 1;
+        flex-direction: column;
         padding: 13px;
     }
 
     .category-product-body h3 {
-        min-height: 56px;
+        min-height: 57px;
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
         font-size: 14px;
+        line-height: 1.35;
+    }
+
+    .category-price-row { min-height: 28px; flex-wrap: nowrap; }
+    .category-price-row strong,
+    .category-price-row del { white-space: nowrap; }
+    .product-stock-line { min-height: 18px; }
+    .category-shop-btn {
+        width: 100%;
+        min-height: 44px;
+        margin-top: auto;
     }
 
     .category-price-row strong {

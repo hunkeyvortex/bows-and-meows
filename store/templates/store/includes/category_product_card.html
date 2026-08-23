@@ -1,0 +1,30 @@
+<article class="category-product-card{% if is_best_seller %} top-pick-card{% endif %}">
+    <a href="{% url 'product_detail' product.id %}" class="category-product-image">
+        {% if product.display_image_url %}
+            <img src="{{ product.display_image_url }}" alt="{{ product.name }}" loading="lazy">
+        {% else %}
+            <div class="category-placeholder" aria-hidden="true">BM</div>
+        {% endif %}
+        {% if is_best_seller %}
+            <span class="product-badge bestseller-badge">Best seller</span>
+        {% elif product.is_featured %}
+            <span class="product-badge featured-badge">Featured</span>
+        {% endif %}
+    </a>
+
+    <div class="category-product-body">
+        <span class="category-product-brand">{{ product.brand|default:"Boww & Meow" }}</span>
+        <h3><a href="{% url 'product_detail' product.id %}">{{ product.name }}</a></h3>
+        {% if product.life_stage %}
+            <small class="product-life-stage">{{ product.get_life_stage_display }}</small>
+        {% endif %}
+        <div class="category-price-row">
+            <strong>₹{{ product.price }}</strong>
+            {% if product.original_price %}<del>₹{{ product.original_price }}</del>{% endif %}
+        </div>
+        <div class="product-stock-line">
+            {% if product.stock > 0 %}<span class="stock-dot"></span>In stock{% else %}Out of stock{% endif %}
+        </div>
+        <a href="{% url 'product_detail' product.id %}" class="category-shop-btn">View options →</a>
+    </div>
+</article>

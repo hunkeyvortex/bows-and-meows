@@ -128,6 +128,89 @@ class HomepageFoodRankingTests(TestCase):
         self.assertIn(real_food.id, ranked_ids)
         self.assertNotIn(clothing.id, ranked_ids)
 
+
+class CategoryBestSellerRankingTests(TestCase):
+    def product(self, name, *, category="dog_food", pet_type="dog", stock=10, featured=False, available=True):
+        return Product.objects.create(
+            name=name,
+            category=category,
+            pet_type=pet_type,
+            product_type="food",
+            price=Decimal("499.00"),
+            stock=stock,
+            is_featured=featured,
+            is_available=available,
+        )
+
+    def sale(self, product, quantity, *, status="delivered", payment_status="paid"):
+        order = Order.objects.create(
+            customer_name="Best Seller Test",
+            email="buyer@example.com",
+            phone="9999999999",
+            address="Test address",
+            status=status,
+            payment_status=payment_status,
+            total_amount=product.price * quantity,
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            quantity=quantity,
+            price=product.price,
+        )
+
+    def best_sellers(self, route_name):
+        return list(self.client.get(reverse(route_name)).context["best_sellers"])
+
+    def test_quantity_ten_ranks_over_quantity_four(self):
+        lower = self.product("Four-unit seller")
+        higher = self.product("Ten-unit seller")
+        self.sale(lower, 4)
+        self.sale(higher, 10)
+        ranked = self.best_sellers("dog_products")
+        self.assertLess(ranked.index(higher), ranked.index(lower))
+
+    def test_cancelled_and_failed_orders_do_not_boost_rank(self):
+        valid = self.product("Valid seller")
+        invalid = self.product("Invalid seller")
+        self.sale(valid, 10)
+        self.sale(invalid, 100, status="cancelled")
+        self.sale(invalid, 100, status="confirmed", payment_status="failed")
+        ranked = self.best_sellers("dog_products")
+        self.assertLess(ranked.index(valid), ranked.index(invalid))
+        self.assertEqual(next(p for p in ranked if p.id == invalid.id).sold_count, 0)
+
+    def test_dog_sales_never_enter_cat_best_sellers(self):
+        dog = self.product("Dog-only seller")
+        cat = self.product("Cat seller", category="cat_food", pet_type="cat")
+        self.sale(dog, 50)
+        ranked = self.best_sellers("cat_products")
+        self.assertNotIn(dog.id, [product.id for product in ranked])
+        self.assertIn(cat.id, [product.id for product in ranked])
+
+    def test_no_sales_uses_market_then_featured_fallback_without_duplicates(self):
+        market = self.product("Royal Canin Mini Puppy Dry Dog Food")
+        featured = self.product("Featured fallback", featured=True)
+        self.product("Ordinary fallback one")
+        self.product("Ordinary fallback two")
+        self.product("Ordinary fallback three")
+        ranked = self.best_sellers("dog_products")
+        self.assertEqual(ranked[0].id, market.id)
+        self.assertLess(ranked.index(featured), 4)
+        self.assertEqual(len(ranked), 4)
+        self.assertEqual(len({product.id for product in ranked}), 4)
+
+    def test_unavailable_and_out_of_stock_products_are_not_best_sellers(self):
+        unavailable = self.product("Unavailable", available=False)
+        out_of_stock = self.product("Out of stock", stock=0)
+        available = self.product("Available")
+        self.sale(unavailable, 100)
+        self.sale(out_of_stock, 100)
+        ranked_ids = [product.id for product in self.best_sellers("dog_products")]
+        self.assertIn(available.id, ranked_ids)
+        self.assertNotIn(unavailable.id, ranked_ids)
+        self.assertNotIn(out_of_stock.id, ranked_ids)
+
     def test_product_page_title_does_not_include_component_css(self):
         product = Product.objects.create(
             name="Clean Title Dog Food",

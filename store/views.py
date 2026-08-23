@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.db.models import Sum, Count
 from django.db.models import Sum, Count, F, DecimalField, ExpressionWrapper
-from django.db.models.functions import TruncDate
+from django.db.models.functions import Coalesce, TruncDate
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Avg
@@ -3275,6 +3275,124 @@ def search_products(request):
         }
     )
 
+
+VALID_SALE_STATUSES = ("confirmed", "shipped", "delivered")
+INVALID_SALE_PAYMENT_STATUSES = ("failed", "refunded")
+CATEGORY_SALES_HISTORY_THRESHOLD = 10
+CATEGORY_BEST_SELLER_LIMIT = 4
+
+# Static market-popularity signals. These names were matched against products
+# already sold by Boww & Meow; storefront data always comes from Product.
+MARKET_BEST_SELLER_NAMES = {
+    "dog": (
+        "Pedigree Chicken and Vegetables Adult Dog Dry Food",
+        "Royal Canin Mini Puppy Dry Dog Food",
+        "Farmina N&D Pumpkin Chicken & Pomegranate Adult Dog Food",
+        "Orijen Original Dog Dry Food (All Breeds & Ages)",
+    ),
+    "cat": (
+        "Royal Canin Fit 32 Adult Dry Cat Food",
+        "Royal Canin Kitten Dry Cat Food",
+        "Farmina N&D Prime Chicken & Pomegranate Grain Free Adult Cat Dry Food",
+        "Farmina N&D Ocean Herring & Orange Grain Free Adult Cat Dry Food",
+    ),
+    "medicine": (
+        "Bravecto (20-40KG) Dog Tablet",
+        "Simparica Trio (20KG to 40KG) Tablet",
+        "Drontal Plus Tasty Tablet",
+        "Virbac Epiotic Ear Cleanser (Salicylic Acid) for Dogs & Cats",
+    ),
+    "wellness": (
+        "Virbac Nutrich Multi Vitamin Tablets for Dogs and Cats",
+        "Virbac Canitone Joint Support for Dogs and Cats (pack of 30 tablets)",
+        "Virbac Vitabest Derm Omega 3+6 Syrup for Dogs and Cats (250ml)",
+        "Pedigree Dentastix Oral Care for Adult (Medium Breed 10 to 25 kg) Dog Treats",
+    ),
+    "grooming": (
+        "Himalaya Erina Coat Cleanser Shampoo for Dogs and Cats",
+        "Virbac Ketochlor Shampoo Antifungal & Antiseptic for Dogs and Cats (200ml)",
+        "Virbac Episoothe Oatmeal Shampoo for Dogs & Cats (200ml)",
+        "Canopus Pet Wipes",
+    ),
+    "bird": (
+        "Bird Food Budgies",
+        "Birds Need Drops",
+        "Respocare Avian Drop",
+        "Immuncare Exotic Drops",
+    ),
+}
+
+CATEGORY_COPY = {
+    "dog": ("Dogs", "All dog products"),
+    "cat": ("Cats", "All cat products"),
+    "medicine": ("Pharmacy", "All pharmacy products"),
+    "wellness": ("Wellness", "All wellness products"),
+    "grooming": ("Grooming", "All grooming products"),
+    "bird": ("Bird Care", "All bird products"),
+}
+
+
+def _with_valid_sales(queryset):
+    valid_sales = (
+        Q(orderitem__order__status__in=VALID_SALE_STATUSES)
+        & ~Q(orderitem__order__payment_status__in=INVALID_SALE_PAYMENT_STATUSES)
+    )
+    return queryset.annotate(
+        sold_count=Coalesce(
+            Sum("orderitem__quantity", filter=valid_sales),
+            Value(0),
+            output_field=IntegerField(),
+        )
+    )
+
+
+def _category_best_sellers(queryset, page_type):
+    """Return four unique, in-stock products without per-product queries."""
+    in_stock = queryset.filter(stock__gt=0)
+    valid_sales = (
+        Q(orderitem__order__status__in=VALID_SALE_STATUSES)
+        & ~Q(orderitem__order__payment_status__in=INVALID_SALE_PAYMENT_STATUSES)
+    )
+    total_sales = in_stock.aggregate(
+        total=Coalesce(
+            Sum("orderitem__quantity", filter=valid_sales),
+            Value(0),
+            output_field=IntegerField(),
+        )
+    )["total"]
+    eligible = _with_valid_sales(in_stock)
+    market_names = MARKET_BEST_SELLER_NAMES.get(page_type, ())
+    market_rank = Case(
+        *[
+            When(name=name, then=Value(position))
+            for position, name in enumerate(market_names)
+        ],
+        default=Value(9999),
+        output_field=IntegerField(),
+    )
+    eligible = eligible.annotate(market_rank=market_rank)
+
+    if total_sales >= CATEGORY_SALES_HISTORY_THRESHOLD:
+        eligible = eligible.order_by(
+            "-sold_count", "market_rank", "-is_featured", "-id"
+        )
+    else:
+        eligible = eligible.order_by(
+            "market_rank", "-is_featured", "-sold_count", "-id"
+        )
+
+    selected = []
+    seen_names = set()
+    for product in eligible[:40]:
+        normalized_name = product.name.strip().casefold()
+        if normalized_name in seen_names:
+            continue
+        seen_names.add(normalized_name)
+        selected.append(product)
+        if len(selected) == CATEGORY_BEST_SELLER_LIMIT:
+            break
+    return selected
+
 def _category_products_page(
     request,
     *,
@@ -3338,25 +3456,11 @@ def _category_products_page(
     # BEST SELLER DATA
     # ==========================================
 
-    products = products.annotate(
-
-        sold_count=Sum(
-
-            "orderitem__quantity",
-
-            filter=Q(
-
-                orderitem__order__status__in=[
-                    "confirmed",
-                    "shipped",
-                    "delivered",
-                ]
-
-            )
-
-        )
-
-    )
+    category_products = products
+    category_product_count = category_products.count()
+    best_sellers = _category_best_sellers(category_products, page_type)
+    best_seller_ids = [product.id for product in best_sellers]
+    products = _with_valid_sales(category_products).exclude(id__in=best_seller_ids)
 
 
     # ==========================================
@@ -3449,7 +3553,7 @@ def _category_products_page(
         )
 
 
-    product_count = products.count()
+    product_count = category_product_count
     paginator = Paginator(products, 48)
     page_obj = paginator.get_page(request.GET.get("page"))
     filter_params = request.GET.copy()
@@ -3465,6 +3569,10 @@ def _category_products_page(
 
         "page_type":
             page_type,
+
+        "category_heading": CATEGORY_COPY.get(page_type, (page_title, page_title))[0],
+        "all_products_heading": CATEGORY_COPY.get(page_type, (page_title, f"All {page_title}"))[1],
+        "best_sellers": best_sellers,
 
         "product_count":
             product_count,

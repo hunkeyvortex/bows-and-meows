@@ -71,23 +71,21 @@
         </h3>
 
 
-        {% if product.life_stage %}
-
-            <small class="home-product-stage">
-                {{ product.get_life_stage_display }}
-            </small>
-
-        {% endif %}
+        <small class="home-product-stage{% if not product.life_stage %} is-empty{% endif %}"{% if not product.life_stage %} aria-hidden="true"{% endif %}>
+            {% if product.life_stage %}{{ product.get_life_stage_display }}{% else %}&nbsp;{% endif %}
+        </small>
 
         {% if product.has_available_variants %}
             <div class="home-product-variants" aria-label="Available sizes">
-                {% for variant in product.card_variants|slice:":4" %}
+                {% for variant in product.card_variants|slice:":3" %}
                     <span>{{ variant.size }}</span>
                 {% endfor %}
-                {% if product.card_variants|length > 4 %}
-                    <small>+{{ product.card_variants|length|add:"-4" }}</small>
+                {% if product.card_variants|length > 3 %}
+                    <small>+{{ product.card_variants|length|add:"-3" }} more</small>
                 {% endif %}
             </div>
+        {% else %}
+            <div class="home-product-variants home-product-variants-empty" aria-hidden="true"></div>
         {% endif %}
 
 
