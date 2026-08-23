@@ -8933,3 +8933,84 @@ img:nth-child(3) {
     .v2-search { min-width: 0; }
     .v2-footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 34px; }
 }
+
+/* Targeted mobile product/checkout polish. Desktop product detail remains unchanged. */
+@media (max-width: 768px) {
+    :root {
+        --bm-mobile-dock-height: 68px;
+        --bm-mobile-help-gap: 14px;
+    }
+
+    .pd-v2-page .pd-v2-breadcrumb { margin-bottom: 10px; }
+    .pd-v2-page .pd-v2-layout { gap: 14px; }
+    .pd-v2-page .pd-v2-media-card {
+        min-height: 0;
+        padding: 10px;
+    }
+    .pd-v2-page .pd-gallery-main {
+        width: 100%;
+        min-height: 0;
+        height: clamp(250px, 68vw, 290px);
+        padding: 10px;
+    }
+    .pd-v2-page .pd-gallery-main img,
+    .pd-v2-page .pd-v2-main-image {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        object-fit: contain;
+    }
+    .pd-v2-page .pd-gallery-thumbs {
+        gap: 8px;
+        margin-top: 8px;
+        padding: 3px 2px 4px;
+    }
+    .pd-v2-page .pd-gallery-thumbs .pd-thumb {
+        width: 68px;
+        height: 68px;
+        min-width: 68px;
+    }
+    .pd-v2-page .pd-v2-info h1 { margin-block: 6px 10px; }
+    .pd-v2-page .pd-v2-rating-row { margin-bottom: 10px; }
+    .pd-v2-page .pd-v2-tags { margin-block: 10px; }
+    .pd-v2-page .pd-v2-price-block { margin-block: 14px; }
+    .pd-v2-page .pd-v2-stock-row { margin-block: 14px; }
+
+    .bm-floating-help,
+    body:has(.home-product-card) .bm-floating-help,
+    body:has(.category-product-card) .bm-floating-help,
+    body:has(.pd-v2-page) .bm-floating-help {
+        position: fixed;
+        right: 14px;
+        bottom: calc(
+            var(--bm-mobile-dock-height) +
+            env(safe-area-inset-bottom) +
+            var(--bm-mobile-help-gap)
+        );
+        z-index: 20;
+        display: flex;
+        width: 48px;
+        min-height: 48px;
+        padding: 0;
+        justify-content: center;
+    }
+    .bm-floating-help strong { display: none; }
+
+    /* The checkout CTA occupies the space directly above the mobile dock. */
+    body:has(.checkout-page) .bm-floating-help {
+        display: flex;
+        bottom: calc(
+            var(--bm-mobile-dock-height) +
+            env(safe-area-inset-bottom) +
+            84px
+        );
+        z-index: 4;
+    }
+
+    /* The filter backdrop and sheet visually own the viewport while open. */
+    body.bm-filter-sheet-open .bm-floating-help {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+    }
+}

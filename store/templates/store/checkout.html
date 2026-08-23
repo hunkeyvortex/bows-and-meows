@@ -53,9 +53,6 @@
             <h2>Customer Details</h2>
 
 
-            <label>
-                Full Name
-            </label>
             {% if request.user.is_authenticated and addresses %}
 
                 <div class="saved-addresses">
@@ -109,7 +106,7 @@
 
             {% endif %}
             <label for="checkout-name">
-                Full name
+                Full Name
             </label>
 
             <input

@@ -287,6 +287,37 @@ class CategoryBestSellerRankingTests(TestCase):
         self.assertContains(response, 'aria-label="Boww & Meow home"')
         self.assertNotContains(response, "Bows & Meows")
 
+    def test_checkout_renders_each_customer_field_label_once(self):
+        product = Product.objects.create(
+            name="Accessible Checkout Food",
+            category="dog_food",
+            product_type="food",
+            price=Decimal("399.00"),
+            stock=5,
+            is_available=True,
+        )
+        session = self.client.session
+        session["cart"] = {
+            str(product.id): {
+                "product_id": product.id,
+                "variant_id": None,
+                "quantity": 1,
+            }
+        }
+        session.save()
+
+        html = self.client.get(reverse("checkout")).content.decode()
+
+        for field_id in (
+            "checkout-name",
+            "checkout-email",
+            "checkout-phone",
+            "checkout-address",
+            "checkout-payment",
+        ):
+            self.assertEqual(html.count(f'for="{field_id}"'), 1, field_id)
+        self.assertEqual(html.count("Full Name"), 1)
+
 
 @override_settings(
     STORAGES={
