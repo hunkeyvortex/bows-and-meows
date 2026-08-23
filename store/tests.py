@@ -1,5 +1,6 @@
 from decimal import Decimal
 from io import StringIO
+from pathlib import Path
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
@@ -965,3 +966,45 @@ class PaymentInventoryTests(TestCase):
         ):
             response = self.client.get(reverse(route_name, args=[self.order.id]))
             self.assertEqual(response.status_code, 405)
+
+
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+)
+class BrandAndCartSoundTests(TestCase):
+    def product(self, pet_type):
+        return Product.objects.create(
+            name=f"{pet_type.title()} Sound Product",
+            category="cat_food" if pet_type == "cat" else "dog_food",
+            pet_type=pet_type,
+            product_type="food",
+            price=Decimal("399.00"),
+            stock=5,
+            is_available=True,
+        )
+
+    def test_storefront_uses_official_logo_without_old_header_brand(self):
+        html = self.client.get(reverse("home")).content.decode()
+        self.assertEqual(html.count("images/boww-meow-coral-logo.png"), 2)
+        self.assertEqual(html.count('alt="Boww & Meow"'), 2)
+        self.assertNotIn('class="v2-brand-mark"', html)
+        self.assertNotIn('class="v2-brand-copy"', html)
+
+    def test_product_purchase_forms_use_structured_pet_type_sound(self):
+        cases = (("dog", "dog"), ("cat", "cat"), ("both", "dog"))
+        for pet_type, expected_sound in cases:
+            html = self.client.get(
+                reverse("product_detail", args=[self.product(pet_type).id])
+            ).content.decode()
+            self.assertEqual(html.count(f'data-cart-sound="{expected_sound}"'), 2)
+
+    def test_sound_script_has_temporary_not_permanent_submission_guard(self):
+        script = (
+            Path(__file__).resolve().parent / "static" / "store" / "cart-sounds.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("const activeSubmissions = new WeakSet()", script)
+        self.assertIn('document.addEventListener("submit"', script)
+        self.assertNotIn("soundPlayed", script)

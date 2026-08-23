@@ -160,7 +160,7 @@
                             </div>
 
                             {% if product.stock > 0 %}
-                                <form method="POST" action="{% url 'add_to_cart' product.id %}"{% if product.pet_type == 'dog' or product.category|slice:':4' == 'dog_' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' or product.category|slice:':4' == 'cat_' %} data-cart-sound="cat"{% endif %}>
+                                <form method="POST" action="{% url 'add_to_cart' product.id %}"{% if product.pet_type == 'dog' or product.pet_type == 'both' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' %} data-cart-sound="cat"{% endif %}>
                                     {% csrf_token %}
                                     <button type="submit" class="catalog-v3-add">Add to cart</button>
                                 </form>

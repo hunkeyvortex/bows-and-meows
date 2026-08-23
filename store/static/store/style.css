@@ -9014,3 +9014,27 @@ img:nth-child(3) {
         pointer-events: none;
     }
 }
+
+/* Official coral brand artwork. */
+.v2-brand-logo {
+    display: block;
+    width: 152px;
+    height: auto;
+    object-fit: contain;
+}
+
+.v2-footer-logo {
+    width: 176px;
+}
+
+@media (max-width: 700px) {
+    .v2-main-header .v2-brand-logo {
+        width: clamp(115px, 31vw, 128px);
+        height: auto;
+    }
+
+    .v2-footer-logo {
+        width: 150px;
+        height: auto;
+    }
+}

@@ -17,12 +17,19 @@
         return audio;
     }
 
+    const activeSubmissions = new WeakSet();
+
     document.addEventListener("submit", (event) => {
         const form = event.target.closest("form[data-cart-sound]");
-        if (!form || form.dataset.soundPlayed === "true") return;
+        if (!form) return;
+
+        if (activeSubmissions.has(form)) {
+            event.preventDefault();
+            return;
+        }
 
         event.preventDefault();
-        form.dataset.soundPlayed = "true";
+        activeSubmissions.add(form);
         const submitter = event.submitter;
         if (submitter) submitter.disabled = true;
 
@@ -33,6 +40,13 @@
         }
 
         const delay = form.dataset.cartSound === "cat" ? 820 : 1050;
-        window.setTimeout(() => form.submit(), delay);
+        window.setTimeout(() => {
+            try {
+                HTMLFormElement.prototype.submit.call(form);
+            } catch (_) {
+                activeSubmissions.delete(form);
+                if (submitter) submitter.disabled = false;
+            }
+        }, delay);
     });
 })();

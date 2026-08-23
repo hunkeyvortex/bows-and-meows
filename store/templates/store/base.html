@@ -23,11 +23,7 @@
     <div class="v2-shell v2-main-header">
 
         <a href="{% url 'home' %}" class="v2-brand" aria-label="Boww & Meow home">
-            <span class="v2-brand-mark"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span>
-            <span class="v2-brand-copy">
-                <strong>Boww & Meow</strong>
-                <small>Pet care, made better</small>
-            </span>
+            <img class="v2-brand-logo" src="{% static 'store/images/boww-meow-coral-logo.png' %}" alt="Boww & Meow">
         </a>
 
         <form method="GET" action="{% url 'search_products' %}" class="v2-search" role="search">
@@ -119,13 +115,9 @@
         <div class="v2-footer-grid">
 
             <div class="v2-footer-brand">
-                <div class="v2-brand v2-brand-footer">
-                    <span class="v2-brand-mark"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span>
-                    <span class="v2-brand-copy">
-                        <strong>Boww & Meow</strong>
-                        <small>Pet care, made better</small>
-                    </span>
-                </div>
+                <a href="{% url 'home' %}" class="v2-brand v2-brand-footer" aria-label="Boww & Meow home">
+                    <img class="v2-brand-logo v2-footer-logo" src="{% static 'store/images/boww-meow-coral-logo.png' %}" alt="Boww & Meow">
+                </a>
 
                 <p>
                     Thoughtful food, care and everyday essentials
