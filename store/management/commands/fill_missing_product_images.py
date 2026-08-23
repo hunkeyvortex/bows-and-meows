@@ -57,7 +57,7 @@ def branded_placeholder(product):
     draw.text((450, 273), (product.brand or "B&M")[:18].upper(), font=font(30, True), fill="#1d4d38", anchor="mm")
     draw.text((450, 440), "PET CARE", font=font(24, True), fill="#ffffff", anchor="mm")
 
-    brand = (product.brand or "Bow & Meow").upper()
+    brand = (product.brand or "Boww & Meow").upper()
     draw.text((90, 625), brand[:35], font=font(24, True), fill="#6a8248")
     wrapped = textwrap.wrap(product.name.replace("�", "-"), width=35)[:3]
     draw.multiline_text((90, 670), "\n".join(wrapped), font=font(31, True), fill="#172b20", spacing=9)

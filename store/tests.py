@@ -98,6 +98,46 @@ class HomepageFoodRankingTests(TestCase):
         self.assertIn(real_food.id, ranked_ids)
         self.assertNotIn(clothing.id, ranked_ids)
 
+    def test_product_page_title_does_not_include_component_css(self):
+        product = Product.objects.create(
+            name="Clean Title Dog Food",
+            category="dog_food",
+            product_type="food",
+            price=Decimal("299.00"),
+            stock=5,
+            is_available=True,
+        )
+
+        response = self.client.get(reverse("product_detail", args=[product.id]))
+
+        self.assertContains(response, "<title>\nClean Title Dog Food | Boww & Meow\n</title>", html=False)
+        title_markup = response.content.decode().split("</title>", 1)[0]
+        self.assertNotIn("<style>", title_markup)
+
+    def test_checkout_uses_shared_bow_and_meow_storefront(self):
+        product = Product.objects.create(
+            name="Checkout Dog Food",
+            category="dog_food",
+            product_type="food",
+            price=Decimal("399.00"),
+            stock=5,
+            is_available=True,
+        )
+        session = self.client.session
+        session["cart"] = {
+            str(product.id): {
+                "product_id": product.id,
+                "variant_id": None,
+                "quantity": 1,
+            }
+        }
+        session.save()
+
+        response = self.client.get(reverse("checkout"))
+
+        self.assertContains(response, 'aria-label="Boww & Meow home"')
+        self.assertNotContains(response, "Bows & Meows")
+
 
 class StoreSecurityTests(TestCase):
     def setUp(self):

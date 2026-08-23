@@ -2,7 +2,8 @@
 {% load static %}
 
 {% block title %}
-{{ product.name }} | Bow & Meow
+{{ product.name }} | Boww & Meow
+{% endblock %}
 
 <style>
 .smart-pack-advisor {
@@ -238,9 +239,6 @@
 }
 </style>
 
-
-{% endblock %}
-
 {% block content %}
 
 <section class="pd-v2-page">
@@ -464,7 +462,7 @@
 
                     <div class="smart-pack-head">
                         <div>
-                            <span class="smart-pack-kicker">🐾 BOW & MEOW SMART PACK ADVISOR</span>
+                            <span class="smart-pack-kicker">🐾 BOWW & MEOW SMART PACK ADVISOR</span>
                             <h3>Which pack fits your pet best?</h3>
                             <p>
                                 We use your pet's saved weight and this product's feeding guide
@@ -523,7 +521,7 @@
                             <div class="smart-pack-empty">
                                 <strong>Add your pet to unlock personalized pack recommendations.</strong>
                                 <p>
-                                    Save your pet's weight once and Bow & Meow can estimate
+                                    Save your pet's weight once and Boww & Meow can estimate
                                     how long different food packs may last.
                                 </p>
                                 <a href="{% url 'my_pets' %}">
@@ -724,7 +722,7 @@
                 {% if product.has_available_variants %}
                     <p>
                         Compare package sizes and stock here. In the next step,
-                        Bow & Meow will calculate pack value and remember the
+                        Boww & Meow will calculate pack value and remember the
                         exact size you add to your cart.
                     </p>
                 {% else %}
@@ -1578,7 +1576,7 @@ function runSmartPackAdvisor() {
             === recommended.id
         ) {
             badge =
-                "✨ Bow & Meow Pick";
+                "✨ Boww & Meow Pick";
         } else if (
             item.id
             === freshest.id

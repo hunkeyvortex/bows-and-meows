@@ -1,9 +1,9 @@
 {% extends "store/base.html" %}
-{% block title %}My Account | Bow & Meow{% endblock %}
+{% block title %}My Account | Boww & Meow{% endblock %}
 {% block content %}
 <section class="bm-account-page"><div class="bm-account-shell">
 {% include "store/includes/account_nav.html" %}
-<header class="bm-account-hero"><div class="bm-account-hero-copy"><span class="bm-account-kicker">🐾 MY BOW & MEOW</span><h1>Hello, {{ request.user.username }}</h1><p>Everything you need to care for your pets and manage your shopping, all in one place.</p></div><div class="bm-account-avatar" aria-hidden="true"><span>🐾</span></div></header>
+<header class="bm-account-hero"><div class="bm-account-hero-copy"><span class="bm-account-kicker">🐾 MY BOWW & MEOW</span><h1>Hello, {{ request.user.username }}</h1><p>Everything you need to care for your pets and manage your shopping, all in one place.</p></div><div class="bm-account-avatar" aria-hidden="true"><span>🐾</span></div></header>
 <div class="bm-account-heading"><div><span>YOUR ACCOUNT</span><h2>What would you like to do?</h2></div><p>View orders, manage delivery details, and keep your pet profiles up to date.</p></div>
 <div class="bm-account-grid">
 <a href="{% url 'my_orders' %}" class="bm-account-card bm-account-orders"><span class="bm-account-icon">📦</span><div><h3>My Orders</h3><p>View purchases, payment status and delivery progress.</p><strong>View orders <span>→</span></strong></div></a>

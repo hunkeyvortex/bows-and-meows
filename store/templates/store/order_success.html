@@ -1,4 +1,4 @@
-{% extends "store/base.html" %}{% block title %}Order BM-{{ order.id|stringformat:"04d" }} Confirmed | Bow & Meow{% endblock %}{% block content %}
+{% extends "store/base.html" %}{% block title %}Order BM-{{ order.id|stringformat:"04d" }} Confirmed | Boww & Meow{% endblock %}{% block content %}
 <main class="bm-confirm-page"><div class="bm-confirm-shell">
 <section class="bm-confirm-hero"><div class="bm-confirm-check">✓</div><span>🐾 ORDER BM-{{ order.id|stringformat:"04d" }}</span><h1>Your pet-care order<br>is confirmed!</h1><p>Thanks, {{ order.customer_name }}. We’ve received your order and will keep you updated as it makes its way to you.</p><div class="bm-confirm-actions">{% if request.user.is_authenticated %}<a class="primary" href="{% url 'order_detail' order.id %}">Track my order →</a>{% else %}<a class="primary" href="{% url 'contact_page' %}">Get order updates →</a>{% endif %}<a href="{% url 'home' %}">Continue shopping</a></div><small>✉ A confirmation has been sent to {{ order.email }}</small></section>
 

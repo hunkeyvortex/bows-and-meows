@@ -258,7 +258,7 @@ EMAIL_HOST_PASSWORD = (
 ).strip()
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-DEFAULT_FROM_EMAIL = "Bow & Meow <noreply@bowsandmeows.com>"
+DEFAULT_FROM_EMAIL = "Boww & Meow <noreply@bowsandmeows.com>"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 LOGIN_URL = "/login/"

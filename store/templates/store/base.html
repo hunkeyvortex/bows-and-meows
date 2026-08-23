@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Bow & Meow{% endblock %}</title>
+    <title>{% block title %}Boww & Meow{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'store/style.css' %}">
 </head>
 
@@ -22,16 +22,16 @@
 
     <div class="v2-shell v2-main-header">
 
-        <a href="{% url 'home' %}" class="v2-brand" aria-label="Bow & Meow home">
+        <a href="{% url 'home' %}" class="v2-brand" aria-label="Boww & Meow home">
             <span class="v2-brand-mark"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span>
             <span class="v2-brand-copy">
-                <strong>Bow & Meow</strong>
+                <strong>Boww & Meow</strong>
                 <small>Pet care, made better</small>
             </span>
         </a>
 
         <form method="GET" action="{% url 'search_products' %}" class="v2-search">
-            <span class="v2-search-icon">⌕</span>
+            <span class="v2-search-icon"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#search"></use></svg></span>
             <input
                 type="text"
                 name="q"
@@ -44,17 +44,17 @@
         <div class="v2-header-actions">
             {% if request.user.is_authenticated %}
                 <a href="{% url 'wishlist' %}" class="v2-action-link">
-                    <span>♡</span>
+                    <span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#heart"></use></svg></span>
                     <small>Saved</small>
                 </a>
 
                 <a href="{% url 'account' %}" class="v2-action-link">
-                    <span>👤</span>
+                    <span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#user"></use></svg></span>
                     <small>{{ request.user.username }}</small>
                 </a>
             {% else %}
                 <a href="{% url 'login' %}" class="v2-action-link">
-                    <span>👤</span>
+                    <span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#user"></use></svg></span>
                     <small>Login</small>
                 </a>
             {% endif %}
@@ -120,7 +120,7 @@
                 <div class="v2-brand v2-brand-footer">
                     <span class="v2-brand-mark"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span>
                     <span class="v2-brand-copy">
-                        <strong>Bow & Meow</strong>
+                        <strong>Boww & Meow</strong>
                         <small>Pet care, made better</small>
                     </span>
                 </div>
@@ -172,7 +172,7 @@
         </div>
 
         <div class="v2-footer-bottom">
-            <span>© 2026 Bow & Meow. All rights reserved.</span>
+            <span>© 2026 Boww & Meow. All rights reserved.</span>
             <span>Made with care for pet parents.</span>
         </div>
 
@@ -203,9 +203,9 @@
 </nav>
 
 {% if whatsapp_number %}
-<a class="bm-floating-help" href="https://wa.me/{{ whatsapp_number }}?text=Hello%20Bows%20%26%20Meows%2C%20I%20need%20help%20with..." target="_blank" rel="noopener" aria-label="Chat with Bow & Meow on WhatsApp"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#chat"></use></svg></span><strong>Need help?</strong></a>
+<a class="bm-floating-help" href="https://wa.me/{{ whatsapp_number }}?text=Hello%20Boww%20%26%20Meow%2C%20I%20need%20help%20with..." target="_blank" rel="noopener" aria-label="Chat with Boww & Meow on WhatsApp"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#chat"></use></svg></span><strong>Need help?</strong></a>
 {% else %}
-<a class="bm-floating-help" href="{% url 'contact_page' %}" aria-label="Contact Bow & Meow"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#chat"></use></svg></span><strong>Need help?</strong></a>
+<a class="bm-floating-help" href="{% url 'contact_page' %}" aria-label="Contact Boww & Meow"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#chat"></use></svg></span><strong>Need help?</strong></a>
 {% endif %}
 
 <script src="{% static 'store/cart-sounds.js' %}" defer></script>

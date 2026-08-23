@@ -286,7 +286,7 @@ def send_brevo_email(to_email, to_name, subject, html_content):
 
     api_key = os.getenv("BREVO_API_KEY")
     sender_email = os.getenv("BREVO_SENDER_EMAIL")
-    sender_name = os.getenv("BREVO_SENDER_NAME", "Bow & Meow")
+    sender_name = os.getenv("BREVO_SENDER_NAME", "Boww & Meow")
 
     if not api_key:
         print("BREVO ERROR: BREVO_API_KEY missing")
@@ -774,7 +774,7 @@ def send_order_confirmation(order):
         return
 
     subject = (
-        f"Bow & Meow - Order #{order.id} Confirmed"
+        f"Boww & Meow - Order #{order.id} Confirmed"
     )
 
     html_content = render_to_string(
@@ -786,13 +786,13 @@ def send_order_confirmation(order):
 
     text_content = (
         f"Hi {order.customer_name},\n\n"
-        f"Thank you for shopping with Bow & Meow!\n\n"
+        f"Thank you for shopping with Boww & Meow!\n\n"
         f"Order #{order.id}\n"
         f"Total: ₹{order.total_amount}\n"
         f"Payment: {order.get_payment_method_display()}\n"
         f"Delivery Address: {order.address}\n\n"
         f"Thank you,\n"
-        f"Bow & Meow"
+        f"Boww & Meow"
     )
 
     send_brevo_email(
@@ -839,7 +839,7 @@ def send_order_status_email(order):
         f"Status: {order.get_status_display()}\n"
         f"Total: ₹{order.total_amount}\n\n"
         f"Thank you,\n"
-        f"Bow & Meow"
+        f"Boww & Meow"
     )
 
     send_brevo_email(
