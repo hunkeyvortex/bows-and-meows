@@ -19,8 +19,8 @@
             <small class="product-life-stage">{{ product.get_life_stage_display }}</small>
         {% endif %}
         <div class="category-price-row">
-            <strong>₹{{ product.price }}</strong>
-            {% if product.original_price %}<del>₹{{ product.original_price }}</del>{% endif %}
+            <strong>₹{{ product.display_price }}</strong>
+            {% if product.display_original_price %}<del>₹{{ product.display_original_price }}</del>{% endif %}
         </div>
         <div class="product-stock-line">
             {% if product.stock > 0 %}<span class="stock-dot"></span>In stock{% else %}Out of stock{% endif %}

@@ -286,6 +286,129 @@ class CategoryBestSellerRankingTests(TestCase):
         self.assertNotContains(response, "Bows & Meows")
 
 
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+)
+class CategoryFilteringRegressionTests(TestCase):
+    def product(
+        self,
+        name,
+        *,
+        brand="Royal Canin",
+        category="dog_food",
+        pet_type="dog",
+        product_type="",
+        price="500.00",
+        care_area="",
+        available=True,
+    ):
+        return Product.objects.create(
+            name=name,
+            brand=brand,
+            category=category,
+            pet_type=pet_type,
+            product_type=product_type,
+            price=Decimal(price),
+            care_area=care_area,
+            stock=10,
+            is_available=available,
+        )
+
+    def results(self, route_name="dog_products", **params):
+        response = self.client.get(reverse(route_name), params)
+        return response, list(response.context["products"])
+
+    def test_combined_royal_food_filters_return_every_matching_product_in_price_order(self):
+        expected = [
+            self.product("Royal Canin Food 500", price="500.00"),
+            self.product("Royal Canin Food 800", price="800.00"),
+            self.product("Royal Canin Food 1200", price="1200.00"),
+        ]
+        grooming = self.product(
+            "Royal Canin Grooming Product",
+            category="dog_grooming",
+            product_type="grooming",
+            price="100.00",
+        )
+        response, products = self.results(
+            q="Royal",
+            brand="Royal Canin",
+            product_type="food",
+            care_area="",
+            sort="price_low",
+        )
+        self.assertEqual([product.id for product in products], [product.id for product in expected])
+        self.assertNotIn(grooming.id, [product.id for product in products])
+        self.assertEqual(response.context["page_obj"].paginator.count, 3)
+
+    def test_brand_filter_returns_multiple_products_and_normalizes_case_and_outer_space(self):
+        first = self.product("First", brand=" Royal Canin ")
+        second = self.product("Second", brand="royal canin")
+        _, products = self.results(brand="ROYAL CANIN")
+        self.assertEqual({product.id for product in products}, {first.id, second.id})
+
+    def test_search_uses_or_across_name_and_brand(self):
+        name_match = self.product("Royal Nutrition", brand="Another Brand")
+        brand_match = self.product("Mini Adult", brand="Royal Canin")
+        self.product("Unrelated", brand="Another Brand")
+        _, products = self.results(q="Royal")
+        self.assertEqual({product.id for product in products}, {name_match.id, brand_match.id})
+
+    def test_food_filter_uses_category_even_when_imported_product_type_is_blank(self):
+        blank_type = self.product("Blank imported type", product_type="")
+        explicit_type = self.product("Explicit food type", product_type="food")
+        wrong_category = self.product(
+            "Food-labelled grooming",
+            category="dog_grooming",
+            product_type="food",
+        )
+        _, products = self.results(product_type="food")
+        self.assertEqual({product.id for product in products}, {blank_type.id, explicit_type.id})
+        self.assertNotIn(wrong_category.id, [product.id for product in products])
+
+    def test_price_sort_uses_available_variant_selling_price_without_reducing_count(self):
+        base_cheaper = self.product("Base cheaper", price="300.00")
+        variant_cheaper = self.product("Variant cheaper", price="900.00")
+        ProductVariant.objects.create(
+            product=base_cheaper,
+            size="1 KG",
+            price=Decimal("700.00"),
+            stock=2,
+            sku="SORT-700",
+        )
+        ProductVariant.objects.create(
+            product=variant_cheaper,
+            size="1 KG",
+            price=Decimal("400.00"),
+            stock=2,
+            sku="SORT-400",
+        )
+        _, unsorted_products = self.results(q="cheaper")
+        _, sorted_products = self.results(q="cheaper", sort="price_low")
+        self.assertEqual(len(sorted_products), len(unsorted_products))
+        self.assertEqual([p.id for p in sorted_products], [variant_cheaper.id, base_cheaper.id])
+
+    def test_blank_care_area_does_not_filter_and_specific_value_does(self):
+        general = self.product("General care", care_area="")
+        dental = self.product("Dental care", care_area="dental")
+        _, all_products = self.results(q="care", care_area="")
+        _, dental_products = self.results(q="care", care_area="dental")
+        self.assertEqual({p.id for p in all_products}, {general.id, dental.id})
+        self.assertEqual([p.id for p in dental_products], [dental.id])
+
+    def test_category_isolation_and_unavailable_rules_remain_active(self):
+        dog = self.product("Royal Dog Food")
+        cat = self.product("Royal Cat Food", category="cat_food", pet_type="cat")
+        unavailable = self.product("Royal Hidden Dog Food", available=False)
+        _, dog_products = self.results(q="Royal", product_type="food")
+        self.assertIn(dog.id, [p.id for p in dog_products])
+        self.assertNotIn(cat.id, [p.id for p in dog_products])
+        self.assertNotIn(unavailable.id, [p.id for p in dog_products])
+
+
 class StoreSecurityTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(

@@ -12,8 +12,8 @@ from .models import Product, Order, OrderItem, Pet
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.db.models import Sum, Count
-from django.db.models import Sum, Count, F, DecimalField, ExpressionWrapper
-from django.db.models.functions import Coalesce, TruncDate
+from django.db.models import Sum, Count, F, DecimalField, ExpressionWrapper, OuterRef, Subquery
+from django.db.models.functions import Coalesce, Lower, Trim, TruncDate
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Avg
@@ -3281,6 +3281,12 @@ INVALID_SALE_PAYMENT_STATUSES = ("failed", "refunded")
 CATEGORY_SALES_HISTORY_THRESHOLD = 10
 CATEGORY_BEST_SELLER_LIMIT = 4
 
+FOOD_CATEGORIES_BY_PAGE = {
+    "dog": ("dog_food",),
+    "cat": ("cat_food",),
+    "bird": ("bird_food",),
+}
+
 # Static market-popularity signals. These names were matched against products
 # already sold by Boww & Meow; storefront data always comes from Product.
 MARKET_BEST_SELLER_NAMES = {
@@ -3464,7 +3470,7 @@ def _category_products_page(
     category_product_count = category_products.count()
     best_sellers = _category_best_sellers(category_products, page_type)
     best_seller_ids = [product.id for product in best_sellers]
-    products = _with_valid_sales(category_products).exclude(id__in=best_seller_ids)
+    products = _with_valid_sales(category_products)
 
 
     # ==========================================
@@ -3497,6 +3503,18 @@ def _category_products_page(
                 flavour__icontains=query
             )
 
+            |
+
+            Q(
+                description__icontains=query
+            )
+
+            |
+
+            Q(
+                supplier_product_id__icontains=query
+            )
+
         )
 
     product_type = request.GET.get("product_type", "").strip()
@@ -3504,11 +3522,23 @@ def _category_products_page(
     brand = request.GET.get("brand", "").strip()
 
     if product_type and not fixed_product_type:
-        products = products.filter(product_type=product_type)
+        food_categories = FOOD_CATEGORIES_BY_PAGE.get(page_type)
+        if product_type == "food" and food_categories:
+            products = products.filter(category__in=food_categories)
+        else:
+            products = products.filter(product_type=product_type)
     if care_area:
         products = products.filter(care_area=care_area)
     if brand:
-        products = products.filter(brand=brand)
+        products = products.annotate(
+            normalized_brand=Lower(Trim("brand"))
+        ).filter(normalized_brand=brand.casefold())
+
+    # On an unfiltered catalogue the top four are already visible immediately
+    # above, so omit them from the first catalogue page. During filtering they
+    # must remain eligible or valid search results would silently disappear.
+    if not any((query, product_type, care_area, brand)):
+        products = products.exclude(id__in=best_seller_ids)
 
 
     # ==========================================
@@ -3521,19 +3551,34 @@ def _category_products_page(
     )
 
 
+    available_variant_price = ProductVariant.objects.filter(
+        product_id=OuterRef("pk"),
+        is_available=True,
+        stock__gt=0,
+    ).order_by("price", "id").values("price")[:1]
+    products = products.annotate(
+        effective_price=Coalesce(
+            Subquery(available_variant_price, output_field=DecimalField()),
+            F("price"),
+            output_field=DecimalField(max_digits=10, decimal_places=2),
+        )
+    )
+
     if sort == "price_low":
 
         products = products.order_by(
-            "price",
-            "name"
+            "effective_price",
+            "name",
+            "id",
         )
 
 
     elif sort == "price_high":
 
         products = products.order_by(
-            "-price",
-            "name"
+            "-effective_price",
+            "name",
+            "id",
         )
 
 
