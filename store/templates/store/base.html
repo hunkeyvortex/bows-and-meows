@@ -179,6 +179,29 @@
     </div>
 </footer>
 
+<nav class="bm-mobile-dock" aria-label="Mobile navigation">
+    <a href="{% url 'home' %}">
+        <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg>
+        <span>Home</span>
+    </a>
+    <a href="{% url 'dog_products' %}">
+        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#dog"></use></svg>
+        <span>Dogs</span>
+    </a>
+    <a href="{% url 'cat_products' %}">
+        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cat"></use></svg>
+        <span>Cats</span>
+    </a>
+    <a href="{% url 'medicine_products' %}">
+        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#medical"></use></svg>
+        <span>Pharmacy</span>
+    </a>
+    <a href="{% url 'cart' %}">
+        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cart"></use></svg>
+        <span>Cart</span>
+    </a>
+</nav>
+
 {% if whatsapp_number %}
 <a class="bm-floating-help" href="https://wa.me/{{ whatsapp_number }}?text=Hello%20Bows%20%26%20Meows%2C%20I%20need%20help%20with..." target="_blank" rel="noopener" aria-label="Chat with Bow & Meow on WhatsApp"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#chat"></use></svg></span><strong>Need help?</strong></a>
 {% else %}

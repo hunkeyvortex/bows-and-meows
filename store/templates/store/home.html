@@ -374,7 +374,15 @@ Bow & Meow | Pet Food, Care & Essentials
         height: 440px;
     }
 
-    .bm3-hero.is-offer-active { height: 33.333vw; min-height: 120px; }
+    .bm3-hero.is-offer-active {
+        height: clamp(210px, 58vw, 280px);
+        min-height: 210px;
+    }
+
+    .bm3-offer-slide .bm3-banner-link img {
+        object-fit: cover;
+        object-position: center;
+    }
 
     .bm3-brand {
         grid-template-columns: 1fr;
@@ -473,6 +481,11 @@ Bow & Meow | Pet Food, Care & Essentials
         font-size: 28px;
     }
 
+    .bm3-hero.is-offer-active {
+        height: 220px;
+        min-height: 220px;
+    }
+
     .bm3-campaign {
         padding: 14px 12px;
     }
@@ -558,6 +571,43 @@ Bow & Meow | Pet Food, Care & Essentials
     </div>
 
 </div>
+
+<!-- Top-selling food, ranked from the live catalogue and completed orders. -->
+<section class="bm-top-selling" aria-labelledby="top-selling-title">
+    <div class="v2-shell">
+        <div class="bm-top-selling-head">
+            <div>
+                <span class="v2-eyebrow">PET-PARENT FAVOURITES</span>
+                <h2 id="top-selling-title">Our Top Selling Products</h2>
+                <p>Trusted food picks for happier dogs and cats.</p>
+            </div>
+            <div class="bm-top-selling-tabs" role="tablist" aria-label="Top-selling pet food">
+                <button class="is-active" type="button" role="tab" aria-selected="true" aria-controls="top-dog-food" data-top-selling-tab="dog">Dog Food</button>
+                <button type="button" role="tab" aria-selected="false" aria-controls="top-cat-food" data-top-selling-tab="cat">Cat Food</button>
+            </div>
+        </div>
+
+        <div id="top-dog-food" class="bm-top-selling-panel is-active" role="tabpanel" data-top-selling-panel="dog">
+            <div class="bm-top-selling-grid">
+                {% for product in top_dog_foods %}
+                    {% include "store/includes/home_product_card.html" %}
+                {% empty %}
+                    <p class="bm-top-selling-empty">Dog food favourites will appear as soon as they are available.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="top-cat-food" class="bm-top-selling-panel" role="tabpanel" data-top-selling-panel="cat" hidden>
+            <div class="bm-top-selling-grid">
+                {% for product in top_cat_foods %}
+                    {% include "store/includes/home_product_card.html" %}
+                {% empty %}
+                    <p class="bm-top-selling-empty">Cat food favourites will appear as soon as they are available.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- ==========================================
      BEST SELLERS
@@ -1038,6 +1088,25 @@ Bow & Meow | Pet Food, Care & Essentials
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    const topSellingTabs = document.querySelectorAll("[data-top-selling-tab]");
+    const topSellingPanels = document.querySelectorAll("[data-top-selling-panel]");
+
+    topSellingTabs.forEach(tab => {
+        tab.addEventListener("click", function () {
+            const selected = tab.dataset.topSellingTab;
+            topSellingTabs.forEach(button => {
+                const active = button === tab;
+                button.classList.toggle("is-active", active);
+                button.setAttribute("aria-selected", String(active));
+            });
+            topSellingPanels.forEach(panel => {
+                const active = panel.dataset.topSellingPanel === selected;
+                panel.classList.toggle("is-active", active);
+                panel.hidden = !active;
+            });
+        });
+    });
+
     const hero = document.getElementById("bm3-hero");
     if (!hero) return;
 

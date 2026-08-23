@@ -5139,6 +5139,165 @@ span {
    HOMEPAGE PRODUCT DISCOVERY
    ========================================== */
 
+.bm-top-selling {
+    padding: 42px 0 48px;
+    border-bottom: 1px solid #e5e8df;
+    background:
+        radial-gradient(circle at 4% 0%, rgba(218, 241, 174, .42), transparent 25%),
+        #fbfaf5;
+}
+
+.bm-top-selling-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+}
+
+.bm-top-selling-head h2 {
+    margin: 6px 0;
+    color: #172a20;
+    font-size: clamp(30px, 3.4vw, 46px);
+    line-height: 1.05;
+    letter-spacing: -.035em;
+}
+
+.bm-top-selling-head p {
+    margin: 0;
+    color: #6c776f;
+}
+
+.bm-top-selling-tabs {
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+    border: 1px solid #dce2d8;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, .82);
+}
+
+.bm-top-selling-tabs button {
+    min-height: 42px;
+    padding: 0 19px;
+    border: 0;
+    border-radius: 11px;
+    background: transparent;
+    color: #536159;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.bm-top-selling-tabs button.is-active {
+    background: #1d513b;
+    color: #fff;
+    box-shadow: 0 7px 16px rgba(29, 81, 59, .16);
+}
+
+.bm-top-selling-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.bm-top-selling-grid .home-product-image {
+    height: 190px;
+}
+
+.bm-top-selling-empty {
+    grid-column: 1 / -1;
+    padding: 30px;
+    border: 1px dashed #ccd7c9;
+    border-radius: 18px;
+    background: #fff;
+    color: #647169;
+    text-align: center;
+}
+
+@media (max-width: 1000px) {
+    .bm-top-selling-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .bm-top-selling {
+        padding: 28px 0 34px;
+    }
+
+    .bm-top-selling-head {
+        display: block;
+        margin-bottom: 16px;
+    }
+
+    .bm-top-selling-head h2 {
+        max-width: 310px;
+        font-size: 30px;
+    }
+
+    .bm-top-selling-head p {
+        font-size: 12px;
+    }
+
+    .bm-top-selling-tabs {
+        width: 100%;
+        margin-top: 16px;
+    }
+
+    .bm-top-selling-tabs button {
+        flex: 1;
+    }
+
+    .bm-top-selling-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .bm-top-selling-grid .home-product-card {
+        width: auto;
+        min-width: 0;
+        flex: none;
+        border-radius: 15px;
+    }
+
+    .bm-top-selling-grid .home-product-image {
+        height: 155px;
+        padding: 10px;
+    }
+
+    .bm-top-selling-grid .home-product-info {
+        padding: 12px;
+    }
+
+    .bm-top-selling-grid .home-product-info h3 {
+        min-height: 37px;
+        margin: 5px 0 7px;
+        font-size: 12px;
+        line-height: 1.35;
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .bm-top-selling-grid .home-product-price strong {
+        font-size: 17px;
+    }
+
+    .bm-top-selling-grid .home-product-button {
+        min-height: 39px;
+        padding: 0 7px;
+        font-size: 11px;
+    }
+
+    .bm-top-selling-grid .home-product-variants {
+        overflow: hidden;
+        white-space: nowrap;
+    }
+}
+
 .home-commerce-section {
     padding: 44px 0;
 
@@ -8095,4 +8254,128 @@ img:nth-child(3) {
 
 .bm-icon.outline {
     fill: none;
+}
+
+.bm-mobile-dock {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    body {
+        padding-bottom: 66px;
+        overflow-x: hidden;
+    }
+
+    .site-header-v2 {
+        background: #f4fae9;
+    }
+
+    .v2-main-header {
+        padding: 10px 0 11px;
+    }
+
+    .v2-search {
+        min-height: 48px;
+        border: 1.5px solid #3b865b;
+        border-radius: 15px;
+        background: #fff;
+        box-shadow: 0 6px 18px rgba(27, 83, 56, .06);
+    }
+
+    .v2-search input {
+        min-width: 0;
+        font-size: 13px;
+    }
+
+    .v2-category-bar {
+        background: #fff;
+    }
+
+    .v2-category-nav {
+        min-height: 49px;
+        gap: 24px;
+    }
+
+    .v2-category-nav a {
+        font-size: 12px;
+    }
+
+    .home-product-scroll {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 9px !important;
+        overflow: visible !important;
+        padding-bottom: 0 !important;
+    }
+
+    .home-product-scroll .home-product-card {
+        width: auto !important;
+        min-width: 0 !important;
+        flex: none !important;
+        border-radius: 15px;
+    }
+
+    .home-product-scroll .home-product-image {
+        height: 155px !important;
+        padding: 10px !important;
+    }
+
+    .home-product-scroll .home-product-info {
+        padding: 12px;
+    }
+
+    .home-product-scroll .home-product-info h3 {
+        min-height: 37px;
+        font-size: 12px;
+        line-height: 1.35;
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .home-product-scroll .home-product-button {
+        min-height: 39px;
+        padding-inline: 7px;
+        font-size: 11px;
+    }
+
+    .bm-mobile-dock {
+        position: fixed;
+        z-index: 1000;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        min-height: 64px;
+        padding: 7px max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+        border-top: 1px solid #dfe5dc;
+        background: rgba(255, 255, 255, .97);
+        box-shadow: 0 -8px 24px rgba(26, 54, 40, .08);
+        backdrop-filter: blur(14px);
+    }
+
+    .bm-mobile-dock a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+        color: #627068;
+        font-size: 9px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .bm-mobile-dock .bm-icon {
+        width: 21px;
+        height: 21px;
+        color: #1e583f;
+    }
+
+    .bm-floating-help {
+        bottom: 76px;
+    }
 }

@@ -133,6 +133,27 @@ def home(request):
         )[:8]
     )
 
+    # Food-only rankings for the homepage. Completed orders lead the ranking,
+    # while featured and recently added products keep a useful fallback order
+    # until the shop has more sales history.
+    top_dog_foods = (
+        base_products
+        .filter(
+            Q(category="dog_food")
+            | (Q(pet_type="dog") & Q(product_type="food"))
+        )
+        .order_by("-sold_count", "-is_featured", "-id")[:10]
+    )
+
+    top_cat_foods = (
+        base_products
+        .filter(
+            Q(category="cat_food")
+            | (Q(pet_type="cat") & Q(product_type="food"))
+        )
+        .order_by("-sold_count", "-is_featured", "-id")[:10]
+    )
+
     offers = (
         base_products
         .filter(original_price__isnull=False, original_price__gt=F("price"))
@@ -163,6 +184,12 @@ def home(request):
 
         "popular_cats":
             popular_cats,
+
+        "top_dog_foods":
+            top_dog_foods,
+
+        "top_cat_foods":
+            top_cat_foods,
 
         "offers":
             offers,
