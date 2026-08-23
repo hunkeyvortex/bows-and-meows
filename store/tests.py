@@ -129,6 +129,12 @@ class HomepageFoodRankingTests(TestCase):
         self.assertNotIn(clothing.id, ranked_ids)
 
 
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+)
 class CategoryBestSellerRankingTests(TestCase):
     def product(self, name, *, category="dog_food", pet_type="dog", stock=10, featured=False, available=True):
         return Product.objects.create(
@@ -210,6 +216,34 @@ class CategoryBestSellerRankingTests(TestCase):
         self.assertIn(available.id, ranked_ids)
         self.assertNotIn(unavailable.id, ranked_ids)
         self.assertNotIn(out_of_stock.id, ranked_ids)
+
+    def test_category_filter_sheet_reuses_one_form_on_every_listing(self):
+        self.product("Shared listing product")
+        for route_name in (
+            "dog_products", "cat_products", "medicine_products",
+            "wellness_products", "grooming_products", "bird_products",
+            "small_pet_products", "farm_animal_products",
+            "fish_reptile_products", "vaccination_products",
+        ):
+            response = self.client.get(reverse(route_name))
+            self.assertEqual(response.status_code, 200, route_name)
+            self.assertEqual(
+                response.content.decode().count('id="category-filter-sheet"'),
+                1,
+                route_name,
+            )
+
+    def test_filter_count_and_query_values_are_preserved(self):
+        self.product("Filtered product")
+        response = self.client.get(reverse("dog_products"), {
+            "q": "Filtered",
+            "brand": "Example Brand",
+            "sort": "price_low",
+        })
+        self.assertEqual(response.context["active_filter_count"], 3)
+        self.assertContains(response, "Filter (3)")
+        self.assertContains(response, 'name="q" value="Filtered"')
+        self.assertContains(response, 'value="price_low" selected')
 
     def test_product_page_title_does_not_include_component_css(self):
         product = Product.objects.create(

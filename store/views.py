@@ -3323,12 +3323,16 @@ MARKET_BEST_SELLER_NAMES = {
 }
 
 CATEGORY_COPY = {
-    "dog": ("Dogs", "All dog products"),
-    "cat": ("Cats", "All cat products"),
-    "medicine": ("Pharmacy", "All pharmacy products"),
-    "wellness": ("Wellness", "All wellness products"),
-    "grooming": ("Grooming", "All grooming products"),
-    "bird": ("Bird Care", "All bird products"),
+    "dog": ("Dogs", "All Dog Products"),
+    "cat": ("Cats", "All Cat Products"),
+    "medicine": ("Pharmacy", "Pharmacy Products"),
+    "wellness": ("Wellness", "Wellness Products"),
+    "grooming": ("Grooming", "Grooming Products"),
+    "bird": ("Bird Care", "Bird Care Products"),
+    "small_pet": ("Small Pets", "Small Pet Products"),
+    "farm": ("Farm Animals", "Farm Animal Products"),
+    "fish_reptile": ("Fish & Reptiles", "Fish & Reptile Products"),
+    "vaccine": ("Vaccination", "Vaccination Products"),
 }
 
 
@@ -3589,6 +3593,13 @@ def _category_products_page(
         "product_type_filter": product_type,
         "care_area_filter": care_area,
         "brand_filter": brand,
+        "active_filter_count": sum((
+            bool(query),
+            bool(product_type),
+            bool(care_area),
+            bool(brand),
+            sort != "featured",
+        )),
         "product_types": Product.PRODUCT_TYPE_CHOICES,
         "care_areas": Product.CARE_AREA_CHOICES,
         "available_brands": Product.objects.filter(

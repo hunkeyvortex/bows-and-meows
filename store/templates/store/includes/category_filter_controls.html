@@ -1,0 +1,72 @@
+<button
+    type="button"
+    class="category-filter-trigger"
+    aria-controls="category-filter-sheet"
+    aria-expanded="false"
+>
+    <span>Filter{% if active_filter_count %} ({{ active_filter_count }}){% endif %}</span>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" />
+    </svg>
+</button>
+
+<form
+    method="GET"
+    action="{{ request.path }}#all-products"
+    class="category-controls"
+    id="category-filter-sheet"
+    role="search"
+    aria-labelledby="category-filter-title"
+    aria-hidden="false"
+>
+    <div class="filter-sheet-header">
+        <h3 id="category-filter-title">Filters</h3>
+        <button type="button" class="filter-sheet-close" aria-label="Close filters">×</button>
+    </div>
+
+    <div class="filter-field filter-search-field">
+        <label for="category-filter-search">Search products</label>
+        <input id="category-filter-search" type="search" name="q" value="{{ query }}" placeholder="Search in this category...">
+    </div>
+
+    <div class="filter-field">
+        <label for="category-filter-product-type">Product type</label>
+        <select id="category-filter-product-type" name="product_type">
+            <option value="">All product types</option>
+            {% for value,label in product_types %}<option value="{{ value }}" {% if product_type_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-field">
+        <label for="category-filter-care-area">Care area</label>
+        <select id="category-filter-care-area" name="care_area">
+            <option value="">All care areas</option>
+            {% for value,label in care_areas %}{% if value %}<option value="{{ value }}" {% if care_area_filter == value %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-field">
+        <label for="category-filter-brand">Brand</label>
+        <select id="category-filter-brand" name="brand">
+            <option value="">All brands</option>
+            {% for brand in available_brands %}<option value="{{ brand }}" {% if brand_filter == brand %}selected{% endif %}>{{ brand }}</option>{% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-field">
+        <label for="category-filter-sort">Sort by</label>
+        <select id="category-filter-sort" name="sort">
+            <option value="featured" {% if sort == "featured" %}selected{% endif %}>Popular first</option>
+            <option value="price_low" {% if sort == "price_low" %}selected{% endif %}>Price: Low to High</option>
+            <option value="price_high" {% if sort == "price_high" %}selected{% endif %}>Price: High to Low</option>
+            <option value="name" {% if sort == "name" %}selected{% endif %}>Name A–Z</option>
+        </select>
+    </div>
+
+    <div class="filter-sheet-actions">
+        <a href="{{ request.path }}#all-products" class="filter-clear">Clear filters</a>
+        <button type="submit" class="filter-submit">Show products</button>
+    </div>
+</form>
+
+<button type="button" class="category-filter-backdrop" aria-label="Close filters" tabindex="-1"></button>
