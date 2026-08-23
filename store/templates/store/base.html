@@ -30,13 +30,14 @@
             </span>
         </a>
 
-        <form method="GET" action="{% url 'search_products' %}" class="v2-search">
+        <form method="GET" action="{% url 'search_products' %}" class="v2-search" role="search">
             <span class="v2-search-icon"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#search"></use></svg></span>
             <input
                 type="text"
                 name="q"
                 placeholder="Search food, treats, medicines & more"
                 aria-label="Search products"
+                autocomplete="off"
             >
             <button type="submit">Search</button>
         </form>
@@ -59,9 +60,10 @@
                 </a>
             {% endif %}
 
-            <a href="{% url 'cart' %}" class="v2-cart-link">
+            <a href="{% url 'cart' %}" class="v2-cart-link" aria-label="Cart with {{ cart_item_count }} item{{ cart_item_count|pluralize }}">
                 <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#cart"></use></svg></span>
                 <small>Cart</small>
+                {% if cart_item_count %}<b class="bm-cart-badge">{{ cart_item_count }}</b>{% endif %}
             </a>
         </div>
 
@@ -69,13 +71,13 @@
 
     <div class="v2-category-bar">
         <div class="v2-shell v2-category-nav">
-            <a href="{% url 'home' %}" class="v2-nav-home">Home</a>
-            <a href="{% url 'dog_products' %}">Dogs</a>
-            <a href="{% url 'cat_products' %}">Cats</a>
-            <a href="{% url 'medicine_products' %}">Pharmacy</a>
-            <a href="{% url 'wellness_products' %}">Wellness</a>
-            <a href="{% url 'grooming_products' %}">Grooming</a>
-            <a href="{% url 'bird_products' %}">Bird Care</a>
+            <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">Home</a>
+            <a href="{% url 'dog_products' %}" class="{% if request.resolver_match.url_name == 'dog_products' %}is-active{% endif %}">Dogs</a>
+            <a href="{% url 'cat_products' %}" class="{% if request.resolver_match.url_name == 'cat_products' %}is-active{% endif %}">Cats</a>
+            <a href="{% url 'medicine_products' %}" class="{% if request.resolver_match.url_name == 'medicine_products' %}is-active{% endif %}">Pharmacy</a>
+            <a href="{% url 'wellness_products' %}" class="{% if request.resolver_match.url_name == 'wellness_products' %}is-active{% endif %}">Wellness</a>
+            <a href="{% url 'grooming_products' %}" class="{% if request.resolver_match.url_name == 'grooming_products' %}is-active{% endif %}">Grooming</a>
+            <a href="{% url 'bird_products' %}" class="{% if request.resolver_match.url_name == 'bird_products' %}is-active{% endif %}">Bird Care</a>
             <a href="{% url 'home' %}#featured-products">Best Sellers</a>
             <a href="{% url 'home' %}#offers">Offers</a>
 
@@ -180,25 +182,26 @@
 </footer>
 
 <nav class="bm-mobile-dock" aria-label="Mobile navigation">
-    <a href="{% url 'home' %}">
+    <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">
         <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg>
         <span>Home</span>
     </a>
-    <a href="{% url 'dog_products' %}">
+    <a href="{% url 'dog_products' %}" class="{% if request.resolver_match.url_name == 'dog_products' %}is-active{% endif %}">
         <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#dog"></use></svg>
         <span>Dogs</span>
     </a>
-    <a href="{% url 'cat_products' %}">
+    <a href="{% url 'cat_products' %}" class="{% if request.resolver_match.url_name == 'cat_products' %}is-active{% endif %}">
         <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cat"></use></svg>
         <span>Cats</span>
     </a>
-    <a href="{% url 'medicine_products' %}">
+    <a href="{% url 'medicine_products' %}" class="{% if request.resolver_match.url_name == 'medicine_products' %}is-active{% endif %}">
         <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#medical"></use></svg>
         <span>Pharmacy</span>
     </a>
-    <a href="{% url 'cart' %}">
+    <a href="{% url 'cart' %}" class="{% if request.resolver_match.url_name == 'cart' %}is-active{% endif %}">
         <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cart"></use></svg>
         <span>Cart</span>
+        {% if cart_item_count %}<b class="bm-cart-badge">{{ cart_item_count }}</b>{% endif %}
     </a>
 </nav>
 

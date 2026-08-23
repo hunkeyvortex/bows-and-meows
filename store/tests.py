@@ -70,6 +70,36 @@ class CouponCalculationTests(TestCase):
 
 
 class HomepageFoodRankingTests(TestCase):
+    def test_popular_picks_are_balanced_between_dogs_and_cats(self):
+        for index in range(6):
+            Product.objects.create(
+                name=f"Popular Dog Food {index}",
+                pet_type="dog",
+                category="dog_food",
+                product_type="food",
+                price=Decimal("299.00"),
+                stock=5,
+                is_available=True,
+            )
+            Product.objects.create(
+                name=f"Popular Cat Food {index}",
+                pet_type="cat",
+                category="cat_food",
+                product_type="food",
+                price=Decimal("199.00"),
+                stock=5,
+                is_available=True,
+            )
+
+        response = self.client.get(reverse("home"))
+        picks = response.context["popular_picks"]
+        dog_count = sum(product.category.startswith("dog_") for product in picks)
+        cat_count = sum(product.category.startswith("cat_") for product in picks)
+
+        self.assertEqual(len(picks), 10)
+        self.assertEqual(dog_count, 5)
+        self.assertEqual(cat_count, 5)
+
     def test_top_selling_food_rejects_misclassified_clothing(self):
         real_food = Product.objects.create(
             name="Pedigree Chicken and Vegetables Adult Dog Dry Food",

@@ -371,7 +371,7 @@ Boww & Meow | Pet Food, Care & Essentials
 /* Mobile */
     @media (max-width: 760px) {
     .bm3-hero {
-        height: 440px;
+        height: 350px;
     }
 
     .bm3-hero.is-offer-active {
@@ -386,7 +386,7 @@ Boww & Meow | Pet Food, Care & Essentials
 
     .bm3-brand {
         grid-template-columns: 1fr;
-        grid-template-rows: 205px 235px;
+        grid-template-rows: 178px 172px;
     }
 
     .bm3-brand-copy {
@@ -395,7 +395,7 @@ Boww & Meow | Pet Food, Care & Essentials
 
     .bm3-brand h1 {
         margin: 5px 0 8px;
-        font-size: 31px;
+        font-size: clamp(26px, 8vw, 30px);
     }
 
     .bm3-brand-copy > p {
@@ -421,7 +421,7 @@ Boww & Meow | Pet Food, Care & Essentials
     }
 
     .bm3-brand-photo > img {
-        object-position: center 46%;
+        object-position: center 42%;
     }
 
     .bm3-photo-badge {
@@ -432,8 +432,8 @@ Boww & Meow | Pet Food, Care & Essentials
     }
 
     .bm3-campaign {
-        grid-template-columns: 42% 58%;
-        padding: 18px;
+        grid-template-columns: 46% 54%;
+        padding: 14px;
     }
 
     .bm3-campaign-copy h2 {
@@ -452,7 +452,7 @@ Boww & Meow | Pet Food, Care & Essentials
     }
 
     .bm3-packs {
-        height: 240px;
+        height: 190px;
     }
 
     .bm3-packs img {
@@ -466,19 +466,21 @@ Boww & Meow | Pet Food, Care & Essentials
     .bm3-pill {
         display: none;
     }
+
+    .bm3-arrow { display: none; }
 }
 
 @media (max-width: 430px) {
     .bm3-hero {
-        height: 410px;
+        height: 338px;
     }
 
     .bm3-brand {
-        grid-template-rows: 190px 220px;
+        grid-template-rows: 174px 164px;
     }
 
     .bm3-brand h1 {
-        font-size: 28px;
+        font-size: 26px;
     }
 
     .bm3-hero.is-offer-active {
@@ -978,7 +980,7 @@ Boww & Meow | Pet Food, Care & Essentials
 
             <div class="v2-products-grid">
 
-                {% for product in products|slice:":8" %}
+                {% for product in popular_picks %}
 
                 <article class="v2-product-card">
 

@@ -272,7 +272,7 @@
                         {% else %}
 
                             <div class="pd-gallery-placeholder">
-                                🐾
+                                <svg class="bm-icon" aria-hidden="true"><use href="{% static 'store/icons.svg' %}#paw"></use></svg>
                             </div>
 
                         {% endif %}
@@ -360,11 +360,11 @@
                     {% if product.pet_type %}
                         <span>
                             {% if product.pet_type == "dog" %}
-                                🐕 Dog
+                                <svg class="bm-icon" aria-hidden="true"><use href="{% static 'store/icons.svg' %}#dog"></use></svg> Dog
                             {% elif product.pet_type == "cat" %}
-                                🐈 Cat
+                                <svg class="bm-icon" aria-hidden="true"><use href="{% static 'store/icons.svg' %}#cat"></use></svg> Cat
                             {% else %}
-                                🐾 Dog & Cat
+                                <svg class="bm-icon" aria-hidden="true"><use href="{% static 'store/icons.svg' %}#paw"></use></svg> Dog & Cat
                             {% endif %}
                         </span>
                     {% endif %}
@@ -587,7 +587,7 @@
 
                 {% if product.requires_prescription %}
                 <div class="pd-v2-prescription-notice" role="note">
-                    <span>🩺</span>
+                    <span><svg class="bm-icon" aria-hidden="true"><use href="{% static 'store/icons.svg' %}#medical"></use></svg></span>
                     <div>
                         <strong>Veterinary prescription required</strong>
                         <p>This medicine cannot be purchased through normal checkout. Contact us with a valid prescription and we’ll help you safely.</p>
@@ -632,9 +632,9 @@
                             {% csrf_token %}
                             <button type="submit" class="pd-v2-wishlist-btn">
                             {% if is_saved %}
-                                ♥ Saved
+                                <svg class="bm-icon" aria-hidden="true"><use href="{% static 'store/icons.svg' %}#heart"></use></svg> Saved
                             {% else %}
-                                ♡ Save Product
+                                <svg class="bm-icon outline" aria-hidden="true"><use href="{% static 'store/icons.svg' %}#heart"></use></svg> Save Product
                             {% endif %}
                             </button>
                         </form>
@@ -643,7 +643,7 @@
                             href="{% url 'login' %}?next={{ request.path }}"
                             class="pd-v2-wishlist-btn"
                         >
-                            ♡ Login to Save
+                            <svg class="bm-icon outline" aria-hidden="true"><use href="{% static 'store/icons.svg' %}#heart"></use></svg> Login to Save
                         </a>
                     {% endif %}
 

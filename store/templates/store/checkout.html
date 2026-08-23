@@ -108,54 +108,67 @@
                 </div>
 
             {% endif %}
+            <label for="checkout-name">
+                Full name
+            </label>
+
             <input
+                id="checkout-name"
                 type="text"
                 name="customer_name"
+                autocomplete="name"
                 value="{% if default_address %}{{ default_address.full_name }}{% endif %}"
                 required
             >
 
 
-            <label>
+            <label for="checkout-email">
                 Email
             </label>
 
             <input
+                id="checkout-email"
                 type="email"
                 name="email"
+                autocomplete="email"
                 value="{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}"
                 required
             >
 
 
-            <label>
+            <label for="checkout-phone">
                 Phone Number
             </label>
 
             <input
-                type="text"
+                id="checkout-phone"
+                type="tel"
                 name="phone"
+                inputmode="tel"
+                autocomplete="tel"
                 value="{% if default_address %}{{ default_address.phone }}{% endif %}"
                 required
             >
 
 
-            <label>
+            <label for="checkout-address">
                 Delivery Address
             </label>
 
             <textarea
+                id="checkout-address"
                 name="address"
+                autocomplete="street-address"
                 rows="5"
                 required
             >{% if default_address %}{{ default_address.address_line1 }}{% if default_address.address_line2 %}, {{ default_address.address_line2 }}{% endif %}, {{ default_address.city }}, {{ default_address.state }} - {{ default_address.pincode }}{% endif %}</textarea>
 
 
-            <label>
+            <label for="checkout-payment">
                 Payment Method
             </label>
 
-            <select name="payment_method">
+            <select id="checkout-payment" name="payment_method">
 
                 <option value="cod">
                     Cash on Delivery

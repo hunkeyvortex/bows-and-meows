@@ -100,13 +100,18 @@ def home(request):
     # POPULAR DOG PRODUCTS
     # ==========================================
 
+    dog_product_match = (
+        Q(category__startswith="dog_")
+        | (Q(pet_type="dog") & ~Q(category__startswith="cat_"))
+    )
+    cat_product_match = (
+        Q(category__startswith="cat_")
+        | (Q(pet_type="cat") & ~Q(category__startswith="dog_"))
+    )
+
     popular_dogs = (
         base_products
-        .filter(
-            Q(pet_type="dog")
-            |
-            Q(category__startswith="dog_")
-        )
+        .filter(dog_product_match)
         .order_by(
             "-sold_count",
             "-is_featured",
@@ -121,17 +126,24 @@ def home(request):
 
     popular_cats = (
         base_products
-        .filter(
-            Q(pet_type="cat")
-            |
-            Q(category__startswith="cat_")
-        )
+        .filter(cat_product_match)
         .order_by(
             "-sold_count",
             "-is_featured",
             "-id"
         )[:8]
     )
+
+    # Keep the lower "Popular Right Now" grid evenly balanced. Alternating
+    # species also prevents one group from occupying an entire mobile row.
+    top_five_dogs = list(popular_dogs[:5])
+    top_five_cats = list(popular_cats[:5])
+    popular_picks = []
+    for index in range(5):
+        if index < len(top_five_dogs):
+            popular_picks.append(top_five_dogs[index])
+        if index < len(top_five_cats):
+            popular_picks.append(top_five_cats[index])
 
     # Imported catalogue categories are not always reliable. For this section,
     # require food language in the product name and rank recognised best-selling
@@ -262,6 +274,9 @@ def home(request):
 
         "popular_cats":
             popular_cats,
+
+        "popular_picks":
+            popular_picks,
 
         "top_dog_foods":
             top_dog_foods,
