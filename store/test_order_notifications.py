@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.core import mail
 from django.test import TestCase, override_settings
+from django.template.loader import get_template
 from django.urls import reverse
 
 from .models import Order, OrderItem, Product
@@ -107,3 +108,10 @@ class OrderNotificationTests(TestCase):
         self.assertContains(response, 'class="v2-brand"')
         self.assertContains(response, f'href="{reverse("home")}"', count=None)
         self.assertContains(response, "boww-meow-coral-logo.png")
+
+    def test_checkout_relies_only_on_global_django_message_renderer(self):
+        base_source = get_template("store/base.html").template.source
+        checkout_source = get_template("store/checkout.html").template.source
+        self.assertIn("{% for message in messages %}", base_source)
+        self.assertNotIn("{% for message in messages %}", checkout_source)
+        self.assertNotIn("bm-checkout-messages", checkout_source)
