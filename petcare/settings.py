@@ -280,14 +280,17 @@ if "test" in sys.argv:
 BREVO_API_KEY = (env.get("BREVO_API_KEY") or "").strip()
 BREVO_SENDER_EMAIL = (env.get("BREVO_SENDER_EMAIL") or "").strip()
 BREVO_SENDER_NAME = (env.get("BREVO_SENDER_NAME") or "Boww & Meow").strip()
+# A configured Brevo key always wins over legacy SMTP environment values.
+# This prevents an old EMAIL_BACKEND setting on Render from silently routing
+# production mail back through SMTP ports that free services cannot access.
 EMAIL_BACKEND = (
-    env.get("EMAIL_BACKEND")
-    or (
-        "store.email_backend.BrevoAPIEmailBackend"
-        if BREVO_API_KEY
-        else "django.core.mail.backends.console.EmailBackend"
-    )
-).strip()
+    "store.email_backend.BrevoAPIEmailBackend"
+    if BREVO_API_KEY
+    else (
+        env.get("EMAIL_BACKEND")
+        or "django.core.mail.backends.console.EmailBackend"
+    ).strip()
+)
 EMAIL_HOST = (env.get("EMAIL_HOST") or "smtp.gmail.com").strip()
 EMAIL_PORT = int((env.get("EMAIL_PORT") or "587").strip())
 EMAIL_USE_TLS = (env.get("EMAIL_USE_TLS") or "True").lower() == "true"
