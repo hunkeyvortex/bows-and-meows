@@ -1,24 +1,17 @@
-import ssl
+import logging
 from email.utils import parseaddr
 
 import requests
 from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
-from django.core.mail.backends.smtp import EmailBackend
 
 
-class RelaxedStrictSMTPBackend(EmailBackend):
+logger = logging.getLogger(__name__)
 
-    @property
-    def ssl_context(self):
-        context = ssl.create_default_context()
 
-        # Python 3.13+ enables strict X509 checking by default.
-        # Remove only the strict flag.
-        if hasattr(ssl, "VERIFY_X509_STRICT"):
-            context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+class BrevoDeliveryError(RuntimeError):
+    """A safe, actionable Brevo delivery error for production logs."""
 
-        return context
 
 
 class BrevoAPIEmailBackend(BaseEmailBackend):
@@ -86,17 +79,31 @@ class BrevoAPIEmailBackend(BaseEmailBackend):
         if message.reply_to:
             payload["replyTo"] = self._recipient(message.reply_to[0])
 
-        response = requests.post(
-            self.endpoint,
-            json=payload,
-            headers={
-                "accept": "application/json",
-                "api-key": api_key,
-                "content-type": "application/json",
-            },
-            timeout=getattr(settings, "EMAIL_TIMEOUT", 10),
-        )
-        response.raise_for_status()
+        try:
+            response = requests.post(
+                self.endpoint,
+                json=payload,
+                headers={
+                    "accept": "application/json",
+                    "api-key": api_key,
+                    "content-type": "application/json",
+                },
+                timeout=getattr(settings, "EMAIL_TIMEOUT", 10),
+            )
+        except requests.RequestException as exc:
+            raise BrevoDeliveryError(f"Brevo API connection failed: {exc}") from exc
+
+        if not 200 <= response.status_code < 300:
+            detail = (response.text or "No response body").strip()[:1000]
+            raise BrevoDeliveryError(
+                f"Brevo API returned HTTP {response.status_code}: {detail}"
+            )
+
+        try:
+            message_id = response.json().get("messageId", "")
+        except (TypeError, ValueError):
+            message_id = ""
+        logger.info("Brevo accepted transactional email%s", f" ({message_id})" if message_id else "")
 
     @staticmethod
     def _recipient(value):

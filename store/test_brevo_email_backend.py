@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 
+import requests
 from django.core.mail import EmailMultiAlternatives
 from django.test import SimpleTestCase, override_settings
 
@@ -15,7 +16,11 @@ from django.test import SimpleTestCase, override_settings
 class BrevoAPIEmailBackendTests(SimpleTestCase):
     @patch("store.email_backend.requests.post")
     def test_sends_text_and_html_through_brevo_https_api(self, post):
-        post.return_value = Mock()
+        post.return_value = Mock(
+            status_code=201,
+            text='{"messageId":"test-id"}',
+            json=Mock(return_value={"messageId": "test-id"}),
+        )
 
         message = EmailMultiAlternatives(
             subject="Order confirmed",
@@ -39,3 +44,28 @@ class BrevoAPIEmailBackendTests(SimpleTestCase):
         )
         self.assertIn("htmlContent", call.kwargs["json"])
 
+    @patch("store.email_backend.requests.post")
+    def test_failure_contains_safe_brevo_response_detail(self, post):
+        post.return_value = Mock(
+            status_code=401,
+            text='{"message":"Key not found"}',
+        )
+        message = EmailMultiAlternatives(
+            subject="Order confirmed",
+            body="Your order is confirmed.",
+            to=["buyer@example.com"],
+        )
+
+        with self.assertRaisesMessage(RuntimeError, "Brevo API returned HTTP 401"):
+            message.send(fail_silently=False)
+
+    @patch("store.email_backend.requests.post")
+    def test_failure_can_remain_non_blocking(self, post):
+        post.side_effect = requests.Timeout("timed out")
+        message = EmailMultiAlternatives(
+            subject="Order confirmed",
+            body="Your order is confirmed.",
+            to=["buyer@example.com"],
+        )
+
+        self.assertEqual(message.send(fail_silently=True), 0)
