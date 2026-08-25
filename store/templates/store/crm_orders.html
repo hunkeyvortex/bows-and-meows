@@ -111,6 +111,13 @@ Orders | Boww & Meow CRM
                             </option>
 
                             <option
+                                value="packed"
+                                {% if order.status == "packed" %}selected{% endif %}
+                            >
+                                Packed
+                            </option>
+
+                            <option
                                 value="shipped"
                                 {% if order.status == "shipped" %}selected{% endif %}
                             >

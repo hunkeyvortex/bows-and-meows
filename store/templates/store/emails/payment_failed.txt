@@ -1,0 +1,5 @@
+Payment for Boww & Meow order {{ order_number }} was not completed.
+
+Hi {{ order.customer_name }}, Boww & Meow has not marked this order as paid.
+{% if retry_url %}Try payment again: {{ retry_url }}
+{% endif %}{% if support_email %}Support: {{ support_email }}{% endif %}

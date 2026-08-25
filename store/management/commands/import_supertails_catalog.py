@@ -60,11 +60,17 @@ class Command(BaseCommand):
             "--catalog",
             default=str(settings.BASE_DIR / "catalog_exports" / "full" / "supertails_bulk_import.csv"),
         )
-        parser.add_argument("--stock", type=int, default=10)
+        parser.add_argument(
+            "--stock",
+            type=int,
+            default=0,
+            help="Verified stock assigned to each imported variant (default: 0).",
+        )
+        parser.add_argument("--dry-run", action="store_true")
 
     def handle(self, *args, **options):
         path = Path(options["catalog"])
-        stock = max(1, options["stock"])
+        stock = max(0, options["stock"])
         if not path.exists():
             raise CommandError(f"Catalog not found: {path}")
 
@@ -77,9 +83,14 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Loaded {len(grouped)} products from {path.name}.")
 
-        existing_products = list(Product.objects.all())
+        existing_products = list(Product.objects.all().order_by("id"))
         by_supplier = {p.supplier_product_id: p for p in existing_products if p.supplier_product_id}
-        by_identity = {(p.name.casefold(), p.brand.casefold()): p for p in existing_products}
+        by_identity = {}
+        for existing in existing_products:
+            if not existing.supplier_product_id:
+                by_identity.setdefault(
+                    (existing.name.casefold(), existing.brand.casefold()), existing
+                )
         product_updates = []
         product_creates = []
 
@@ -88,6 +99,8 @@ class Command(BaseCommand):
             name = clean(row.get("name"), 200)
             brand = clean(row.get("brand"), 100)
             product = by_supplier.get(supplier_id)
+            if product and product.duplicate_of_id:
+                product = product.duplicate_of
             if not product:
                 identity_match = by_identity.get((name.casefold(), brand.casefold()))
                 # Only claim a legacy/manual product once. Two supplier records
@@ -110,11 +123,15 @@ class Command(BaseCommand):
                 "stock": stock * len(rows),
                 "product_type": product_type_for(category),
                 "requires_prescription": category == "medicine",
-                "is_available": True,
+                "is_available": stock > 0,
                 "is_archived": False,
                 "external_image_url": clean(row.get("product_image_url"), 1000),
                 "source_url": clean(row.get("source_url"), 1000),
-                "supplier_product_id": clean(supplier_id, 80),
+                "supplier_product_id": (
+                    product.supplier_product_id
+                    if product and product.supplier_product_id
+                    else clean(supplier_id, 80)
+                ),
             }
             if product:
                 for field, value in values.items():
@@ -129,6 +146,43 @@ class Command(BaseCommand):
             "product_type", "requires_prescription", "is_available", "is_archived",
             "external_image_url", "source_url", "supplier_product_id",
         ]
+
+        if options["dry_run"]:
+            existing_variants = list(ProductVariant.objects.all())
+            supplier_variant_ids = {
+                variant.supplier_variant_id
+                for variant in existing_variants
+                if variant.supplier_variant_id
+            }
+            skus = {variant.sku for variant in existing_variants if variant.sku}
+            variant_updates = 0
+            variant_creates = 0
+            seen_rows = set()
+            skipped_rows = 0
+            for rows in grouped.values():
+                for row in rows:
+                    identity = (
+                        clean(row.get("supertails_variant_id"), 80),
+                        clean(row.get("sku"), 100),
+                    )
+                    if identity in seen_rows:
+                        skipped_rows += 1
+                        continue
+                    seen_rows.add(identity)
+                    if identity[0] in supplier_variant_ids or identity[1] in skus:
+                        variant_updates += 1
+                    else:
+                        variant_creates += 1
+            self.stdout.write(str({
+                "products_create": len(product_creates),
+                "products_update": len(product_updates),
+                "variants_create": variant_creates,
+                "variants_update": variant_updates,
+                "duplicates_or_skipped": skipped_rows,
+            }))
+            self.stdout.write("Dry run only. Remove --dry-run to apply the import.")
+            return
+
         with transaction.atomic():
             if product_creates:
                 Product.objects.bulk_create(product_creates, batch_size=500)
@@ -136,10 +190,9 @@ class Command(BaseCommand):
                 Product.objects.bulk_update(product_updates, update_fields, batch_size=500)
 
         self.stdout.write(f"Products created: {len(product_creates)}; updated: {len(product_updates)}")
-        product_map = {
-            product.supplier_product_id: product
-            for product in Product.objects.exclude(supplier_product_id="")
-        }
+        product_map = {}
+        for stored_product in Product.objects.exclude(supplier_product_id="").select_related("duplicate_of"):
+            product_map[stored_product.supplier_product_id] = stored_product.duplicate_of or stored_product
 
         existing_variants = list(ProductVariant.objects.select_related("product").all())
         by_variant_supplier = {v.supplier_variant_id: v for v in existing_variants if v.supplier_variant_id}
@@ -179,7 +232,7 @@ class Command(BaseCommand):
                     "original_price": money(row.get("variant_mrp")) if row.get("variant_mrp") else None,
                     "stock": stock,
                     "sku": sku,
-                    "is_available": True,
+                    "is_available": stock > 0,
                     "external_image_url": clean(row.get("variant_image_url") or row.get("product_image_url"), 1000),
                     "supplier_variant_id": supplier_variant_id,
                 }

@@ -586,12 +586,14 @@
         background: rgba(9, 25, 17, .55);
         opacity: 0;
         visibility: hidden;
+        pointer-events: none;
         transition: opacity .22s ease, visibility 0s linear .22s;
     }
 
     .category-filter-backdrop.is-open {
         opacity: 1;
         visibility: visible;
+        pointer-events: auto;
         transition: opacity .22s ease;
     }
 

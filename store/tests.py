@@ -72,6 +72,30 @@ class CouponCalculationTests(TestCase):
         self.assertNotContains(self.client.get(reverse("checkout")), "This coupon has reached its usage limit.")
 
 
+class CouponCrmEditTests(TestCase):
+    def setUp(self):
+        staff = User.objects.create_user(username="coupon-manager", password="test-pass", is_staff=True)
+        self.coupon = Coupon.objects.create(code="WELCOME5", discount_percent=5, minimum_order=499)
+        self.client.force_login(staff)
+
+    def test_staff_can_open_and_update_coupon(self):
+        response = self.client.get(reverse("crm_coupon_edit", args=[self.coupon.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit WELCOME5")
+
+        response = self.client.post(reverse("crm_coupon_edit", args=[self.coupon.id]), {
+            "code": "WELCOME10", "discount_percent": "10", "minimum_order": "599",
+            "maximum_discount": "250", "usage_limit": "20",
+            "starts_at": "2026-08-25T10:00", "ends_at": "2026-08-31T23:59",
+        })
+        self.assertRedirects(response, reverse("crm_coupon_edit", args=[self.coupon.id]))
+        self.coupon.refresh_from_db()
+        self.assertEqual(self.coupon.code, "WELCOME10")
+        self.assertEqual(self.coupon.discount_percent, 10)
+        self.assertEqual(self.coupon.usage_limit, 20)
+        self.assertIsNotNone(self.coupon.ends_at)
+
+
 class HomepageFoodRankingTests(TestCase):
     def test_popular_picks_are_balanced_between_dogs_and_cats(self):
         for index in range(6):
@@ -667,7 +691,7 @@ class StoreSecurityTests(TestCase):
 
         self.assertRedirects(
             response,
-            reverse("product_detail", args=[medicine.id]),
+            f"{reverse('login')}?next={reverse('prescription_upload', args=[medicine.id])}",
             fetch_redirect_response=False,
         )
         self.assertFalse(self.client.session.get("cart"))

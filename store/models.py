@@ -1,9 +1,26 @@
 import re
+import uuid
 from decimal import Decimal
 
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+
+
+class ProductQuerySet(models.QuerySet):
+    def customer_visible(self):
+        """Products that can actually be purchased by a customer right now."""
+        sellable_variant = ProductVariant.objects.filter(
+            product_id=models.OuterRef("pk"),
+            is_available=True,
+            stock__gt=0,
+        )
+        return self.annotate(
+            has_sellable_variant=models.Exists(sellable_variant)
+        ).filter(
+            is_available=True,
+            is_archived=False,
+        ).filter(models.Q(stock__gt=0) | models.Q(has_sellable_variant=True))
 
 
 class Product(models.Model):
@@ -228,6 +245,15 @@ class Product(models.Model):
         help_text="Hides the product from customers without deleting its history.",
     )
 
+    duplicate_of = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="archived_duplicates",
+        help_text="Canonical product retained when this duplicate is archived.",
+    )
+
     is_featured = models.BooleanField(
         default=False
     )
@@ -235,6 +261,32 @@ class Product(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True
     )
+
+    objects = ProductQuerySet.as_manager()
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["is_archived", "is_available", "category"],
+                name="store_prod_vis_cat_idx",
+            ),
+            models.Index(
+                fields=["is_archived", "is_available", "pet_type"],
+                name="store_prod_vis_pet_idx",
+            ),
+            models.Index(
+                fields=["is_archived", "is_available", "brand"],
+                name="store_prod_vis_brand_idx",
+            ),
+            models.Index(
+                fields=["category", "is_archived", "is_available", "is_featured"],
+                name="store_prod_cat_sort_idx",
+            ),
+            models.Index(
+                fields=["is_archived", "is_available", "price"],
+                name="store_prod_vis_price_idx",
+            ),
+        ]
 
     def __str__(self):
         return self.name
@@ -391,6 +443,42 @@ class ProductImage(models.Model):
             except (ValueError, AttributeError):
                 pass
         return self.external_image_url
+
+
+class ConversionEvent(models.Model):
+    EVENT_CHOICES = [
+        ("product_view", "Product view"),
+        ("add_to_cart", "Add to cart"),
+        ("buy_now", "Buy now"),
+        ("checkout_started", "Checkout started"),
+        ("purchase_completed", "Purchase completed"),
+        ("coupon_applied", "Coupon applied"),
+    ]
+
+    event_type = models.CharField(max_length=30, choices=EVENT_CHOICES)
+    session_key = models.CharField(max_length=40, blank=True, db_index=True)
+    user = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="conversion_events",
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="conversion_events",
+    )
+    order = models.ForeignKey(
+        "Order", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="conversion_events",
+    )
+    coupon_code = models.CharField(max_length=50, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["event_type", "created_at"], name="store_event_type_time_idx"),
+            models.Index(fields=["session_key", "created_at"], name="store_event_session_idx"),
+            models.Index(fields=["user", "event_type"], name="store_event_user_type_idx"),
+        ]
 class FeedingGuide(models.Model):
 
     product = models.ForeignKey(
@@ -450,6 +538,7 @@ class Order(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
         ("confirmed", "Confirmed"),
+        ("packed", "Packed"),
         ("shipped", "Shipped"),
         ("delivered", "Delivered"),
         ("cancelled", "Cancelled"),
@@ -528,6 +617,122 @@ class Coupon(models.Model):
         return min(discount, subtotal)
 
 
+class DeliveryZone(models.Model):
+    pincode = models.CharField(max_length=6, unique=True)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    min_delivery_days = models.PositiveSmallIntegerField(default=2)
+    max_delivery_days = models.PositiveSmallIntegerField(default=5)
+    is_active = models.BooleanField(default=True)
+    cod_available = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ("pincode",)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if not re.fullmatch(r"\d{6}", self.pincode or ""):
+            raise ValidationError({"pincode": "Enter exactly 6 digits."})
+        if self.max_delivery_days < self.min_delivery_days:
+            raise ValidationError({"max_delivery_days": "Must be at least the minimum delivery days."})
+
+    def __str__(self):
+        return f"{self.pincode} — {self.city}, {self.state}"
+
+
+class OfferCampaign(models.Model):
+    title = models.CharField(max_length=140)
+    slug = models.SlugField(unique=True)
+    subtitle = models.CharField(max_length=240, blank=True)
+    image = models.ImageField(upload_to="offers/", blank=True, null=True)
+    starts_at = models.DateTimeField(blank=True, null=True)
+    ends_at = models.DateTimeField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    priority = models.IntegerField(default=0)
+    coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, blank=True, null=True, related_name="campaigns")
+    products = models.ManyToManyField(Product, blank=True, related_name="offer_campaigns")
+    categories = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        ordering = ("-priority", "title")
+
+    @property
+    def is_current(self):
+        now = timezone.now()
+        return self.is_active and (not self.starts_at or self.starts_at <= now) and (not self.ends_at or self.ends_at >= now)
+
+    def __str__(self):
+        return self.title
+
+
+class ProductBundle(models.Model):
+    name = models.CharField(max_length=160)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True)
+    image = models.ImageField(upload_to="bundles/", blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    starts_at = models.DateTimeField(blank=True, null=True)
+    ends_at = models.DateTimeField(blank=True, null=True)
+    bundle_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    discount_percent = models.PositiveSmallIntegerField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("name",)
+
+    @property
+    def is_current(self):
+        now = timezone.now()
+        return self.is_active and (not self.starts_at or self.starts_at <= now) and (not self.ends_at or self.ends_at >= now)
+
+    def __str__(self):
+        return self.name
+
+
+class BundleItem(models.Model):
+    bundle = models.ForeignKey(ProductBundle, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="bundle_items")
+    variant = models.ForeignKey(ProductVariant, on_delete=models.PROTECT, blank=True, null=True, related_name="bundle_items")
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ("id",)
+        constraints = [models.UniqueConstraint(fields=("bundle", "product", "variant"), name="unique_bundle_product_variant")]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.variant_id and self.variant.product_id != self.product_id:
+            raise ValidationError({"variant": "The selected variant must belong to this product."})
+
+    def __str__(self):
+        return f"{self.bundle}: {self.product} × {self.quantity}"
+
+
+def prescription_upload_path(instance, filename):
+    extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
+    return f"prescriptions/{instance.user_id}/{uuid.uuid4().hex}.{extension}"
+
+
+class Prescription(models.Model):
+    STATUS_CHOICES = (("pending", "Pending"), ("approved", "Approved"), ("rejected", "Rejected"))
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="prescriptions")
+    order = models.ForeignKey("Order", on_delete=models.SET_NULL, blank=True, null=True, related_name="prescriptions")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, blank=True, null=True, related_name="prescriptions")
+    pet = models.ForeignKey("Pet", on_delete=models.SET_NULL, blank=True, null=True, related_name="prescriptions")
+    file = models.FileField(upload_to=prescription_upload_path)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default="pending")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(blank=True, null=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name="reviewed_prescriptions")
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ("-uploaded_at",)
+
+    def __str__(self):
+        return f"Prescription #{self.pk} — {self.user} — {self.status}"
+
+
 class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
@@ -546,6 +751,13 @@ class OrderItem(models.Model):
         null=True,
         blank=True,
         related_name="order_items"
+    )
+    bundle = models.ForeignKey(
+        ProductBundle,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order_items",
     )
 
     # Snapshot the package size so old orders still show
@@ -583,7 +795,6 @@ class Pet(models.Model):
         on_delete=models.CASCADE,
         related_name="pets"
     )
-
     image = models.ImageField(
         upload_to="pets/",
         blank=True,

@@ -362,10 +362,6 @@ Boww & Meow | Pet Food, Care & Essentials
         grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
         gap: 14px !important;
     }
-    .home-best-section .home-product-image {
-        height: 180px !important;
-        padding: 12px !important;
-    }
 }
 
 /* Mobile */
@@ -974,6 +970,8 @@ Boww & Meow | Pet Food, Care & Essentials
     </section>
 
 
+    {% if recent_products %}<section class="bm-feature-section"><div class="v2-section-head"><div><span class="v2-eyebrow">PICK UP WHERE YOU LEFT OFF</span><h2>Recently Viewed</h2></div></div><div class="bm-feature-grid">{% for recent in recent_products %}{% include "store/includes/home_product_card.html" with product=recent %}{% endfor %}</div></section>{% endif %}
+
     <section class="v2-section" id="featured-products">
         <div class="v2-shell">
 
@@ -1065,21 +1063,17 @@ Boww & Meow | Pet Food, Care & Essentials
 
                 <div>
                     <span class="v2-eyebrow">MADE FOR YOUR PET</span>
-                    <h2>Your pet profile should make shopping easier.</h2>
-                    <p>
-                        Keep your pet details in one place today. Next, we can use breed,
-                        age and pet type to power smarter product recommendations.
-                    </p>
+                    <h2>Smarter shopping starts with your pet.</h2>
+                    <p>Add your pet’s breed, age and preferences to discover products matched to their needs.</p>
 
                     <a href="{% url 'my_pets' %}" class="v2-btn v2-btn-dark">
-                        View My Pets
+                        View My Pets →
                     </a>
                 </div>
 
-                <div class="v2-personal-visual">
-                    <span>🐶</span>
-                    <span>🐱</span>
-                    <small>Personalized care starts here</small>
+                <div class="v2-personal-visual" aria-hidden="true">
+                    <svg viewBox="0 0 260 150" role="img"><path d="M68 55 45 31 37 70c-9 13-8 35 4 49 13 16 45 18 61 2 13-13 15-37 5-51l-5-40-25 25"/><circle cx="62" cy="79" r="4"/><circle cx="87" cy="79" r="4"/><path d="M67 94c5 6 12 6 17 0M165 58l-17-27-12 34c-7 12-6 31 3 43 12 16 42 19 58 5 14-12 17-33 9-47l-8-34-20 26"/><circle cx="158" cy="81" r="4"/><circle cx="184" cy="81" r="4"/><path d="M164 96c5 5 11 5 16 0"/></svg>
+                    <small>Personalized care, thoughtfully matched</small>
                 </div>
 
             </div>

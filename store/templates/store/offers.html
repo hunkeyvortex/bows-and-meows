@@ -1,0 +1,4 @@
+{% extends "store/base.html" %}{% block title %}Offers | Boww & Meow{% endblock %}{% block content %}
+<section class="bm-offer-hero"><span class="v2-eyebrow">OFFER ZONE</span><h1>More care, better value</h1><p>Current Boww & Meow promotions. Expired offers disappear automatically.</p>
+{% if campaigns %}<div class="bm-campaigns">{% for campaign in campaigns %}<article class="bm-campaign"><h2>{{ campaign.title }}</h2><p>{{ campaign.subtitle }}</p>{% if campaign.coupon %}<strong>Use {{ campaign.coupon.code }} · {{ campaign.coupon.discount_percent }}% off</strong>{% endif %}</article>{% endfor %}</div>{% endif %}</section>
+<section class="bm-feature-section"><h2>Products on offer</h2><div class="bm-feature-grid">{% for product in products %}{% include "store/includes/home_product_card.html" %}{% empty %}<p>No offers are active right now.</p>{% endfor %}</div></section>{% endblock %}

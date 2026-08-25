@@ -1,0 +1,4 @@
+Boww & Meow order {{ order_number }} has been cancelled.
+
+Hi {{ order.customer_name }}, your order has been cancelled. If payment or refund information applies, our team will confirm it separately once known.
+{% if support_email %}Support: {{ support_email }}{% endif %}

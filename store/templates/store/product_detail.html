@@ -590,13 +590,17 @@
                     <span><svg class="bm-icon" aria-hidden="true"><use href="{% static 'store/icons.svg' %}#medical"></use></svg></span>
                     <div>
                         <strong>Veterinary prescription required</strong>
-                        <p>This medicine cannot be purchased through normal checkout. Contact us with a valid prescription and we’ll help you safely.</p>
+                        <p>Upload a valid prescription for staff review before checkout.</p>
                     </div>
                 </div>
                 {% endif %}
 
 
                 <div class="pd-v2-actions">
+
+                    {% if product.requires_prescription %}
+                        {% if request.user.is_authenticated %}<a href="{% url 'prescription_upload' product.id %}" class="pd-v2-cart-btn">Upload prescription</a>{% else %}<a href="{% url 'login' %}?next={% url 'prescription_upload' product.id %}" class="pd-v2-cart-btn">Sign in to upload prescription</a>{% endif %}
+                    {% endif %}
 
                     {% if product.stock > 0 and not product.requires_prescription %}
 
@@ -883,6 +887,16 @@
             </div>
 
         </section>
+
+        <section class="bm-feature-section bm-product-commerce">
+            <div class="bm-delivery-check">
+                <strong>Delivery to</strong>
+                <form action="{% url 'delivery_status' %}" method="post" data-delivery-form>{% csrf_token %}<div class="bm-delivery-row"><input name="pincode" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="Enter pincode" required><button>Check</button></div><p class="bm-delivery-result" data-delivery-result></p></form>
+            </div>
+        </section>
+
+        {% if frequently_bought %}<section class="bm-feature-section"><h2>Frequently Bought Together</h2><form method="post" action="{% url 'add_frequently_bought' product.id %}">{% csrf_token %}<div class="bm-feature-grid">{% for recommended in frequently_bought %}<div class="bm-select-product"><label><input type="checkbox" name="selected" value="{{ recommended.id }}" checked> Add this product</label>{% include "store/includes/home_product_card.html" with product=recommended %}{% if recommended.has_available_variants %}<select name="variant_{{ recommended.id }}" required><option value="">Choose size</option>{% for variant in recommended.variants.all %}{% if variant.is_available and variant.stock > 0 %}<option value="{{ variant.id }}">{{ variant.size }} · ₹{{ variant.price }}</option>{% endif %}{% endfor %}</select>{% endif %}</div>{% endfor %}</div><button class="bm-primary" type="submit">Add selected to cart</button></form></section>{% endif %}
+        {% if recent_products %}<section class="bm-feature-section"><h2>Recently Viewed</h2><div class="bm-feature-grid">{% for recent in recent_products %}{% include "store/includes/home_product_card.html" with product=recent %}{% endfor %}</div></section>{% endif %}
 
         {% if related_products %}
         <section class="bm-related-products">

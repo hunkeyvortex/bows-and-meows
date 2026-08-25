@@ -45,8 +45,7 @@
         return audio;
     }
 
-    const activeSubmissions =
-        new WeakSet();
+    const activeSubmissions = new WeakSet();
 
     function resetCartSoundState() {
         document
@@ -67,8 +66,7 @@
             });
     }
 
-    document.addEventListener(
-        "submit",
+    document.addEventListener("submit",
         (event) => {
 
             const form =

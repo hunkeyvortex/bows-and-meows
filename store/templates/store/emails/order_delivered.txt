@@ -1,0 +1,4 @@
+Your Boww & Meow order {{ order_number }} has been delivered.
+
+Hi {{ order.customer_name }}, we hope your pet loves everything.
+Visit Boww & Meow: {{ store_url }}

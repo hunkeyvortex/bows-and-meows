@@ -1,0 +1,116 @@
+.bm-product-commerce {
+    margin-top: 28px;
+}
+
+.bm-select-product {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid #dfe5dc;
+    border-radius: 22px;
+    background: #fff;
+}
+
+.bm-select-product > label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+    padding: 0 4px;
+    color: #203229;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.bm-select-product > label input {
+    width: 18px;
+    height: 18px;
+    accent-color: #174b36;
+}
+
+.bm-select-product .home-product-card {
+    border: 0;
+    box-shadow: none;
+}
+
+/* The bundle selector below the card is the action in this section. */
+.bm-select-product .home-product-button {
+    display: none;
+}
+
+.bm-select-product > select {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 10px;
+    padding: 0 42px 0 14px;
+    border: 1px solid #cbd7c9;
+    border-radius: 12px;
+    background: #f8faf5;
+    color: #1d3026;
+    font: inherit;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.bm-feature-section form > .bm-primary {
+    min-height: 52px;
+    margin-top: 18px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 14px;
+    background: #174b36;
+    color: #fff;
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(23, 75, 54, .16);
+}
+
+.bm-bundle-form-row {
+    margin: 12px 0;
+    padding: 14px;
+    border: 1px solid #dfe5dc;
+    border-radius: 14px;
+    background: #f9fbf7;
+}
+
+@media (max-width: 768px) {
+    .bm-feature-section {
+        margin-top: 26px;
+        padding-inline: 12px;
+    }
+
+    .bm-feature-section h2 {
+        margin: 0 0 14px;
+        font-size: clamp(28px, 9vw, 38px);
+        line-height: 1.06;
+    }
+
+    .bm-select-product {
+        padding: 6px;
+        border-radius: 16px;
+    }
+
+    .bm-select-product > label {
+        font-size: 12px;
+    }
+
+    .bm-select-product > select {
+        min-height: 46px;
+        font-size: 12px;
+    }
+
+    .bm-feature-section form > .bm-primary {
+        position: sticky;
+        bottom: calc(var(--bm-mobile-dock-height, 68px) + env(safe-area-inset-bottom) + 10px);
+        z-index: 5;
+        width: 100%;
+    }
+}
+/* Keep the growing CRM navigation usable without overlapping its footer links. */
+@media (min-width: 761px) {
+  .crm-sidebar { display:flex !important; flex-direction:column !important; height:100dvh !important; overflow:hidden !important; }
+  .crm-sidebar .crm-logo { flex:0 0 auto !important; }
+  .crm-sidebar .crm-nav { flex:1 1 auto !important; min-height:0 !important; overflow-x:hidden !important; overflow-y:auto !important; padding-bottom:14px !important; scrollbar-width:thin; scrollbar-color:rgba(221,234,175,.45) transparent; }
+  .crm-sidebar .crm-sidebar-bottom { position:static !important; inset:auto !important; flex:0 0 auto !important; margin-top:8px !important; padding-top:10px !important; border-top:1px solid rgba(255,255,255,.1) !important; background:transparent !important; }
+}

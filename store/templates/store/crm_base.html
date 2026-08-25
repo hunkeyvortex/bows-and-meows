@@ -10,6 +10,8 @@
     <title>{% block title %}Boww & Meow CRM{% endblock %}</title>
 
     <link rel="stylesheet" href="{% static 'store/style.css' %}">
+    <link rel="stylesheet" href="{% static 'store/commerce-features.css' %}">
+    <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}">
 </head>
 
 <body class="crm-body">
@@ -47,6 +49,10 @@
             <a href="{% url 'crm_coupons' %}" {% if request.resolver_match.url_name == 'crm_coupons' %}class="active"{% endif %}>
                 <span>%</span> Coupons
             </a>
+            <a href="{% url 'crm_delivery_zones' %}" {% if 'crm_delivery' in request.resolver_match.url_name %}class="active"{% endif %}><span>⌖</span> Delivery Zones</a>
+            <a href="{% url 'crm_offers' %}" {% if 'crm_offer' in request.resolver_match.url_name %}class="active"{% endif %}><span>◇</span> Offer Zone</a>
+            <a href="{% url 'crm_bundles' %}" {% if 'crm_bundle' in request.resolver_match.url_name %}class="active"{% endif %}><span>▣</span> Bundles</a>
+            <a href="{% url 'crm_prescriptions' %}" {% if 'crm_prescription' in request.resolver_match.url_name %}class="active"{% endif %}><span>Rx</span> Prescriptions</a>
 
             <a href="{% url 'crm_reports' %}" {% if request.resolver_match.url_name == 'crm_reports' %}class="active"{% endif %}>
                 <span>↗</span> Reports

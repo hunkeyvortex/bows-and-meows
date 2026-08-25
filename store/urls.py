@@ -1,9 +1,28 @@
 from django.urls import path
-from . import views
+from . import views, commerce_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path("delivery/check/", commerce_views.delivery_status, name="delivery_status"),
+    path("quick-view/<int:product_id>/", commerce_views.quick_view, name="quick_view"),
+    path("product/<int:product_id>/frequently-bought/add/", commerce_views.add_frequently_bought, name="add_frequently_bought"),
+    path("offers/", commerce_views.offers, name="offers"),
+    path("bundles/<slug:slug>/", commerce_views.bundle_detail, name="bundle_detail"),
+    path("bundles/<slug:slug>/add/", commerce_views.add_bundle, name="add_bundle"),
+    path("bundles/<int:bundle_id>/remove/", commerce_views.remove_bundle, name="remove_bundle"),
+    path("prescriptions/upload/<int:product_id>/", commerce_views.prescription_upload, name="prescription_upload"),
+    path("prescriptions/<int:prescription_id>/file/", commerce_views.prescription_download, name="prescription_download"),
+    path("crm/delivery-zones/", commerce_views.crm_delivery_zones, name="crm_delivery_zones"),
+    path("crm/delivery-zones/<int:zone_id>/", commerce_views.crm_delivery_zones, name="crm_delivery_zone_edit"),
+    path("crm/offers/", commerce_views.crm_offers, name="crm_offers"),
+    path("crm/offers/<int:campaign_id>/", commerce_views.crm_offers, name="crm_offer_edit"),
+    path("crm/bundles/", commerce_views.crm_bundles, name="crm_bundles"),
+    path("crm/bundles/products/search/", commerce_views.crm_bundle_product_search, name="crm_bundle_product_search"),
+    path("crm/bundles/variants/search/", commerce_views.crm_bundle_variant_search, name="crm_bundle_variant_search"),
+    path("crm/bundles/<int:bundle_id>/", commerce_views.crm_bundles, name="crm_bundle_edit"),
+    path("crm/prescriptions/", commerce_views.crm_prescriptions, name="crm_prescriptions"),
+    path("crm/prescriptions/<int:prescription_id>/review/", commerce_views.crm_prescription_review, name="crm_prescription_review"),
 
     path("cart/", views.cart, name="cart"),
     path("cart/add/<int:product_id>/", views.add_to_cart, name="add_to_cart"),
@@ -36,6 +55,7 @@ urlpatterns = [
     path("crm/orders/<int:order_id>/status/", views.crm_order_status, name="crm_order_status"),
     path("crm/reports/", views.crm_reports, name="crm_reports"),
     path("crm/coupons/", views.crm_coupons, name="crm_coupons"),
+    path("crm/coupons/<int:coupon_id>/edit/", views.crm_coupons, name="crm_coupon_edit"),
     path("crm/inventory/add/", views.crm_inventory_add, name="crm_inventory_add"),
     path("product/<int:product_id>/", views.product_detail, name="product_detail"),
     path("product/<int:product_id>/review/",views.add_review,name="add_review"),

@@ -8,13 +8,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.urls import reverse
 from .models import Product, Order, OrderItem, Pet
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.db.models import Sum, Count
 from django.db.models import Sum, Count, F, DecimalField, ExpressionWrapper, OuterRef, Subquery
 from django.db.models.functions import Coalesce, Lower, Trim, TruncDate
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db.models import Avg
 from .models import Product, Order, OrderItem, Pet, Review
@@ -32,23 +33,13 @@ from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import csv
 import io
-from brevo import Brevo
-from brevo.transactional_emails import (
-    SendTransacEmailRequestSender,
-    SendTransacEmailRequestToItem,
-)
-from brevo.core.api_error import ApiError
 import re
 from django.db import transaction
 import uuid
 from decimal import Decimal, InvalidOperation
 from PIL import Image as PillowImage, UnidentifiedImageError
 from django.conf import settings
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.core.mail import EmailMultiAlternatives
 from django.core.paginator import Paginator
-from brevo.core.api_error import ApiError
 from .models import (
     Product,
     ProductVariant,
@@ -56,16 +47,38 @@ from .models import (
     Order,
     OrderItem,
     Coupon,
+    ConversionEvent,
 )
+from .services.order_notifications import (
+    notify_order_confirmed,
+    notify_order_status,
+    notify_payment_confirmed,
+    notify_payment_failed,
+)
+
+
+def _track_conversion(request, event_type, *, product=None, order=None, coupon_code="", metadata=None):
+    """Record storefront funnel activity without ever interrupting a purchase."""
+    try:
+        if not request.session.session_key:
+            request.session.save()
+        ConversionEvent.objects.create(
+            event_type=event_type,
+            session_key=request.session.session_key or "",
+            user=request.user if request.user.is_authenticated else None,
+            product=product,
+            order=order,
+            coupon_code=coupon_code,
+            metadata=metadata or {},
+        )
+    except Exception:
+        # Analytics is best-effort; it must never make commerce unavailable.
+        pass
 def home(request):
 
     base_products = (
         Product.objects
-        .filter(
-            is_available=True,
-            is_archived=False,
-            stock__gt=0
-        )
+        .customer_visible()
         .prefetch_related("variants")
         .annotate(
             sold_count=Sum(
@@ -224,7 +237,7 @@ def home(request):
 
     famous_brands = list(
         Product.objects
-        .filter(is_available=True, is_archived=False, stock__gt=0)
+        .customer_visible()
         .exclude(brand__isnull=True)
         .exclude(brand="")
         .values("brand")
@@ -289,6 +302,7 @@ def home(request):
 
         "offers":
             offers,
+        "recent_products": __import__("store.services.commerce", fromlist=["recently_viewed"]).recently_viewed(request),
     }
 
 
@@ -297,62 +311,6 @@ def home(request):
         "store/home.html",
         context
     )
-def send_brevo_email(to_email, to_name, subject, html_content):
-
-    api_key = os.getenv("BREVO_API_KEY")
-    sender_email = os.getenv("BREVO_SENDER_EMAIL")
-    sender_name = os.getenv("BREVO_SENDER_NAME", "Boww & Meow")
-
-    if not api_key:
-        print("BREVO ERROR: BREVO_API_KEY missing")
-        return
-
-    if not sender_email:
-        print("BREVO ERROR: BREVO_SENDER_EMAIL missing")
-        return
-
-    if not to_email:
-        print("BREVO ERROR: recipient email missing")
-        return
-
-    try:
-        client = Brevo(api_key=api_key)
-
-        result = client.transactional_emails.send_transac_email(
-            subject=subject,
-            html_content=html_content,
-
-            sender=SendTransacEmailRequestSender(
-                name=sender_name,
-                email=sender_email,
-            ),
-
-            to=[
-                SendTransacEmailRequestToItem(
-                    email=to_email,
-                    name=to_name or "",
-                )
-            ],
-        )
-
-        print(
-            "BREVO EMAIL SENT:",
-            result.message_id
-        )
-
-    except ApiError as e:
-        print(
-            "BREVO API ERROR:",
-            e.status_code,
-            e.body
-        )
-
-    except Exception as e:
-        print(
-            "BREVO UNKNOWN ERROR:",
-            str(e)
-        )
-
 def _sync_product_stock(product):
     variants = product.variants.all()
     if variants.exists():
@@ -434,6 +392,19 @@ def _request_can_access_order(request, order):
     ) or order.id in request.session.get("order_access_ids", [])
 
 
+def _mark_payment_failed(order):
+    """Persist and notify a genuine payment-failure transition once."""
+    old_status = order.payment_status
+    if old_status == "paid":
+        return False
+    if old_status != "failed":
+        order.payment_status = "failed"
+        order.save(update_fields=["payment_status"])
+        notify_payment_failed(order)
+        return True
+    return False
+
+
 def _cart_line_key(product_id, variant_id=None):
     return f"p{product_id}:v{variant_id}" if variant_id else f"p{product_id}"
 
@@ -463,11 +434,17 @@ def _normalize_cart(request):
                 continue
             variant_id = None
         key = _cart_line_key(product_id, variant_id)
-        normalized[key] = {
+        normalized_entry = {
             "product_id": product_id,
             "variant_id": variant_id,
             "quantity": quantity,
         }
+        if isinstance(raw_value, dict) and raw_value.get("bundle_id"):
+            normalized_entry["bundle_id"] = int(raw_value["bundle_id"])
+            normalized_entry["bundle_name"] = str(raw_value.get("bundle_name", ""))[:160]
+            normalized_entry["bundle_unit_price"] = str(raw_value.get("bundle_unit_price", ""))
+            key = f"b{normalized_entry['bundle_id']}:{key}"
+        normalized[key] = normalized_entry
     request.session["cart"] = normalized
     request.session.modified = True
     return normalized
@@ -562,6 +539,17 @@ def _build_cart_items(request):
                 continue
         quantity = max(int(entry.get("quantity", 1)), 1)
         unit_price = variant.price if variant else product.price
+        if entry.get("bundle_id"):
+            try:
+                from .models import ProductBundle
+                active_bundle = ProductBundle.objects.filter(id=entry["bundle_id"], is_active=True).first()
+                if not active_bundle or not active_bundle.items.filter(product=product, variant=variant).exists():
+                    invalid.append(line_key)
+                    continue
+                unit_price = Decimal(entry["bundle_unit_price"])
+            except (InvalidOperation, TypeError, ValueError):
+                invalid.append(line_key)
+                continue
         subtotal = unit_price * quantity
         total += subtotal
         cart_items.append({
@@ -573,6 +561,8 @@ def _build_cart_items(request):
             "available_stock": variant.stock if variant else product.stock,
             "subtotal": subtotal,
             "upgrade_suggestion": _find_pack_upgrade(product, variant, quantity) if variant else None,
+            "bundle_id": entry.get("bundle_id"),
+            "bundle_name": entry.get("bundle_name", ""),
         })
     for key in invalid:
         cart.pop(key, None)
@@ -628,13 +618,14 @@ def _available_coupons(subtotal):
 
 @require_POST
 def add_to_cart(request, product_id):
-    product = get_object_or_404(Product, id=product_id, is_available=True, is_archived=False)
+    product = get_object_or_404(Product.objects.customer_visible(), id=product_id)
     if product.requires_prescription:
-        messages.warning(
-            request,
-            "This veterinary medicine requires a valid prescription. Please contact us before ordering.",
-        )
-        return redirect("product_detail", product_id=product.id)
+        if not request.user.is_authenticated:
+            messages.warning(request, "Sign in to upload a prescription for this medicine.")
+            return redirect(f"{reverse('login')}?next={reverse('prescription_upload', args=[product.id])}")
+        from .models import Prescription
+        if not Prescription.objects.filter(user=request.user, product=product).exists():
+            return redirect("prescription_upload", product_id=product.id)
     cart = _normalize_cart(request)
     variant_id = request.GET.get("variant") or request.POST.get("variant")
     variant = None
@@ -656,6 +647,10 @@ def add_to_cart(request, product_id):
             "variant_id": variant.id if variant else None,
             "quantity": current + 1,
         }
+        _track_conversion(request, "add_to_cart", product=product, metadata={
+            "variant_id": variant.id if variant else None,
+            "quantity": current + 1,
+        })
 
     replace_key = request.POST.get("replace") or request.GET.get("replace")
     if replace_key and replace_key != line_key and replace_key in cart:
@@ -669,18 +664,14 @@ def add_to_cart(request, product_id):
 @require_POST
 def buy_now(request, product_id):
     """Start a focused checkout containing only the selected product/variant."""
-    product = get_object_or_404(
-        Product,
-        id=product_id,
-        is_available=True,
-        is_archived=False,
-    )
+    product = get_object_or_404(Product.objects.customer_visible(), id=product_id)
     if product.requires_prescription:
-        messages.warning(
-            request,
-            "This veterinary medicine requires a valid prescription. Please contact us before ordering.",
-        )
-        return redirect("product_detail", product_id=product.id)
+        if not request.user.is_authenticated:
+            messages.warning(request, "Sign in to upload a prescription for this medicine.")
+            return redirect(f"{reverse('login')}?next={reverse('prescription_upload', args=[product.id])}")
+        from .models import Prescription
+        if not Prescription.objects.filter(user=request.user, product=product).exists():
+            return redirect("prescription_upload", product_id=product.id)
 
     variant_id = request.POST.get("variant")
     variant = None
@@ -705,6 +696,9 @@ def buy_now(request, product_id):
     }
     request.session.pop("coupon_code", None)
     request.session.modified = True
+    _track_conversion(request, "buy_now", product=product, metadata={
+        "variant_id": variant.id if variant else None,
+    })
     return redirect("checkout")
 
 
@@ -733,6 +727,7 @@ def apply_coupon(request):
     else:
         request.session["coupon_code"] = coupon.code
         request.session.modified = True
+        _track_conversion(request, "coupon_applied", coupon_code=coupon.code, metadata={"subtotal": str(subtotal)})
         messages.success(request, f"{coupon.code} applied — you save {coupon.discount_percent}%.")
     return redirect(request.POST.get("next") or "cart")
 
@@ -783,93 +778,31 @@ def decrease_quantity(request, product_id):
     request.session.modified = True
     return redirect("cart")
 
-def send_order_confirmation(order):
-
-    if not order.email:
-        return
-
-    subject = (
-        f"Boww & Meow - Order #{order.id} Confirmed"
-    )
-
-    html_content = render_to_string(
-        "store/emails/order_confirmation.html",
-        {
-            "order": order
-        }
-    )
-
-    text_content = (
-        f"Hi {order.customer_name},\n\n"
-        f"Thank you for shopping with Boww & Meow!\n\n"
-        f"Order #{order.id}\n"
-        f"Total: ₹{order.total_amount}\n"
-        f"Payment: {order.get_payment_method_display()}\n"
-        f"Delivery Address: {order.address}\n\n"
-        f"Thank you,\n"
-        f"Boww & Meow"
-    )
-
-    send_brevo_email(
-    to_email=order.email,
-    to_name=order.customer_name,
-    subject=subject,
-    html_content=html_content,
-)
-
-def send_order_status_email(order):
-
-    if not order.email:
-        return
-
-    subject_map = {
-        "confirmed":
-            f"Order #{order.id} Confirmed 🎉",
-
-        "shipped":
-            f"Order #{order.id} Has Been Shipped 📦",
-
-        "delivered":
-            f"Order #{order.id} Delivered ✅",
-
-        "cancelled":
-            f"Order #{order.id} Cancelled",
-    }
-
-    subject = subject_map.get(
-        order.status,
-        f"Update for Order #{order.id}"
-    )
-
-    html_content = render_to_string(
-        "store/emails/order_status_update.html",
-        {
-            "order": order
-        }
-    )
-
-    text_content = (
-        f"Hi {order.customer_name},\n\n"
-        f"Your order #{order.id} has been updated.\n\n"
-        f"Status: {order.get_status_display()}\n"
-        f"Total: ₹{order.total_amount}\n\n"
-        f"Thank you,\n"
-        f"Boww & Meow"
-    )
-
-    send_brevo_email(
-        to_email=order.email,
-        to_name=order.customer_name,
-        subject=subject,
-        html_content=html_content,
-    )
-
 def checkout(request):
     cart_items, subtotal = _build_cart_items(request)
     pricing = _cart_pricing(request, subtotal)
     total = pricing["total"]
     if not cart_items:
         return redirect("cart")
+
+    prescription_products = [item["product"] for item in cart_items if item["product"].requires_prescription]
+    if prescription_products:
+        if not request.user.is_authenticated:
+            messages.warning(request, "Sign in and upload an approved prescription before checkout.")
+            return redirect(f"{reverse('login')}?next={reverse('checkout')}")
+        from .models import Prescription
+        missing = [product for product in prescription_products if not Prescription.objects.filter(
+            user=request.user, product=product, status="approved"
+        ).exists()]
+        if missing:
+            messages.warning(request, "An approved prescription is required for the medicine in your cart.")
+            return redirect("prescription_upload", product_id=missing[0].id)
+
+    if request.method == "GET":
+        _track_conversion(request, "checkout_started", metadata={
+            "subtotal": str(subtotal),
+            "items": sum(item["quantity"] for item in cart_items),
+        })
 
     checkout_token = request.session.get("checkout_token")
     if not checkout_token:
@@ -966,6 +899,7 @@ def checkout(request):
                     variant_size=item["variant"].size if item["variant"] else "",
                     quantity=item["quantity"],
                     price=item["unit_price"],
+                    bundle_id=item.get("bundle_id"),
                 )
 
             _reserve_order_inventory(order)
@@ -988,8 +922,7 @@ def checkout(request):
                 })
             except Exception:
                 _restore_order_inventory(order)
-                order.payment_status = "failed"
-                order.save(update_fields=["payment_status"])
+                _mark_payment_failed(order)
                 return render(request, "store/payment_failed.html", {
                     "order": order,
                     "error": "We couldn't start the payment. Please try again."
@@ -1006,7 +939,9 @@ def checkout(request):
             })
 
         if payment_method == "cod":
-            send_order_confirmation(order)
+            notify_order_confirmed(order)
+            _track_conversion(request, "purchase_completed", order=order, coupon_code=order.coupon_code,
+                              metadata={"total": str(order.total_amount), "payment_method": "cod"})
             request.session["cart"] = {}
             return redirect("order_success", order_id=order.id)
 
@@ -1330,10 +1265,20 @@ def crm_dashboard(request):
     )
 
 
+def _coupon_datetime(value):
+    if not value:
+        return None
+    parsed = datetime.fromisoformat(value)
+    if timezone.is_naive(parsed):
+        parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+    return parsed
+
+
 @login_required
-def crm_coupons(request):
+def crm_coupons(request, coupon_id=None):
     if not request.user.is_staff:
         return redirect("home")
+    editing_coupon = get_object_or_404(Coupon, pk=coupon_id) if coupon_id else None
     if request.method == "POST":
         action = request.POST.get("action", "create")
         if action == "toggle":
@@ -1346,25 +1291,29 @@ def crm_coupons(request):
                 percent = int(request.POST.get("discount_percent", 0))
                 if not 1 <= percent <= 100:
                     raise ValueError
-                Coupon.objects.create(
-                    code=request.POST.get("code", "").strip().upper(),
-                    discount_percent=percent,
-                    minimum_order=Decimal(request.POST.get("minimum_order") or "0"),
-                    maximum_discount=(
-                        Decimal(request.POST["maximum_discount"])
-                        if request.POST.get("maximum_discount")
-                        and Decimal(request.POST["maximum_discount"]) > 0
-                        else None
-                    ),
-                    usage_limit=int(request.POST["usage_limit"]) if request.POST.get("usage_limit") else None,
+                coupon = editing_coupon or Coupon()
+                coupon.code = request.POST.get("code", "").strip().upper()
+                coupon.discount_percent = percent
+                coupon.minimum_order = Decimal(request.POST.get("minimum_order") or "0")
+                coupon.maximum_discount = (
+                    Decimal(request.POST["maximum_discount"])
+                    if request.POST.get("maximum_discount")
+                    and Decimal(request.POST["maximum_discount"]) > 0
+                    else None
                 )
-                messages.success(request, "Coupon created and ready to use.")
+                coupon.usage_limit = int(request.POST["usage_limit"]) if request.POST.get("usage_limit") else None
+                coupon.starts_at = _coupon_datetime(request.POST.get("starts_at"))
+                coupon.ends_at = _coupon_datetime(request.POST.get("ends_at"))
+                if coupon.starts_at and coupon.ends_at and coupon.ends_at <= coupon.starts_at:
+                    raise ValueError
+                coupon.save()
+                messages.success(request, f"{coupon.code} {'updated' if editing_coupon else 'created and ready to use'}.")
             except (ValueError, InvalidOperation):
-                messages.error(request, "Enter valid coupon values. Discount must be between 1% and 100%.")
+                messages.error(request, "Enter valid coupon values. Discount must be 1–100%, and the end date must be after the start date.")
             except Exception:
                 messages.error(request, "That coupon code already exists or could not be saved.")
-        return redirect("crm_coupons")
-    return render(request, "store/crm_coupons.html", {"coupons": Coupon.objects.all()})
+        return redirect("crm_coupon_edit", coupon_id=editing_coupon.id) if editing_coupon else redirect("crm_coupons")
+    return render(request, "store/crm_coupons.html", {"coupons": Coupon.objects.all(), "editing_coupon": editing_coupon})
 
 @login_required
 def crm_customers(request):
@@ -1702,7 +1651,7 @@ def crm_order_status(request, order_id):
         return redirect("crm_orders")
 
     new_status = request.POST.get("status")
-    valid_statuses = ["pending", "confirmed", "shipped", "delivered", "cancelled"]
+    valid_statuses = ["pending", "confirmed", "packed", "shipped", "delivered", "cancelled"]
     if new_status not in valid_statuses:
         return redirect("crm_orders")
 
@@ -1725,8 +1674,7 @@ def crm_order_status(request, order_id):
             order.payment_status = "pending"
     order.save()
 
-    if old_status != new_status:
-        send_order_status_email(order)
+    notify_order_status(order, old_status)
 
     return redirect("crm_orders")
 
@@ -1781,27 +1729,19 @@ def crm_reports(request):
         )
         .order_by("day")
     )
-    total_revenue = Order.objects.filter(
-        status__in=["confirmed", "shipped", "delivered"]
-    ).aggregate(
-        total=Sum("total_amount")
-    )["total"] or 0
-
     total_orders = orders_queryset.count()
 
-    delivered_orders = Order.objects.filter(
-        status="delivered"
-    ).count()
+    period_orders = Order.objects.all()
+    if start_date:
+        period_orders = period_orders.filter(created_at__gte=start_date)
+    delivered_orders = period_orders.filter(status="delivered").count()
+    cancelled_orders = period_orders.filter(status="cancelled").count()
 
-    cancelled_orders = Order.objects.filter(
-        status="cancelled"
-    ).count()
-
+    order_item_filters = Q(order__status__in=["confirmed", "shipped", "delivered"])
+    if start_date:
+        order_item_filters &= Q(order__created_at__gte=start_date)
     top_products = (
-        OrderItem.objects
-        .filter(
-            order__status__in=["confirmed", "shipped", "delivered"]
-        )
+        OrderItem.objects.filter(order_item_filters)
         .values("product__name")
         .annotate(
             quantity_sold=Sum("quantity"),
@@ -1817,33 +1757,36 @@ def crm_reports(request):
         )
         .order_by("-quantity_sold")[:5]
     )
-    daily_sales = (
-        Order.objects
-        .filter(
-            status__in=["confirmed", "shipped", "delivered"]
-        )
-        .annotate(
-            day=TruncDate("created_at")
-        )
-        .values("day")
-        .annotate(
-            revenue=Sum("total_amount"),
-            orders=Count("id")
-        )
-        .order_by("day")
-    )
     top_customers = (
-        Order.objects
-        .filter(
-            user__isnull=False,
-            status__in=["confirmed", "shipped", "delivered"]
-        )
+        orders_queryset.filter(user__isnull=False)
         .values("user__username")
         .annotate(
             total_spent=Sum("total_amount"),
             order_count=Count("id")
         )
         .order_by("-total_spent")[:5]
+    )
+
+    funnel_events = ConversionEvent.objects.all()
+    if start_date:
+        funnel_events = funnel_events.filter(created_at__gte=start_date)
+    event_counts = dict(
+        funnel_events.values_list("event_type").annotate(total=Count("id"))
+    )
+    funnel = [
+        {"key": key, "label": label, "count": event_counts.get(key, 0)}
+        for key, label in ConversionEvent.EVENT_CHOICES
+    ]
+    abandoned_cutoff = now - timedelta(hours=24)
+    cart_sessions = set(
+        funnel_events.filter(event_type="add_to_cart", created_at__lte=abandoned_cutoff)
+        .exclude(session_key="")
+        .values_list("session_key", flat=True)
+    )
+    purchased_sessions = set(
+        funnel_events.filter(event_type="purchase_completed")
+        .exclude(session_key="")
+        .values_list("session_key", flat=True)
     )
 
     context = {
@@ -1854,6 +1797,8 @@ def crm_reports(request):
         "top_products": top_products,
         "top_customers": top_customers,
         "daily_sales": daily_sales,
+        "funnel": funnel,
+        "abandoned_carts": len(cart_sessions - purchased_sessions),
         "period": period,
     }
 
@@ -2361,6 +2306,8 @@ def crm_inventory_bulk_import(request):
                 existing_variants = 0
 
                 invalid_count = 0
+                duplicate_products = 0
+                skipped_rows = 0
 
                 seen_skus = set()
 
@@ -2492,6 +2439,7 @@ def crm_inventory_bulk_import(request):
                     if not row_valid:
 
                         invalid_count += 1
+                        skipped_rows += 1
                         continue
 
 
@@ -2501,14 +2449,21 @@ def crm_inventory_bulk_import(request):
 
                     if product_code not in product_preview:
 
-                        existing_product = (
-                            Product.objects
-                            .filter(
-                                name=name,
-                                brand=brand
-                            )
-                            .exists()
+                        supplier_matches = Product.objects.filter(
+                            supplier_product_id=product_code
                         )
+                        legacy_matches = Product.objects.filter(
+                            supplier_product_id="",
+                            name__iexact=name,
+                            brand__iexact=brand,
+                        )
+                        existing_product = supplier_matches.exists() or legacy_matches.exists()
+                        identity_count = Product.objects.filter(
+                            name__iexact=name,
+                            brand__iexact=brand,
+                        ).count()
+                        if identity_count > 1:
+                            duplicate_products += identity_count - 1
 
                         if existing_product:
 
@@ -2558,8 +2513,17 @@ def crm_inventory_bulk_import(request):
                         )
                         .exists()
                     ):
-
-                        existing_variants += 1
+                        existing_variant = ProductVariant.objects.select_related("product").get(sku=sku)
+                        existing_code = existing_variant.product.supplier_product_id
+                        if existing_code and existing_code != product_code:
+                            errors.append(
+                                f"Row {row_number}: SKU {sku} already belongs to "
+                                f"supplier product {existing_code}."
+                            )
+                            invalid_count += 1
+                            skipped_rows += 1
+                        else:
+                            existing_variants += 1
 
                     else:
 
@@ -2586,6 +2550,9 @@ def crm_inventory_bulk_import(request):
 
                     "invalid_count":
                         invalid_count,
+
+                    "duplicate_products": duplicate_products,
+                    "skipped_rows": skipped_rows,
 
                     "products":
                         list(
@@ -2625,6 +2592,7 @@ def crm_inventory_bulk_import(request):
         else:
 
             created_products = 0
+            updated_products = 0
             created_variants = 0
             updated_variants = 0
 
@@ -2723,14 +2691,17 @@ def crm_inventory_bulk_import(request):
 
                         else:
 
-                            product = (
-                                Product.objects
-                                .filter(
-                                    name=name,
-                                    brand=brand
-                                )
-                                .first()
-                            )
+                            product = Product.objects.filter(
+                                supplier_product_id=product_code
+                            ).first()
+                            if product and product.duplicate_of_id:
+                                product = product.duplicate_of
+                            if not product:
+                                product = Product.objects.filter(
+                                    supplier_product_id="",
+                                    name__iexact=name,
+                                    brand__iexact=brand,
+                                ).order_by("id").first()
 
 
                             if not product:
@@ -2799,6 +2770,8 @@ def crm_inventory_bulk_import(request):
 
                                         stock=0,
 
+                                        supplier_product_id=product_code,
+
                                         is_featured=(
                                             row.get(
                                                 "featured",
@@ -2816,6 +2789,30 @@ def crm_inventory_bulk_import(request):
                                 )
 
                                 created_products += 1
+
+                            else:
+                                updated_products += 1
+                                product.name = name
+                                product.brand = brand
+                                product.pet_type = row.get("pet_type", "").strip()
+                                product.category = row.get("category", "").strip()
+                                product.life_stage = row.get("life_stage", "").strip()
+                                product.flavour = row.get("flavour", "").strip()
+                                product.description = row.get("description", "").strip()
+                                product.key_benefits = row.get("key_benefits", "").replace(" | ", "\n")
+                                product.manufacturer_name = row.get("manufacturer_name", "").strip()
+                                product.manufacturer_address = row.get("manufacturer_address", "").replace(" | ", "\n").strip()
+                                product.country_of_origin = row.get("country_of_origin", "").strip()
+                                product.marketed_by = row.get("marketed_by", "").strip()
+                                product.ingredients = row.get("ingredients", "").replace(" | ", "\n").strip()
+                                product.directions = row.get("directions", "").replace(" | ", "\n").strip()
+                                product.specifications = row.get("specifications", "").replace(" | ", "\n").strip()
+                                product.price = row.get("base_price") or product.price
+                                product.original_price = row.get("base_mrp") or None
+                                if not product.supplier_product_id:
+                                    product.supplier_product_id = product_code
+                                product.is_featured = row.get("featured", "").lower() in ("yes", "true", "1")
+                                product.save()
 
 
                             # MAIN PRODUCT IMAGE
@@ -2933,6 +2930,11 @@ def crm_inventory_bulk_import(request):
                             )
                             .first()
                         )
+
+                        if variant and variant.product_id != product.id:
+                            raise ValueError(
+                                f"Row {row_number}: SKU {sku} belongs to a different product."
+                            )
 
 
                         variant_stock = int(
@@ -3090,11 +3092,14 @@ def crm_inventory_bulk_import(request):
                         product.is_available = (
                             total_stock > 0
                         )
+                        if total_stock > 0:
+                            product.is_archived = False
 
                         product.save(
                             update_fields=[
                                 "stock",
                                 "is_available",
+                                "is_archived",
                             ]
                         )
 
@@ -3103,6 +3108,8 @@ def crm_inventory_bulk_import(request):
 
                     "products":
                         created_products,
+
+                    "updated_products": updated_products,
 
                     "variants":
                         created_variants,
@@ -3136,12 +3143,11 @@ def crm_inventory_bulk_import(request):
     )
 def product_detail(request, product_id):
 
-    product = get_object_or_404(
-        Product,
-        id=product_id,
-        is_archived=False,
-        is_available=True,
-    )
+    product = get_object_or_404(Product.objects.customer_visible(), id=product_id)
+    from .services.commerce import frequently_bought, recently_viewed, remember_recently_viewed
+    recent_products = recently_viewed(request, exclude_id=product.id)
+    remember_recently_viewed(request, product.id)
+    _track_conversion(request, "product_view", product=product)
 
     reviews = (
         product.reviews
@@ -3203,7 +3209,7 @@ def product_detail(request, product_id):
     if product.brand:
         related_filter |= Q(brand__iexact=product.brand)
     related_products = (
-        Product.objects.filter(is_available=True, is_archived=False)
+        Product.objects.customer_visible()
         .exclude(pk=product.pk)
         .filter(related_filter)
         .prefetch_related("variants")
@@ -3222,6 +3228,8 @@ def product_detail(request, product_id):
         "feeding_guides":
             feeding_guides,
         "related_products": related_products,
+        "frequently_bought": frequently_bought(product),
+        "recent_products": recent_products,
     }
 
     return render(
@@ -3256,10 +3264,7 @@ def add_review(request, product_id):
 def search_products(request):
     query = request.GET.get("q", "").strip()
 
-    products = Product.objects.filter(
-        is_available=True,
-        is_archived=False,
-    ).prefetch_related("variants")
+    products = Product.objects.customer_visible().prefetch_related("variants")
 
     if query:
         products = products.filter(
@@ -3393,7 +3398,7 @@ def _with_valid_sales(queryset):
 
 def _category_best_sellers(queryset, page_type):
     """Return four unique, in-stock products without per-product queries."""
-    in_stock = queryset.filter(stock__gt=0)
+    in_stock = queryset
     valid_sales = (
         Q(orderitem__order__status__in=VALID_SALE_STATUSES)
         & ~Q(orderitem__order__payment_status__in=INVALID_SALE_PAYMENT_STATUSES)
@@ -3450,10 +3455,7 @@ def _category_products_page(
     fixed_product_type=None,
 ):
 
-    products = Product.objects.filter(
-        is_available=True,
-        is_archived=False,
-    ).prefetch_related("variants")
+    products = Product.objects.customer_visible().prefetch_related("variants")
 
 
     # ==========================================
@@ -3691,10 +3693,7 @@ def _category_products_page(
         )),
         "product_types": Product.PRODUCT_TYPE_CHOICES,
         "care_areas": Product.CARE_AREA_CHOICES,
-        "available_brands": Product.objects.filter(
-            is_available=True,
-            is_archived=False,
-        ).exclude(brand="").values_list(
+        "available_brands": category_products.exclude(brand="").order_by().values_list(
             "brand", flat=True
         ).distinct().order_by("brand"),
     }
@@ -3850,8 +3849,7 @@ def terms_page(request):
 def wishlist(request):
     items = Wishlist.objects.filter(
         user=request.user,
-        product__is_archived=False,
-        product__is_available=True,
+        product__in=Product.objects.customer_visible(),
     ).select_related("product").prefetch_related("product__variants").order_by("-created_at")
 
     return render(
@@ -3864,7 +3862,7 @@ def wishlist(request):
 @login_required
 @require_POST
 def toggle_wishlist(request, product_id):
-    product = get_object_or_404(Product, id=product_id, is_archived=False, is_available=True)
+    product = get_object_or_404(Product.objects.customer_visible(), id=product_id)
 
     wishlist_item = Wishlist.objects.filter(
         user=request.user,
@@ -4017,8 +4015,7 @@ def verify_payment(request):
 
     if saved_razorpay_order_id != razorpay_order_id:
         _restore_order_inventory(order)
-        order.payment_status = "failed"
-        order.save(update_fields=["payment_status"])
+        _mark_payment_failed(order)
         return render(request, "store/payment_failed.html", {"order": order})
 
     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
@@ -4039,7 +4036,11 @@ def verify_payment(request):
                 locked_order.status = "confirmed"
                 locked_order.save(update_fields=["payment_status", "status"])
 
-            send_order_confirmation(order)
+            order = locked_order
+            notify_order_confirmed(order)
+            notify_payment_confirmed(order)
+            _track_conversion(request, "purchase_completed", order=order, coupon_code=order.coupon_code,
+                              metadata={"total": str(order.total_amount), "payment_method": "online"})
 
         request.session["cart"] = {}
         request.session.pop("current_order_id", None)
@@ -4048,8 +4049,7 @@ def verify_payment(request):
 
     except (razorpay.errors.SignatureVerificationError, ValueError):
         _restore_order_inventory(order)
-        order.payment_status = "failed"
-        order.save(update_fields=["payment_status"])
+        _mark_payment_failed(order)
         return render(request, "store/payment_failed.html", {"order": order})
 
 @require_POST
@@ -4090,8 +4090,7 @@ def retry_payment(request, order_id):
         })
     except Exception:
         _restore_order_inventory(order)
-        order.payment_status = "failed"
-        order.save(update_fields=["payment_status"])
+        _mark_payment_failed(order)
         return render(request, "store/payment_failed.html", {
             "order": order,
             "error": "We couldn't restart the payment. Please try again.",
@@ -4121,8 +4120,7 @@ def payment_failed_view(request, order_id):
 
     if order.payment_status != "paid":
         _restore_order_inventory(order)
-        order.payment_status = "failed"
-        order.save(update_fields=["payment_status"])
+        _mark_payment_failed(order)
 
     return render(
         request,
@@ -4139,8 +4137,7 @@ def payment_cancelled(request, order_id):
 
     if order.payment_status != "paid":
         _restore_order_inventory(order)
-        order.payment_status = "failed"
-        order.save(update_fields=["payment_status"])
+        _mark_payment_failed(order)
 
     return render(
         request,

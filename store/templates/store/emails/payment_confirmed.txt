@@ -1,0 +1,4 @@
+Payment confirmed for Boww & Meow order {{ order_number }}.
+
+Hi {{ order.customer_name }}, we confirmed your payment of ₹{{ order.total_amount|floatformat:2 }}.
+{% if track_url %}Track order: {{ track_url }}{% endif %}

@@ -16,7 +16,7 @@
         {% else %}
 
             <div class="home-product-placeholder">
-                🐾
+                BM
             </div>
 
         {% endif %}
@@ -35,13 +35,13 @@
         {% if product.sold_count %}
 
             <span class="home-product-badge">
-                🔥 Best Seller
+                Best Seller
             </span>
 
         {% elif product.is_featured %}
 
             <span class="home-product-badge">
-                ★ Featured
+                Featured
             </span>
 
         {% endif %}
@@ -123,10 +123,7 @@
         </div>
 
 
-        <a
-            href="{% url 'product_detail' product.id %}"
-            class="home-product-button"
-        >
+        <button type="button" class="home-product-button bm-quick-trigger" data-quick-url="{% url 'quick_view' product.id %}">
             {% if product.requires_prescription %}
                 View requirements
             {% elif product.has_available_variants %}
@@ -134,7 +131,7 @@
             {% else %}
                 View product
             {% endif %}
-        </a>
+        </button>
 
     </div>
 

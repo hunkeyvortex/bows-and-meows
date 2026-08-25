@@ -128,7 +128,30 @@ Reports | Boww & Meow CRM
 
             </div>
 
+    </div>
+
+
+    <div class="crm-panel">
+        <h2>Shopping Funnel</h2>
+        <p>Customer actions recorded for the selected reporting period.</p>
+        <div class="crm-stats">
+            {% for stage in funnel %}
+                <div class="crm-stat-card">
+                    <div>
+                        <p>{{ stage.label }}</p>
+                        <h2>{{ stage.count }}</h2>
+                    </div>
+                </div>
+            {% endfor %}
+            <div class="crm-stat-card">
+                <div>
+                    <p>Likely Abandoned Carts</p>
+                    <h2>{{ abandoned_carts }}</h2>
+                    <small>Added products over 24 hours ago without a completed purchase.</small>
+                </div>
+            </div>
         </div>
+    </div>
 
 
     <div class="crm-grid">

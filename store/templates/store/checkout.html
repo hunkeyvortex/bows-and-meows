@@ -40,6 +40,7 @@
     <div class="checkout-layout">
 
 
+        <div><form action="{% url 'delivery_status' %}" method="post" data-delivery-form class="bm-delivery-check">{% csrf_token %}<strong>Confirm delivery availability</strong><div class="bm-delivery-row"><input name="pincode" inputmode="numeric" maxlength="6" placeholder="6-digit pincode" required><button type="submit">Check</button></div><p class="bm-delivery-result" data-delivery-result></p></form>
         <form method="POST" class="checkout-form">
 
             {% csrf_token %}
@@ -178,11 +179,12 @@
             </select>
 
 
+
             <button type="submit">
                 Place Order
             </button>
 
-        </form>
+        </form></div>
 
 
         <div class="checkout-summary">

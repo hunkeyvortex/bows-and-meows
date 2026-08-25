@@ -116,6 +116,16 @@ Bulk Import Products | Boww & Meow CRM
                         </strong>
                     </div>
 
+                    <div class="bulk-preview-card">
+                        <span>POSSIBLE DUPLICATES</span>
+                        <strong>{{ preview.duplicate_products }}</strong>
+                    </div>
+
+                    <div class="bulk-preview-card">
+                        <span>SKIPPED ROWS</span>
+                        <strong>{{ preview.skipped_rows }}</strong>
+                    </div>
+
                 </div>
 
 
@@ -241,6 +251,11 @@ Bulk Import Products | Boww & Meow CRM
                 </p>
 
                 <p>
+                    Products updated:
+                    <strong>{{ result.updated_products }}</strong>
+                </p>
+
+                <p>
                     Variants created:
                     <strong>
                         {{ result.variants }}
@@ -279,6 +294,10 @@ Bulk Import Products | Boww & Meow CRM
 
     gap: 15px;
     margin: 25px 0;
+}
+
+@media (max-width: 900px) {
+    .bulk-preview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .bulk-preview-card {

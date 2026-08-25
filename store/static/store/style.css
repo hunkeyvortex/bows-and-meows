@@ -2252,15 +2252,32 @@ footer {
    ========================================================== */
 
 :root {
-    --v2-ink: #1f2321;
-    --v2-muted: #66706a;
-    --v2-line: #e7ebe8;
-    --v2-bg: #f6f8f6;
+    --bm-coral: #e86f58;
+    --bm-coral-dark: #c95b48;
+    --bm-coral-soft: #fdebe6;
+    --bm-green: #184d3a;
+    --bm-green-dark: #123b2d;
+    --bm-green-soft: #eaf4ed;
+    --bm-cream: #faf8f2;
+    --bm-cream-alt: #f5f2e9;
+    --bm-text: #18261f;
+    --bm-muted: #6e7872;
+    --bm-border: #dde3dc;
+    --bm-focus: 0 0 0 3px rgba(232, 111, 88, .24);
+    --bm-shadow-sm: 0 8px 24px rgba(24, 77, 58, .07);
+    --bm-shadow-md: 0 16px 44px rgba(24, 77, 58, .1);
+    --bm-radius-control: 12px;
+    --bm-radius-card: 18px;
+    --bm-radius-panel: 26px;
+    --v2-ink: var(--bm-text);
+    --v2-muted: var(--bm-muted);
+    --v2-line: var(--bm-border);
+    --v2-bg: var(--bm-cream);
     --v2-surface: #ffffff;
-    --v2-green: #244f3d;
-    --v2-green-dark: #183c2e;
-    --v2-lime: #d9ef94;
-    --v2-orange: #ff8d63;
+    --v2-green: var(--bm-green);
+    --v2-green-dark: var(--bm-green-dark);
+    --v2-lime: var(--bm-green-soft);
+    --v2-orange: var(--bm-coral);
     --v2-yellow: #f9dc75;
     --v2-blue: #dceefa;
     --v2-pink: #f8dddd;

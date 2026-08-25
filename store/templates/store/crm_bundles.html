@@ -1,0 +1,66 @@
+{% extends "store/crm_base.html" %}
+{% block title %}Bundles | CRM{% endblock %}
+{% block content %}
+<section class="bm-crm-feature bm-bundle-crm">
+  <h1>{% if editing %}Edit {{ editing.name }}{% else %}Product Bundles{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data" class="bm-form-grid">
+    {% csrf_token %}{{ form.as_p }}
+    <h2>Bundle items</h2>{{ formset.management_form }}
+    <p class="bm-bundle-help">Search by product name, brand, SKU or product number. Only sellable products are shown.</p>
+    {% for item_form in formset %}
+      <div class="bm-bundle-form-row">
+        {{ item_form.id }}
+        {{ item_form.non_field_errors }}
+        <label>Find product<input type="search" class="bm-product-lookup" placeholder="Start typing a product name…" autocomplete="off"></label>
+        <label>Product{{ item_form.product }}{{ item_form.product.errors }}</label>
+        <label>Variant <small>Optional</small>{{ item_form.variant }}{{ item_form.variant.errors }}</label>
+        <label>Quantity{{ item_form.quantity }}{{ item_form.quantity.errors }}</label>
+        {% if item_form.DELETE %}<label class="bm-delete-item">{{ item_form.DELETE }} Remove this item</label>{% endif %}
+      </div>
+    {% endfor %}
+    <button>Save bundle</button>
+  </form>
+  <p>Variants must belong to their selected product. Inventory is validated before purchase.</p>
+  <div class="bm-table-wrap"><table class="bm-data-table"><tr><th>Name</th><th>Items</th><th>Price</th><th>Status</th><th></th></tr>{% for bundle in bundles %}<tr><td>{{ bundle.name }}</td><td>{{ bundle.items.all|length }}</td><td>{{ bundle.bundle_price|default:"Calculated" }}</td><td>{{ bundle.is_active|yesno:"Active,Disabled" }}</td><td><a href="{% url 'crm_bundle_edit' bundle.id %}">Edit</a></td></tr>{% endfor %}</table></div>
+</section>
+<style>
+.bm-bundle-help{margin:-8px 0 4px;color:#6f7972;font-size:13px}.bm-bundle-form-row{display:grid;grid-template-columns:minmax(220px,1.6fr) minmax(220px,1.6fr) minmax(170px,1fr) 100px;gap:12px;align-items:end;padding:16px;border:1px solid #dfe5dc;border-radius:16px;background:#fafbf8}.bm-bundle-form-row>label{display:grid;gap:7px;min-width:0;font-size:12px;font-weight:800;color:#405248}.bm-bundle-form-row input,.bm-bundle-form-row select{width:100%;min-width:0;min-height:44px;padding:9px 10px;border:1px solid #d4ddd2;border-radius:10px;background:#fff}.bm-bundle-form-row .bm-delete-item{display:flex;align-items:center;gap:7px;grid-column:1/-1}.bm-delete-item input{width:auto;min-height:auto}.bm-table-wrap{overflow-x:auto}@media(max-width:950px){.bm-bundle-form-row{grid-template-columns:1fr 1fr}}@media(max-width:560px){.bm-bundle-form-row{grid-template-columns:1fr}}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const productUrl = "{% url 'crm_bundle_product_search' %}";
+  const variantUrl = "{% url 'crm_bundle_variant_search' %}";
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
+
+  document.querySelectorAll(".bm-bundle-form-row").forEach(row => {
+    const search = row.querySelector(".bm-product-lookup");
+    const product = row.querySelector(".bm-remote-product");
+    const variant = row.querySelector(".bm-remote-variant");
+    if (!search || !product || !variant) return;
+    let timer;
+
+    const loadProducts = async () => {
+      search.setAttribute("aria-busy", "true");
+      try {
+        const response = await fetch(`${productUrl}?q=${encodeURIComponent(search.value.trim())}`, {headers:{"X-Requested-With":"XMLHttpRequest"}});
+        const data = await response.json();
+        const selected = product.value;
+        product.innerHTML = '<option value="">Choose product</option>' + data.results.map(item => `<option value="${item.id}" ${String(item.id) === selected ? "selected" : ""}>${escapeHtml(item.text)}</option>`).join("");
+      } finally { search.removeAttribute("aria-busy"); }
+    };
+
+    const loadVariants = async () => {
+      const selected = variant.value;
+      if (!product.value) { variant.innerHTML = '<option value="">No variant</option>'; return; }
+      const response = await fetch(`${variantUrl}?product=${encodeURIComponent(product.value)}`, {headers:{"X-Requested-With":"XMLHttpRequest"}});
+      const data = await response.json();
+      variant.innerHTML = '<option value="">Use base product</option>' + data.results.map(item => `<option value="${item.id}" ${String(item.id) === selected ? "selected" : ""}>${escapeHtml(item.text)}</option>`).join("");
+    };
+
+    search.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(loadProducts, 250); });
+    search.addEventListener("focus", () => { if (product.options.length <= 1) loadProducts(); }, {once:true});
+    product.addEventListener("change", () => { variant.value = ""; loadVariants(); });
+  });
+});
+</script>
+{% endblock %}

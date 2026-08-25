@@ -3,13 +3,13 @@
 {% block content %}
 <section class="bm-account-page"><div class="bm-account-shell">
 {% include "store/includes/account_nav.html" %}
-<header class="bm-account-hero"><div class="bm-account-hero-copy"><span class="bm-account-kicker">🐾 MY BOWW & MEOW</span><h1>Hello, {{ request.user.username }}</h1><p>Everything you need to care for your pets and manage your shopping, all in one place.</p></div><div class="bm-account-avatar" aria-hidden="true"><span>🐾</span></div></header>
+<header class="bm-account-hero"><div class="bm-account-hero-copy"><span class="bm-account-kicker">MY BOWW & MEOW</span><h1>Hello, {{ request.user.username }}</h1><p>Everything you need to care for your pets and manage your shopping, all in one place.</p></div><div class="bm-account-avatar" aria-hidden="true"><span>BM</span></div></header>
 <div class="bm-account-heading"><div><span>YOUR ACCOUNT</span><h2>What would you like to do?</h2></div><p>View orders, manage delivery details, and keep your pet profiles up to date.</p></div>
 <div class="bm-account-grid">
-<a href="{% url 'my_orders' %}" class="bm-account-card bm-account-orders"><span class="bm-account-icon">📦</span><div><h3>My Orders</h3><p>View purchases, payment status and delivery progress.</p><strong>View orders <span>→</span></strong></div></a>
-<a href="{% url 'my_addresses' %}" class="bm-account-card bm-account-addresses"><span class="bm-account-icon">📍</span><div><h3>My Addresses</h3><p>Add or update the addresses you use at checkout.</p><strong>Manage addresses <span>→</span></strong></div></a>
-<a href="{% url 'my_pets' %}" class="bm-account-card bm-account-pets"><span class="bm-account-icon">🐶</span><div><h3>My Pets</h3><p>Save pet details for more useful product guidance.</p><strong>Manage pets <span>→</span></strong></div></a>
-<a href="{% url 'wishlist' %}" class="bm-account-card bm-account-saved"><span class="bm-account-icon">♥</span><div><h3>Saved Products</h3><p>Return to the food, treats and essentials you love.</p><strong>View saved items <span>→</span></strong></div></a>
+<a href="{% url 'my_orders' %}" class="bm-account-card bm-account-orders"><span class="bm-account-icon">ORD</span><div><h3>My Orders</h3><p>View purchases, payment status and delivery progress.</p><strong>View orders <span>→</span></strong></div></a>
+<a href="{% url 'my_addresses' %}" class="bm-account-card bm-account-addresses"><span class="bm-account-icon">PIN</span><div><h3>My Addresses</h3><p>Add or update the addresses you use at checkout.</p><strong>Manage addresses <span>→</span></strong></div></a>
+<a href="{% url 'my_pets' %}" class="bm-account-card bm-account-pets"><span class="bm-account-icon">PET</span><div><h3>My Pets</h3><p>Save pet details for more useful product guidance.</p><strong>Manage pets <span>→</span></strong></div></a>
+<a href="{% url 'wishlist' %}" class="bm-account-card bm-account-saved"><span class="bm-account-icon">SAVE</span><div><h3>Saved Products</h3><p>Return to the food, treats and essentials you love.</p><strong>View saved items <span>→</span></strong></div></a>
 </div>
 <div class="bm-account-footer"><div><strong>Need something for your best friend?</strong><span>Explore everyday favourites selected for dogs and cats.</span></div><a href="{% url 'home' %}#best-sellers" class="bm-account-shop">Shop best sellers</a><form method="POST" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="bm-account-logout">Log out</button></form></div>
 </div></section>

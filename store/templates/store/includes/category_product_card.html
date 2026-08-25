@@ -25,6 +25,6 @@
         <div class="product-stock-line">
             {% if product.stock > 0 %}<span class="stock-dot"></span>In stock{% else %}Out of stock{% endif %}
         </div>
-        <a href="{% url 'product_detail' product.id %}" class="category-shop-btn">View options →</a>
+        <button type="button" class="category-shop-btn bm-quick-trigger" data-quick-url="{% url 'quick_view' product.id %}">Quick view →</button>
     </div>
 </article>

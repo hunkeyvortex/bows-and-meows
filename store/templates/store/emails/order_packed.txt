@@ -1,0 +1,4 @@
+Your Boww & Meow order {{ order_number }} is packed.
+
+Hi {{ order.customer_name }}, your order is carefully packed and getting ready for dispatch.
+{% if track_url %}Track order: {{ track_url }}{% endif %}

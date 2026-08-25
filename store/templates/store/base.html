@@ -5,8 +5,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Boww & Meow offers trusted food, wellness, pharmacy and everyday essentials for happier pets.">
+    <meta name="theme-color" content="#184D3A">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta property="og:site_name" content="Boww & Meow">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% block og_title %}Boww & Meow Pet Care{% endblock %}">
+    <meta property="og:description" content="Trusted food, wellness and everyday pet-care essentials.">
     <title>{% block title %}Boww & Meow{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'store/style.css' %}">
+    <link rel="stylesheet" href="{% static 'store/commerce-features.css' %}">
+    <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}">
+    <link rel="stylesheet" href="{% static 'store/brand-system.css' %}">
 </head>
 
 <body>
@@ -75,7 +85,7 @@
             <a href="{% url 'grooming_products' %}" class="{% if request.resolver_match.url_name == 'grooming_products' %}is-active{% endif %}">Grooming</a>
             <a href="{% url 'bird_products' %}" class="{% if request.resolver_match.url_name == 'bird_products' %}is-active{% endif %}">Bird Care</a>
             <a href="{% url 'home' %}#featured-products">Best Sellers</a>
-            <a href="{% url 'home' %}#offers">Offers</a>
+            <a href="{% url 'offers' %}" class="{% if request.resolver_match.url_name == 'offers' %}is-active{% endif %}">Offers</a>
 
             {% if request.user.is_authenticated %}
                 <a href="{% url 'my_pets' %}">My Pets</a>
@@ -108,6 +118,12 @@
     {% block content %}
     {% endblock %}
 </main>
+
+<div class="bm-quick-backdrop" data-quick-close hidden></div>
+<section class="bm-quick-shell" id="bm-quick-view" role="dialog" aria-modal="true" aria-label="Quick view" hidden>
+    <button class="bm-quick-close" type="button" data-quick-close aria-label="Close quick view">×</button>
+    <div class="bm-quick-content" data-quick-content></div>
+</section>
 
 <footer class="site-footer-v2">
     <div class="v2-shell">
@@ -172,6 +188,7 @@
 
     </div>
 </footer>
+<script src="{% static 'store/commerce-features.js' %}" defer></script>
 
 <nav class="bm-mobile-dock" aria-label="Mobile navigation">
     <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">

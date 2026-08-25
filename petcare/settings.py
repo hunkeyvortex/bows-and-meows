@@ -10,10 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 import os
+import sys
 import dj_database_url
 import truststore
 from pathlib import Path
 from dotenv import dotenv_values
+from django.core.exceptions import ImproperlyConfigured
 
 # Python's bundled CA file can reject certificates issued through the Windows
 # trust chain (common with antivirus/web protection). Use the operating-system
@@ -72,12 +74,43 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 render_hostname = (env.get("RENDER_EXTERNAL_HOSTNAME") or "").strip()
+IS_RENDER = bool(render_hostname)
+
+if IS_RENDER and (
+    len(SECRET_KEY) < 50
+    or SECRET_KEY.startswith("django-insecure-")
+    or SECRET_KEY.startswith("replace-")
+):
+    raise ImproperlyConfigured(
+        "Render requires a unique DJANGO_SECRET_KEY containing at least 50 characters."
+    )
 
 if render_hostname:
+    # Render terminates TLS at its proxy. Force production-safe behavior even
+    # if a stale DEBUG environment variable was accidentally left enabled.
+    DEBUG = False
     ALLOWED_HOSTS.append(render_hostname)
     CSRF_TRUSTED_ORIGINS.append(
         f"https://{render_hostname}"
     )
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = IS_RENDER
+SESSION_COOKIE_SECURE = IS_RENDER
+CSRF_COOKIE_SECURE = IS_RENDER
+SECURE_HSTS_SECONDS = int(
+    (env.get("DJANGO_SECURE_HSTS_SECONDS") or "0").strip()
+)
+# Start with a short host-only HSTS policy. Subdomains/preload remain opt-in
+# until the production domain and every subdomain have been verified on HTTPS.
+SECURE_HSTS_INCLUDE_SUBDOMAINS = (
+    (env.get("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS") or "False").lower() == "true"
+)
+SECURE_HSTS_PRELOAD = (
+    (env.get("DJANGO_SECURE_HSTS_PRELOAD") or "False").lower() == "true"
+)
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+X_FRAME_OPTIONS = "DENY"
 # Application definition
 
 INSTALLED_APPS = [
@@ -234,20 +267,22 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
-
-if os.getenv("RENDER_EXTERNAL_HOSTNAME"):
-    # Render Free blocks Gmail SMTP.
-    # Temporarily print emails to Render logs instead.
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-else:
-    # Local development - real Gmail works here.
-    EMAIL_BACKEND = "store.email_backend.RelaxedStrictSMTPBackend"
-
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+if "test" in sys.argv:
+    # Tests must be deterministic and must never upload private/user files or
+    # depend on a previously generated production static manifest.
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+# Transactional email. Local development defaults to the console; production
+# can select SMTP entirely through environment variables.
+EMAIL_BACKEND = (
+    env.get("EMAIL_BACKEND")
+    or "django.core.mail.backends.console.EmailBackend"
+).strip()
+EMAIL_HOST = (env.get("EMAIL_HOST") or "smtp.gmail.com").strip()
+EMAIL_PORT = int((env.get("EMAIL_PORT") or "587").strip())
+EMAIL_USE_TLS = (env.get("EMAIL_USE_TLS") or "True").lower() == "true"
 
 EMAIL_HOST_USER = (
     env.get("EMAIL_HOST_USER") or ""
@@ -257,8 +292,15 @@ EMAIL_HOST_PASSWORD = (
     env.get("EMAIL_HOST_PASSWORD") or ""
 ).strip()
 
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-DEFAULT_FROM_EMAIL = "Boww & Meow <noreply@bowsandmeows.com>"
+DEFAULT_FROM_EMAIL = (
+    env.get("DEFAULT_FROM_EMAIL")
+    or EMAIL_HOST_USER
+    or "Boww & Meow <noreply@bowsandmeows.com>"
+).strip()
+STOREFRONT_BASE_URL = (
+    env.get("STOREFRONT_BASE_URL")
+    or (f"https://{render_hostname}" if render_hostname else "http://127.0.0.1:8000")
+).rstrip("/")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 LOGIN_URL = "/login/"
