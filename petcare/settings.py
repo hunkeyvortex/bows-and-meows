@@ -274,15 +274,24 @@ if "test" in sys.argv:
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
     }
-# Transactional email. Local development defaults to the console; production
-# can select SMTP entirely through environment variables.
+# Transactional email. Local development defaults to the console. When a
+# Brevo API key is present, production uses Brevo's HTTPS API so it also works
+# on hosts that block outbound SMTP ports.
+BREVO_API_KEY = (env.get("BREVO_API_KEY") or "").strip()
+BREVO_SENDER_EMAIL = (env.get("BREVO_SENDER_EMAIL") or "").strip()
+BREVO_SENDER_NAME = (env.get("BREVO_SENDER_NAME") or "Boww & Meow").strip()
 EMAIL_BACKEND = (
     env.get("EMAIL_BACKEND")
-    or "django.core.mail.backends.console.EmailBackend"
+    or (
+        "store.email_backend.BrevoAPIEmailBackend"
+        if BREVO_API_KEY
+        else "django.core.mail.backends.console.EmailBackend"
+    )
 ).strip()
 EMAIL_HOST = (env.get("EMAIL_HOST") or "smtp.gmail.com").strip()
 EMAIL_PORT = int((env.get("EMAIL_PORT") or "587").strip())
 EMAIL_USE_TLS = (env.get("EMAIL_USE_TLS") or "True").lower() == "true"
+EMAIL_TIMEOUT = int((env.get("EMAIL_TIMEOUT") or "10").strip())
 
 EMAIL_HOST_USER = (
     env.get("EMAIL_HOST_USER") or ""
@@ -294,6 +303,7 @@ EMAIL_HOST_PASSWORD = (
 
 DEFAULT_FROM_EMAIL = (
     env.get("DEFAULT_FROM_EMAIL")
+    or (f"{BREVO_SENDER_NAME} <{BREVO_SENDER_EMAIL}>" if BREVO_SENDER_EMAIL else "")
     or EMAIL_HOST_USER
     or "Boww & Meow <noreply@bowsandmeows.com>"
 ).strip()
