@@ -50,6 +50,12 @@ RAZORPAY_KEY_ID = (
 RAZORPAY_KEY_SECRET = (
     env.get("RAZORPAY_KEY_SECRET") or ""
 ).strip()
+RAZORPAY_WEBHOOK_SECRET = (
+    env.get("RAZORPAY_WEBHOOK_SECRET") or ""
+).strip()
+PAYMENT_RESERVATION_MINUTES = int(
+    (env.get("PAYMENT_RESERVATION_MINUTES") or "30").strip()
+)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
@@ -73,6 +79,17 @@ CSRF_TRUSTED_ORIGINS = [
     "https://bows-and-meows-1.onrender.com",
 ]
 
+ALLOWED_HOSTS.extend(
+    host.strip()
+    for host in (env.get("DJANGO_ALLOWED_HOSTS") or "").split(",")
+    if host.strip()
+)
+CSRF_TRUSTED_ORIGINS.extend(
+    origin.strip()
+    for origin in (env.get("DJANGO_CSRF_TRUSTED_ORIGINS") or "").split(",")
+    if origin.strip()
+)
+
 render_hostname = (env.get("RENDER_EXTERNAL_HOSTNAME") or "").strip()
 IS_RENDER = bool(render_hostname)
 
@@ -95,7 +112,7 @@ if render_hostname:
     )
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = False
+SECURE_SSL_REDIRECT = IS_RENDER
 SESSION_COOKIE_SECURE = IS_RENDER
 CSRF_COOKIE_SECURE = IS_RENDER
 SECURE_HSTS_SECONDS = int(

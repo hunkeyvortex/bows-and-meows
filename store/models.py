@@ -530,6 +530,23 @@ class Order(models.Model):
         help_text="Whether this order's quantities are currently deducted from stock.",
     )
 
+    checkout_token = models.UUIDField(
+        null=True,
+        blank=True,
+        unique=True,
+        editable=False,
+        help_text="Idempotency token preventing duplicate checkout submissions.",
+    )
+
+    razorpay_order_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        unique=True,
+        editable=False,
+        help_text="Server-created Razorpay order associated with this store order.",
+    )
+
     PAYMENT_CHOICES = [
         ("cod", "Cash on Delivery"),
         ("online", "Online Payment"),

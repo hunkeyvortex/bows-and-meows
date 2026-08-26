@@ -32,6 +32,26 @@ def bundle_snapshot(bundle):
     return {"bundle": bundle, "items": items, "regular_price": regular, "price": price, "saving": max(regular - price, Decimal("0.00")), "available": available}
 
 
+def bundle_unit_prices(snapshot):
+    """Allocate the current bundle total across its items deterministically."""
+    regular = snapshot["regular_price"]
+    remaining = snapshot["price"]
+    allocations = {}
+    for index, item in enumerate(snapshot["items"]):
+        source_price = item.variant.price if item.variant else item.product.price
+        if index == len(snapshot["items"]) - 1:
+            allocated_total = remaining
+        else:
+            allocated_total = (
+                snapshot["price"] * (source_price * item.quantity) / regular
+            ).quantize(Decimal("0.01")) if regular else Decimal("0.00")
+            remaining -= allocated_total
+        allocations[(item.product_id, item.variant_id)] = (
+            allocated_total / item.quantity
+        ).quantize(Decimal("0.01"))
+    return allocations
+
+
 def frequently_bought(product, limit=3):
     valid = Q(order__status__in=("confirmed", "shipped", "delivered")) & ~Q(order__payment_status__in=("failed", "refunded"))
     order_ids = OrderItem.objects.filter(valid, product=product).values("order_id")

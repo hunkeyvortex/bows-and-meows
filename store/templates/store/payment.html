@@ -37,6 +37,12 @@ Payment | Boww & Meow
 <form method="POST" action="{% url 'payment_failed_view' order.id %}" id="payment-failed-form">
     {% csrf_token %}
 </form>
+<form method="POST" action="{% url 'verify_payment' %}" id="payment-verification-form">
+    {% csrf_token %}
+    <input type="hidden" name="razorpay_payment_id" id="verified-payment-id">
+    <input type="hidden" name="razorpay_order_id" id="verified-order-id">
+    <input type="hidden" name="razorpay_signature" id="verified-signature">
+</form>
 
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -52,15 +58,10 @@ Payment | Boww & Meow
         "order_id": "{{ razorpay_order_id }}",
 
         "handler": function (response) {
-
-            window.location.href =
-                "{% url 'verify_payment' %}" +
-                "?razorpay_payment_id=" +
-                response.razorpay_payment_id +
-                "&razorpay_order_id=" +
-                response.razorpay_order_id +
-                "&razorpay_signature=" +
-                response.razorpay_signature;
+            document.getElementById("verified-payment-id").value = response.razorpay_payment_id;
+            document.getElementById("verified-order-id").value = response.razorpay_order_id;
+            document.getElementById("verified-signature").value = response.razorpay_signature;
+            document.getElementById("payment-verification-form").submit();
         },
 
         "modal": {

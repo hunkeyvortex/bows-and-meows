@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
@@ -11,7 +9,7 @@ from django.views.decorators.http import require_POST
 
 from .commerce_forms import BundleItemFormSet, DeliveryZoneForm, OfferCampaignForm, PrescriptionUploadForm, ProductBundleForm
 from .models import DeliveryZone, OfferCampaign, Prescription, Product, ProductBundle, ProductVariant
-from .services.commerce import active_campaigns, bundle_snapshot
+from .services.commerce import active_campaigns, bundle_snapshot, bundle_unit_prices
 
 
 def delivery_status(request):
@@ -32,7 +30,17 @@ def delivery_status(request):
 
 def quick_view(request, product_id):
     product = get_object_or_404(Product.objects.customer_visible().prefetch_related("variants", "gallery_images"), id=product_id)
-    return render(request, "store/includes/quick_view_content.html", {"product": product})
+    variants = product.available_variants
+    selected_variant = variants[0] if variants else None
+    return render(
+        request,
+        "store/includes/quick_view_content.html",
+        {
+            "product": product,
+            "variants": variants,
+            "selected_variant": selected_variant,
+        },
+    )
 
 
 @require_POST
@@ -87,17 +95,10 @@ def add_bundle(request, slug):
     if not snapshot["available"]:
         messages.error(request, "This bundle is currently unavailable.")
         return redirect("bundle_detail", slug=slug)
-    regular = snapshot["regular_price"]
-    remaining = snapshot["price"]
+    unit_prices = bundle_unit_prices(snapshot)
     cart = request.session.get("cart", {}) if isinstance(request.session.get("cart", {}), dict) else {}
-    for index, item in enumerate(snapshot["items"]):
-        source_price = item.variant.price if item.variant else item.product.price
-        if index == len(snapshot["items"]) - 1:
-            allocated_total = remaining
-        else:
-            allocated_total = (snapshot["price"] * (source_price * item.quantity) / regular).quantize(Decimal("0.01")) if regular else Decimal("0.00")
-            remaining -= allocated_total
-        unit_price = (allocated_total / item.quantity).quantize(Decimal("0.01"))
+    for item in snapshot["items"]:
+        unit_price = unit_prices[(item.product_id, item.variant_id)]
         key = f"b{bundle.id}:p{item.product_id}" + (f":v{item.variant_id}" if item.variant_id else "")
         cart[key] = {"product_id": item.product_id, "variant_id": item.variant_id, "quantity": item.quantity,
                      "bundle_id": bundle.id, "bundle_name": bundle.name, "bundle_unit_price": str(unit_price)}

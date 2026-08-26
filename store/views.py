@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST
@@ -28,17 +29,22 @@ import os
 import requests
 import uuid
 import mimetypes
+import hashlib
+import hmac
+import json
 
 from urllib.parse import urlparse
 from django.core.files.base import ContentFile
 import csv
 import io
 import re
-from django.db import transaction
+from django.db import IntegrityError, transaction
 import uuid
 from decimal import Decimal, InvalidOperation
 from PIL import Image as PillowImage, UnidentifiedImageError
 from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from .models import (
     Product,
@@ -48,6 +54,7 @@ from .models import (
     OrderItem,
     Coupon,
     ConversionEvent,
+    DeliveryZone,
 )
 from .services.order_notifications import (
     notify_order_confirmed,
@@ -328,7 +335,7 @@ def _reserve_order_inventory(order):
             return locked_order
 
         affected = set()
-        for item in locked_order.items.select_related("product", "variant"):
+        for item in locked_order.items.select_related("product", "variant").order_by("product_id", "variant_id", "id"):
             if item.variant_id:
                 variant = ProductVariant.objects.select_for_update().get(id=item.variant_id)
                 if not variant.is_available or item.quantity > variant.stock:
@@ -347,7 +354,7 @@ def _reserve_order_inventory(order):
                 product.is_available = product.stock > 0
                 product.save(update_fields=["stock", "is_available"])
 
-        for product_id in affected:
+        for product_id in sorted(affected):
             _sync_product_stock(Product.objects.get(id=product_id))
 
         locked_order.inventory_reserved = True
@@ -363,7 +370,7 @@ def _restore_order_inventory(order):
             return locked_order
 
         affected = set()
-        for item in locked_order.items.select_related("product", "variant"):
+        for item in locked_order.items.select_related("product", "variant").order_by("product_id", "variant_id", "id"):
             if item.variant_id:
                 variant = ProductVariant.objects.select_for_update().filter(id=item.variant_id).first()
                 if variant:
@@ -377,7 +384,7 @@ def _restore_order_inventory(order):
                 product.is_available = True
                 product.save(update_fields=["stock", "is_available"])
 
-        for product_id in affected:
+        for product_id in sorted(affected):
             _sync_product_stock(Product.objects.get(id=product_id))
 
         locked_order.inventory_reserved = False
@@ -403,6 +410,22 @@ def _mark_payment_failed(order):
         notify_payment_failed(order)
         return True
     return False
+
+
+def _complete_online_payment(order):
+    """Mark a reserved online order paid exactly once under a row lock."""
+    with transaction.atomic():
+        locked_order = Order.objects.select_for_update().get(id=order.id)
+        if locked_order.payment_status == "paid":
+            return locked_order, False
+        if locked_order.payment_method != "online":
+            raise ValueError("Only online orders can be completed as online payments.")
+        if not locked_order.inventory_reserved:
+            raise ValueError("This order no longer has reserved inventory.")
+        locked_order.payment_status = "paid"
+        locked_order.status = "confirmed"
+        locked_order.save(update_fields=["payment_status", "status"])
+        return locked_order, True
 
 
 def _cart_line_key(product_id, variant_id=None):
@@ -526,6 +549,7 @@ def _build_cart_items(request):
     cart_items = []
     total = Decimal("0.00")
     invalid = []
+    bundle_cache = {}
     for line_key, entry in cart.items():
         product = Product.objects.filter(id=entry["product_id"]).first()
         if not product or product.is_archived or not product.is_available:
@@ -542,11 +566,22 @@ def _build_cart_items(request):
         if entry.get("bundle_id"):
             try:
                 from .models import ProductBundle
-                active_bundle = ProductBundle.objects.filter(id=entry["bundle_id"], is_active=True).first()
-                if not active_bundle or not active_bundle.items.filter(product=product, variant=variant).exists():
+                from .services.commerce import bundle_snapshot, bundle_unit_prices
+                bundle_id = int(entry["bundle_id"])
+                if bundle_id not in bundle_cache:
+                    active_bundle = ProductBundle.objects.prefetch_related(
+                        "items__product", "items__variant"
+                    ).filter(id=bundle_id).first()
+                    snapshot = bundle_snapshot(active_bundle) if active_bundle else None
+                    bundle_cache[bundle_id] = (
+                        snapshot,
+                        bundle_unit_prices(snapshot) if snapshot and snapshot["available"] else {},
+                    )
+                snapshot, unit_prices = bundle_cache[bundle_id]
+                unit_price = unit_prices.get((product.id, variant.id if variant else None))
+                if not snapshot or not snapshot["available"] or unit_price is None:
                     invalid.append(line_key)
                     continue
-                unit_price = Decimal(entry["bundle_unit_price"])
             except (InvalidOperation, TypeError, ValueError):
                 invalid.append(line_key)
                 continue
@@ -785,6 +820,21 @@ def checkout(request):
     if not cart_items:
         return redirect("cart")
 
+    if request.method == "GET":
+        _track_conversion(request, "checkout_started", metadata={
+            "subtotal": str(subtotal),
+            "items": sum(item["quantity"] for item in cart_items),
+        })
+
+    if not request.user.is_authenticated and not request.session.get("guest_checkout_confirmed"):
+        if request.GET.get("guest") == "1":
+            request.session["guest_checkout_confirmed"] = True
+            return redirect("checkout")
+        return render(request, "store/checkout_account_choice.html", {
+            "cart_items": cart_items,
+            **pricing,
+        })
+
     prescription_products = [item["product"] for item in cart_items if item["product"].requires_prescription]
     if prescription_products:
         if not request.user.is_authenticated:
@@ -798,12 +848,6 @@ def checkout(request):
             messages.warning(request, "An approved prescription is required for the medicine in your cart.")
             return redirect("prescription_upload", product_id=missing[0].id)
 
-    if request.method == "GET":
-        _track_conversion(request, "checkout_started", metadata={
-            "subtotal": str(subtotal),
-            "items": sum(item["quantity"] for item in cart_items),
-        })
-
     checkout_token = request.session.get("checkout_token")
     if not checkout_token:
         checkout_token = str(uuid.uuid4())
@@ -814,6 +858,18 @@ def checkout(request):
     if request.user.is_authenticated:
         default_address = Address.objects.filter(user=request.user, is_default=True).first()
         addresses = Address.objects.filter(user=request.user).order_by("-is_default", "-created_at")
+
+    def render_checkout_error(message, *, status=400):
+        return render(request, "store/checkout.html", {
+            "cart_items": cart_items,
+            "available_coupons": _available_coupons(subtotal),
+            **pricing,
+            "default_address": default_address,
+            "addresses": addresses,
+            "checkout_token": checkout_token,
+            "submitted_pincode": (request.POST.get("pincode") or request.session.get("delivery_pincode") or "").strip(),
+            "error": message,
+        }, status=status)
 
     if request.method == "POST":
         submitted_token = request.POST.get("checkout_token")
@@ -827,21 +883,17 @@ def checkout(request):
             if item["variant"]:
                 fresh = ProductVariant.objects.filter(id=item["variant"].id, product=item["product"]).first()
                 if not fresh or not fresh.is_available or item["quantity"] > fresh.stock:
-                    return render(request, "store/checkout.html", {
-                        "cart_items": cart_items, "total": total,
-                        "default_address": default_address, "addresses": addresses,
-                        "checkout_token": checkout_token,
-                        "error": f"The selected size for {item['product'].name} does not have enough stock.",
-                    })
+                    return render_checkout_error(
+                        f"The selected size for {item['product'].name} does not have enough stock.",
+                        status=409,
+                    )
             else:
                 fresh = Product.objects.get(id=item["product"].id)
                 if fresh.is_archived or not fresh.is_available or item["quantity"] > fresh.stock:
-                    return render(request, "store/checkout.html", {
-                        "cart_items": cart_items, "total": total,
-                        "default_address": default_address, "addresses": addresses,
-                        "checkout_token": checkout_token,
-                        "error": f"Only {fresh.stock} unit(s) of {fresh.name} are available.",
-                    })
+                    return render_checkout_error(
+                        f"Only {fresh.stock} unit(s) of {fresh.name} are available.",
+                        status=409,
+                    )
 
         selected_address_id = request.POST.get("saved_address")
         selected_address = None
@@ -849,8 +901,9 @@ def checkout(request):
             selected_address = Address.objects.filter(id=selected_address_id, user=request.user).first()
 
         if selected_address:
-            customer_name = selected_address.full_name
-            phone = selected_address.phone
+            customer_name = selected_address.full_name.strip()
+            phone = selected_address.phone.strip()
+            pincode = selected_address.pincode.strip()
             parts = [
                 selected_address.address_line1,
                 selected_address.address_line2,
@@ -858,54 +911,104 @@ def checkout(request):
                 selected_address.state,
             ]
             address = ", ".join(part for part in parts if part)
-            address += f" - {selected_address.pincode}"
+            address += f" - {pincode}"
         else:
-            customer_name = request.POST.get("customer_name")
-            phone = request.POST.get("phone")
-            address = request.POST.get("address")
+            customer_name = (request.POST.get("customer_name") or "").strip()
+            phone = (request.POST.get("phone") or "").strip()
+            address = (request.POST.get("address") or "").strip()
+            pincode = (request.POST.get("pincode") or "").strip()
 
-        email = request.POST.get("email")
-        payment_method = request.POST.get("payment_method")
+        email = (request.POST.get("email") or "").strip()
+        payment_method = (request.POST.get("payment_method") or "").strip()
 
-        with transaction.atomic():
-            order = Order.objects.create(
-                user=request.user if request.user.is_authenticated else None,
-                customer_name=customer_name,
-                email=email,
-                phone=phone,
-                address=address,
-                payment_method=payment_method,
-                payment_status="pending",
-                total_amount=total,
-                subtotal_amount=subtotal,
-                discount_amount=pricing["discount"],
-                coupon_code=pricing["coupon"].code if pricing["coupon"] else "",
-            )
+        if not customer_name or not address:
+            return render_checkout_error("Enter your full name and delivery address.")
+        if not re.fullmatch(r"[0-9+() -]{7,20}", phone):
+            return render_checkout_error("Enter a valid phone number.")
+        try:
+            validate_email(email)
+        except ValidationError:
+            return render_checkout_error("Enter a valid email address.")
+        if payment_method not in {"cod", "online"}:
+            return render_checkout_error("Choose a valid payment method.")
+        if not re.fullmatch(r"\d{6}", pincode):
+            return render_checkout_error("Enter a valid 6-digit delivery pincode.")
 
-            order_access_ids = request.session.get("order_access_ids", [])
-            order_access_ids = [
-                stored_id for stored_id in order_access_ids
-                if isinstance(stored_id, int)
-            ]
-            if order.id not in order_access_ids:
-                order_access_ids.append(order.id)
-            request.session["order_access_ids"] = order_access_ids[-20:]
+        delivery_zone = DeliveryZone.objects.filter(pincode=pincode, is_active=True).first()
+        if not delivery_zone:
+            return render_checkout_error("We currently do not deliver to this pincode.")
+        if payment_method == "cod" and not delivery_zone.cod_available:
+            return render_checkout_error("Cash on Delivery is not available for this pincode. Choose Online Payment.")
 
-            for item in cart_items:
-                OrderItem.objects.create(
-                    order=order,
-                    product=item["product"],
-                    variant=item["variant"],
-                    variant_size=item["variant"].size if item["variant"] else "",
-                    quantity=item["quantity"],
-                    price=item["unit_price"],
-                    bundle_id=item.get("bundle_id"),
+        request.session["delivery_pincode"] = pincode
+
+        try:
+            with transaction.atomic():
+                locked_coupon = None
+                if pricing["coupon"]:
+                    locked_coupon = Coupon.objects.select_for_update().get(pk=pricing["coupon"].pk)
+                    coupon_error = locked_coupon.validation_error(subtotal)
+                    if coupon_error:
+                        request.session.pop("coupon_code", None)
+                        raise ValueError(coupon_error)
+                    discount = locked_coupon.discount_for(subtotal)
+                    total = subtotal - discount
+                else:
+                    discount = Decimal("0.00")
+
+                order = Order.objects.create(
+                    user=request.user if request.user.is_authenticated else None,
+                    checkout_token=submitted_token,
+                    customer_name=customer_name,
+                    email=email,
+                    phone=phone,
+                    address=address,
+                    payment_method=payment_method,
+                    payment_status="pending",
+                    total_amount=total,
+                    subtotal_amount=subtotal,
+                    discount_amount=discount,
+                    coupon_code=locked_coupon.code if locked_coupon else "",
                 )
 
-            _reserve_order_inventory(order)
+                order_access_ids = request.session.get("order_access_ids", [])
+                order_access_ids = [
+                    stored_id for stored_id in order_access_ids
+                    if isinstance(stored_id, int)
+                ]
+                if order.id not in order_access_ids:
+                    order_access_ids.append(order.id)
+                request.session["order_access_ids"] = order_access_ids[-20:]
 
-            if pricing["coupon"]:
-                Coupon.objects.filter(pk=pricing["coupon"].pk).update(times_used=F("times_used") + 1)
+                for item in cart_items:
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item["product"],
+                        variant=item["variant"],
+                        variant_size=item["variant"].size if item["variant"] else "",
+                        quantity=item["quantity"],
+                        price=item["unit_price"],
+                        bundle_id=item.get("bundle_id"),
+                    )
+
+                _reserve_order_inventory(order)
+
+                if locked_coupon:
+                    locked_coupon.times_used += 1
+                    locked_coupon.save(update_fields=["times_used"])
+        except IntegrityError:
+            existing_order = Order.objects.filter(checkout_token=submitted_token).first()
+            request.session.pop("checkout_token", None)
+            if existing_order and _request_can_access_order(request, existing_order):
+                if existing_order.payment_method == "cod" or existing_order.payment_status == "paid":
+                    return redirect("order_success", order_id=existing_order.id)
+                return render(request, "store/payment_failed.html", {
+                    "order": existing_order,
+                    "error": "This checkout was already submitted. Continue with the existing order instead of placing it again.",
+                }, status=409)
+            return redirect("cart")
+        except ValueError as exc:
+            return render_checkout_error(str(exc), status=409)
 
         request.session.pop("checkout_token", None)
         request.session.pop("coupon_code", None)
@@ -930,6 +1033,8 @@ def checkout(request):
 
             request.session["current_order_id"] = order.id
             request.session["razorpay_order_id"] = razorpay_order["id"]
+            order.razorpay_order_id = razorpay_order["id"]
+            order.save(update_fields=["razorpay_order_id"])
 
             return render(request, "store/payment.html", {
                 "order": order,
@@ -943,6 +1048,7 @@ def checkout(request):
             _track_conversion(request, "purchase_completed", order=order, coupon_code=order.coupon_code,
                               metadata={"total": str(order.total_amount), "payment_method": "cod"})
             request.session["cart"] = {}
+            request.session.pop("guest_checkout_confirmed", None)
             return redirect("order_success", order_id=order.id)
 
     return render(request, "store/checkout.html", {
@@ -952,6 +1058,7 @@ def checkout(request):
         "default_address": default_address,
         "addresses": addresses,
         "checkout_token": checkout_token,
+        "submitted_pincode": (request.POST.get("pincode") or request.session.get("delivery_pincode") or (default_address.pincode if default_address else "")).strip(),
     })
 
 def order_success(request, order_id):
@@ -977,6 +1084,15 @@ def register_view(request):
         password = request.POST.get("password") or request.POST.get("password1", "")
         password2 = request.POST.get("password2", password)
         full_name = request.POST.get("full_name", "").strip()
+
+        try:
+            validate_email(email)
+        except ValidationError:
+            return render(request, "store/register.html", {
+                "error": "Enter a valid email address, for example name@gmail.com.",
+                "email_value": email,
+                "full_name_value": full_name,
+            })
 
         if User.objects.filter(email__iexact=email).exists():
             return render(
@@ -1016,6 +1132,13 @@ def register_view(request):
 
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
+        next_url = request.POST.get("next") or request.GET.get("next")
+        if next_url and url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return redirect(next_url)
         return redirect("home")
 
     return render(
@@ -1025,17 +1148,27 @@ def register_view(request):
 
 def login_view(request):
     if request.method == "POST":
-        identifier = (request.POST.get("identifier") or request.POST.get("username") or "").strip()
+        identifier = (request.POST.get("identifier") or "").strip().lower()
         password = request.POST.get("password")
 
-        matched_user = User.objects.filter(email__iexact=identifier).first()
-        username = matched_user.username if matched_user else identifier
+        try:
+            validate_email(identifier)
+        except ValidationError:
+            return render(request, "store/login.html", {
+                "error": "Enter the email address connected to your account.",
+                "identifier_value": identifier,
+            })
 
-        user = authenticate(
-            request,
-            username=username,
-            password=password
-        )
+        matched_user = User.objects.filter(email__iexact=identifier).first()
+        username = matched_user.username if matched_user else None
+
+        user = None
+        if username:
+            user = authenticate(
+                request,
+                username=username,
+                password=password
+            )
 
         if user is not None:
             login(request, user)
@@ -4000,10 +4133,11 @@ def delete_address(request, address_id):
     return redirect("my_addresses")
 
 
+@require_POST
 def verify_payment(request):
-    razorpay_payment_id = request.GET.get("razorpay_payment_id")
-    razorpay_order_id = request.GET.get("razorpay_order_id")
-    razorpay_signature = request.GET.get("razorpay_signature")
+    razorpay_payment_id = request.POST.get("razorpay_payment_id")
+    razorpay_order_id = request.POST.get("razorpay_order_id")
+    razorpay_signature = request.POST.get("razorpay_signature")
 
     order_id = request.session.get("current_order_id")
     saved_razorpay_order_id = request.session.get("razorpay_order_id")
@@ -4013,7 +4147,16 @@ def verify_payment(request):
 
     order = get_object_or_404(Order, id=order_id)
 
-    if saved_razorpay_order_id != razorpay_order_id:
+    if not _request_can_access_order(request, order) or order.payment_method != "online":
+        return redirect("home")
+
+    if (
+        not razorpay_payment_id
+        or not razorpay_order_id
+        or not razorpay_signature
+        or saved_razorpay_order_id != razorpay_order_id
+        or order.razorpay_order_id != razorpay_order_id
+    ):
         _restore_order_inventory(order)
         _mark_payment_failed(order)
         return render(request, "store/payment_failed.html", {"order": order})
@@ -4027,16 +4170,8 @@ def verify_payment(request):
             "razorpay_signature": razorpay_signature,
         })
 
-        if order.payment_status != "paid":
-            with transaction.atomic():
-                locked_order = Order.objects.select_for_update().get(id=order.id)
-                if not locked_order.inventory_reserved:
-                    raise ValueError("This order no longer has reserved inventory.")
-                locked_order.payment_status = "paid"
-                locked_order.status = "confirmed"
-                locked_order.save(update_fields=["payment_status", "status"])
-
-            order = locked_order
+        order, transitioned = _complete_online_payment(order)
+        if transitioned:
             notify_order_confirmed(order)
             notify_payment_confirmed(order)
             _track_conversion(request, "purchase_completed", order=order, coupon_code=order.coupon_code,
@@ -4051,6 +4186,55 @@ def verify_payment(request):
         _restore_order_inventory(order)
         _mark_payment_failed(order)
         return render(request, "store/payment_failed.html", {"order": order})
+
+
+@csrf_exempt
+@require_POST
+def razorpay_webhook(request):
+    """Recover captured Razorpay payments even when the browser callback is lost."""
+    secret = settings.RAZORPAY_WEBHOOK_SECRET
+    signature = request.headers.get("X-Razorpay-Signature", "")
+    if not secret:
+        return JsonResponse({"detail": "Webhook is not configured."}, status=503)
+
+    expected = hmac.new(secret.encode("utf-8"), request.body, hashlib.sha256).hexdigest()
+    if not signature or not hmac.compare_digest(expected, signature):
+        return JsonResponse({"detail": "Invalid signature."}, status=400)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+        event = payload.get("event")
+        if event not in {"payment.captured", "order.paid"}:
+            return JsonResponse({"detail": "Event ignored."})
+
+        event_payload = payload.get("payload", {})
+        payment = event_payload.get("payment", {}).get("entity", {})
+        razorpay_order = event_payload.get("order", {}).get("entity", {})
+        razorpay_order_id = payment.get("order_id") or razorpay_order.get("id")
+        amount = payment.get("amount") or razorpay_order.get("amount_paid")
+        currency = payment.get("currency") or razorpay_order.get("currency")
+
+        order = Order.objects.filter(razorpay_order_id=razorpay_order_id).first()
+        if not order:
+            return JsonResponse({"detail": "Order ignored."})
+        if currency != "INR" or int(amount) != int(order.total_amount * 100):
+            return JsonResponse({"detail": "Payment amount mismatch."}, status=400)
+        if payment and payment.get("status") != "captured":
+            return JsonResponse({"detail": "Payment is not captured."}, status=400)
+
+        order, transitioned = _complete_online_payment(order)
+        if transitioned:
+            notify_order_confirmed(order)
+            notify_payment_confirmed(order)
+            ConversionEvent.objects.create(
+                event_type="purchase_completed",
+                order=order,
+                coupon_code=order.coupon_code,
+                metadata={"total": str(order.total_amount), "payment_method": "online", "source": "webhook"},
+            )
+        return JsonResponse({"detail": "Payment recorded."})
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse({"detail": "Invalid payload."}, status=400)
 
 @require_POST
 def retry_payment(request, order_id):
@@ -4097,7 +4281,8 @@ def retry_payment(request, order_id):
         })
 
     order.payment_status = "pending"
-    order.save(update_fields=["payment_status"])
+    order.razorpay_order_id = razorpay_order["id"]
+    order.save(update_fields=["payment_status", "razorpay_order_id"])
 
     request.session["current_order_id"] = order.id
     request.session["razorpay_order_id"] = razorpay_order["id"]

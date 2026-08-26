@@ -1,0 +1,35 @@
+{% extends "store/base.html" %}
+
+{% block title %}Sign in or continue | Boww & Meow{% endblock %}
+
+{% block content %}
+<main class="bm-checkout-account">
+    <section class="bm-checkout-account-card">
+        <span class="bm-checkout-account-kicker">FASTER CHECKOUT</span>
+        <h1>How would you like to continue?</h1>
+        <p>Sign in to use saved addresses, track this order and reorder your pet’s favourites later.</p>
+
+        <div class="bm-checkout-account-actions">
+            <a class="primary" href="{% url 'login' %}?next={% url 'checkout' %}">Sign in</a>
+            <a class="secondary" href="{% url 'register' %}?next={% url 'checkout' %}">Create account</a>
+        </div>
+
+        <ul>
+            <li>Saved delivery addresses</li>
+            <li>Order tracking in your profile</li>
+            <li>Quick reordering next time</li>
+        </ul>
+
+        <div class="bm-checkout-account-divider"><span>or</span></div>
+        <a class="guest" href="{% url 'checkout' %}?guest=1">Continue as guest</a>
+        <small>You can still track this order using your confirmation details.</small>
+    </section>
+
+    <aside class="bm-checkout-account-summary">
+        <span>YOUR CART</span>
+        <strong>{{ cart_items|length }} product{{ cart_items|length|pluralize }}</strong>
+        <p>Total <b>₹{{ total|floatformat:2 }}</b></p>
+        <a href="{% url 'cart' %}">← Review cart</a>
+    </aside>
+</main>
+{% endblock %}

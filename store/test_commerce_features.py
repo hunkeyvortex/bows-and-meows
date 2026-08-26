@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -7,7 +8,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import (BundleItem, DeliveryZone, OfferCampaign, Order, OrderItem,
+from .models import (BundleItem, Coupon, DeliveryZone, OfferCampaign, Order, OrderItem,
                      Prescription, Product, ProductBundle, ProductVariant)
 from .services.commerce import bundle_snapshot, frequently_bought, recently_viewed, remember_recently_viewed
 
@@ -33,6 +34,92 @@ class DeliveryZoneTests(TestCase):
         self.assertFalse(self.client.post(reverse("delivery_status"), {"pincode": "400002"}).json()["available"])
 
 
+class CheckoutLaunchSafetyTests(TestCase):
+    def setUp(self):
+        self.item = product("Checkout Food", price=Decimal("500.00"), stock=3)
+        self.zone = DeliveryZone.objects.create(
+            pincode="400001", city="Mumbai", state="Maharashtra", cod_available=True
+        )
+
+    def seed_checkout(self, *, token=None, coupon=None):
+        session = self.client.session
+        session["cart"] = {
+            f"p{self.item.id}": {
+                "product_id": self.item.id,
+                "variant_id": None,
+                "quantity": 1,
+            }
+        }
+        if token:
+            session["checkout_token"] = token
+        if coupon:
+            session["coupon_code"] = coupon.code
+        session["guest_checkout_confirmed"] = True
+        session.save()
+        self.client.get(reverse("checkout"))
+        return str(self.client.session["checkout_token"])
+
+    def checkout_data(self, token, **overrides):
+        data = {
+            "checkout_token": token,
+            "customer_name": "Pet Parent",
+            "email": "parent@example.com",
+            "phone": "9876543210",
+            "address": "1 Pet Street, Mumbai",
+            "pincode": self.zone.pincode,
+            "payment_method": "cod",
+        }
+        data.update(overrides)
+        return data
+
+    @patch("store.views.notify_order_confirmed")
+    def test_cod_checkout_is_idempotent_and_coupon_counts_once(self, notify):
+        coupon = Coupon.objects.create(code="LAUNCH10", discount_percent=10, usage_limit=5)
+        token = self.seed_checkout(coupon=coupon)
+
+        first = self.client.post(reverse("checkout"), self.checkout_data(token))
+        self.assertEqual(first.status_code, 302)
+        self.assertEqual(Order.objects.count(), 1)
+        order = Order.objects.get()
+        self.assertEqual(order.total_amount, Decimal("450.00"))
+        self.assertEqual(order.checkout_token.hex, token.replace("-", ""))
+
+        self.seed_checkout(token=token, coupon=coupon)
+        second = self.client.post(reverse("checkout"), self.checkout_data(token))
+        self.assertRedirects(second, reverse("order_success", args=[order.id]), fetch_redirect_response=False)
+        self.assertEqual(Order.objects.count(), 1)
+        coupon.refresh_from_db()
+        self.item.refresh_from_db()
+        self.assertEqual(coupon.times_used, 1)
+        self.assertEqual(self.item.stock, 2)
+        notify.assert_called_once()
+
+    def test_checkout_rejects_unsupported_pincode_and_payment_method(self):
+        token = self.seed_checkout()
+        response = self.client.post(
+            reverse("checkout"),
+            self.checkout_data(token, pincode="999999"),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Order.objects.exists())
+
+        response = self.client.post(
+            reverse("checkout"),
+            self.checkout_data(token, payment_method="free"),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Order.objects.exists())
+
+    def test_checkout_enforces_zone_cod_policy(self):
+        self.zone.cod_available = False
+        self.zone.save(update_fields=["cod_available"])
+        token = self.seed_checkout()
+        response = self.client.post(reverse("checkout"), self.checkout_data(token))
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(response, "Cash on Delivery is not available", status_code=400)
+        self.assertFalse(Order.objects.exists())
+
+
 LOCAL_STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
@@ -47,6 +134,42 @@ class QuickViewAndRecentTests(TestCase):
         response = self.client.get(reverse("quick_view", args=[item.id]))
         self.assertContains(response, "2 KG")
         self.assertContains(response, "Add to cart")
+
+    def test_quick_view_keeps_selected_variant_details_together(self):
+        item = product(price=Decimal("999.00"), original_price=Decimal("1099.00"))
+        expensive = ProductVariant.objects.create(
+            product=item,
+            size="3 KG",
+            price=Decimal("2130.00"),
+            original_price=Decimal("2300.00"),
+            stock=19,
+            external_image_url="https://example.com/3kg.jpg",
+        )
+        selected = ProductVariant.objects.create(
+            product=item,
+            size="1.5 KG",
+            price=Decimal("1180.00"),
+            original_price=Decimal("1250.00"),
+            stock=7,
+            external_image_url="https://example.com/1-5kg.jpg",
+        )
+
+        response = self.client.get(reverse("quick_view", args=[item.id]))
+        html = response.content.decode()
+
+        self.assertContains(response, "₹1180.00")
+        self.assertContains(response, "7 available")
+        self.assertContains(response, 'src="https://example.com/1-5kg.jpg"')
+        self.assertIn(
+            f'value="{selected.id}" data-size="1.5 KG" data-price="1180.00" '
+            'data-mrp="1250.00" data-stock="7" data-image="https://example.com/1-5kg.jpg" checked',
+            html,
+        )
+        self.assertIn(
+            f'value="{expensive.id}" data-size="3 KG" data-price="2130.00" '
+            'data-mrp="2300.00" data-stock="19" data-image="https://example.com/3kg.jpg"',
+            html,
+        )
 
     def test_recent_deduplicates_orders_and_excludes_unavailable(self):
         first, second = product("First"), product("Second")
@@ -110,6 +233,31 @@ class BundleTests(TestCase):
         line = next(iter(self.client.session["cart"].values()))
         self.assertEqual(line["bundle_id"], bundle.id)
 
+    def test_cart_reprices_bundle_from_current_server_data(self):
+        item = product(price=Decimal("100.00"))
+        bundle = ProductBundle.objects.create(name="Starter", slug="starter", bundle_price=Decimal("80.00"))
+        BundleItem.objects.create(bundle=bundle, product=item, quantity=1)
+        self.client.post(reverse("add_bundle", args=[bundle.slug]))
+
+        bundle.bundle_price = Decimal("60.00")
+        bundle.save(update_fields=["bundle_price"])
+        response = self.client.get(reverse("cart"))
+
+        self.assertEqual(response.context["subtotal"], Decimal("60.00"))
+
+    def test_expired_bundle_is_removed_from_cart(self):
+        item = product()
+        bundle = ProductBundle.objects.create(name="Starter", slug="starter", bundle_price=Decimal("80.00"))
+        BundleItem.objects.create(bundle=bundle, product=item, quantity=1)
+        self.client.post(reverse("add_bundle", args=[bundle.slug]))
+        bundle.ends_at = timezone.now() - timedelta(seconds=1)
+        bundle.save(update_fields=["ends_at"])
+
+        response = self.client.get(reverse("cart"))
+
+        self.assertEqual(response.context["cart_items"], [])
+        self.assertFalse(self.client.session["cart"])
+
 
 class BundleCrmSearchTests(TestCase):
     def setUp(self):
@@ -155,6 +303,13 @@ class PrescriptionTests(TestCase):
         upload = SimpleUploadedFile("rx.exe", b"bad", content_type="application/octet-stream")
         response = self.client.post(reverse("prescription_upload", args=[self.medicine.id]), {"file": upload})
         self.assertContains(response, "JPG, JPEG, PNG or PDF")
+        self.assertFalse(Prescription.objects.exists())
+
+    def test_executable_disguised_as_pdf_is_rejected(self):
+        self.client.force_login(self.owner)
+        upload = SimpleUploadedFile("rx.pdf", b"MZ executable", content_type="application/pdf")
+        response = self.client.post(reverse("prescription_upload", args=[self.medicine.id]), {"file": upload})
+        self.assertContains(response, "not a valid PDF")
         self.assertFalse(Prescription.objects.exists())
 
     def test_other_user_cannot_download_and_staff_can_review(self):

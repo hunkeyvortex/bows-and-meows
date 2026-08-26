@@ -1,11 +1,17 @@
 from decimal import Decimal
+from datetime import timedelta
+import hashlib
+import hmac
+import json
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.core.management import call_command
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import Address, Coupon, Order, OrderItem, Product, ProductVariant, Wishlist
 from .views import _reserve_order_inventory, _restore_order_inventory
@@ -20,10 +26,14 @@ class EmailAuthenticationTests(TestCase):
         self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
         self.assertEqual(int(self.client.session["_auth_user_id"]), user.id)
 
-    def test_existing_username_login_still_works(self):
+    def test_customer_username_without_email_cannot_login(self):
         user = User.objects.create_user(username="legacy-name", email="pet@example.com", password="Strong-pass-938!")
-        self.client.post(reverse("login"), {"identifier": "legacy-name", "password": "Strong-pass-938!"})
-        self.assertEqual(int(self.client.session["_auth_user_id"]), user.id)
+        response = self.client.post(reverse("login"), {
+            "identifier": "legacy-name", "password": "Strong-pass-938!",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Enter the email address connected to your account.")
+        self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_email_registration_generates_internal_username(self):
         response = self.client.post(reverse("register"), {
@@ -34,6 +44,36 @@ class EmailAuthenticationTests(TestCase):
         user = User.objects.get(email="daniyal@example.com")
         self.assertEqual(user.first_name, "Daniyal")
         self.assertTrue(user.username.startswith("daniyal"))
+
+    def test_registration_rejects_invalid_email_server_side(self):
+        response = self.client.post(reverse("register"), {
+            "full_name": "Invalid Email",
+            "email": "danybany786",
+            "password1": "Strong-pass-938!",
+            "password2": "Strong-pass-938!",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Enter a valid email address")
+        self.assertFalse(User.objects.filter(email="danybany786").exists())
+
+    def test_registration_returns_customer_to_safe_checkout_next(self):
+        response = self.client.post(reverse("register") + "?next=/checkout/", {
+            "full_name": "Checkout Customer",
+            "email": "checkout@example.com",
+            "password1": "Strong-pass-938!",
+            "password2": "Strong-pass-938!",
+            "next": "/checkout/",
+        })
+        self.assertRedirects(response, "/checkout/", fetch_redirect_response=False)
+
+    def test_registration_rejects_external_next_redirect(self):
+        response = self.client.post(reverse("register"), {
+            "email": "safe@example.com",
+            "password1": "Strong-pass-938!",
+            "password2": "Strong-pass-938!",
+            "next": "https://evil.example/steal",
+        })
+        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
 
 
 class CouponCalculationTests(TestCase):
@@ -305,6 +345,7 @@ class CategoryBestSellerRankingTests(TestCase):
                 "quantity": 1,
             }
         }
+        session["guest_checkout_confirmed"] = True
         session.save()
 
         response = self.client.get(reverse("checkout"))
@@ -329,6 +370,7 @@ class CategoryBestSellerRankingTests(TestCase):
                 "quantity": 1,
             }
         }
+        session["guest_checkout_confirmed"] = True
         session.save()
 
         html = self.client.get(reverse("checkout")).content.decode()
@@ -342,6 +384,29 @@ class CategoryBestSellerRankingTests(TestCase):
         ):
             self.assertEqual(html.count(f'for="{field_id}"'), 1, field_id)
         self.assertEqual(html.count("Full Name"), 1)
+
+    def test_guest_checkout_first_offers_sign_in_signup_or_guest(self):
+        product = Product.objects.create(
+            name="Guest Choice Food", category="dog_food", product_type="food",
+            price=Decimal("399.00"), stock=5, is_available=True,
+        )
+        session = self.client.session
+        session["cart"] = {
+            str(product.id): {"product_id": product.id, "variant_id": None, "quantity": 1}
+        }
+        session.save()
+
+        response = self.client.get(reverse("checkout"))
+
+        self.assertContains(response, "How would you like to continue?")
+        self.assertContains(response, f'{reverse("login")}?next={reverse("checkout")}')
+        self.assertContains(response, f'{reverse("register")}?next={reverse("checkout")}')
+        self.assertContains(response, f'{reverse("checkout")}?guest=1')
+
+        response = self.client.get(reverse("checkout"), {"guest": "1"})
+        self.assertRedirects(response, reverse("checkout"), fetch_redirect_response=False)
+        self.assertTrue(self.client.session["guest_checkout_confirmed"])
+        self.assertContains(self.client.get(reverse("checkout")), "Customer Details")
 
 
 @override_settings(
@@ -746,10 +811,12 @@ class StoreSecurityTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_external_login_redirect_is_rejected(self):
+        self.user.email = "customer@example.com"
+        self.user.save(update_fields=["email"])
         response = self.client.post(
             reverse("login") + "?next=https://evil.example/steal",
             {
-                "username": "customer",
+                "identifier": "customer@example.com",
                 "password": "strong-test-password",
             },
         )
@@ -984,12 +1051,98 @@ class PaymentInventoryTests(TestCase):
     def test_payment_result_mutations_reject_get(self):
         self.grant_guest_access()
         for route_name in (
+            "verify_payment",
             "retry_payment",
             "payment_failed_view",
             "payment_cancelled",
         ):
-            response = self.client.get(reverse(route_name, args=[self.order.id]))
+            args = [] if route_name == "verify_payment" else [self.order.id]
+            response = self.client.get(reverse(route_name, args=args))
             self.assertEqual(response.status_code, 405)
+
+    @patch("store.views.notify_payment_confirmed")
+    @patch("store.views.notify_order_confirmed")
+    @patch("store.views.razorpay.Client")
+    def test_verified_post_marks_only_the_persisted_razorpay_order_paid(
+        self, client_class, notify_confirmed, notify_payment
+    ):
+        self.grant_guest_access()
+        _reserve_order_inventory(self.order)
+        self.order.razorpay_order_id = "order_server_created"
+        self.order.save(update_fields=["razorpay_order_id"])
+        session = self.client.session
+        session["current_order_id"] = self.order.id
+        session["razorpay_order_id"] = "order_server_created"
+        session.save()
+
+        response = self.client.post(reverse("verify_payment"), {
+            "razorpay_payment_id": "pay_valid",
+            "razorpay_order_id": "order_server_created",
+            "razorpay_signature": "signed-value",
+        })
+
+        self.assertRedirects(
+            response,
+            reverse("order_success", args=[self.order.id]),
+            fetch_redirect_response=False,
+        )
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.payment_status, "paid")
+        self.assertEqual(self.order.status, "confirmed")
+        client_class.return_value.utility.verify_payment_signature.assert_called_once()
+        notify_confirmed.assert_called_once()
+        notify_payment.assert_called_once()
+
+    @override_settings(RAZORPAY_WEBHOOK_SECRET="test-webhook-secret")
+    @patch("store.views.notify_payment_confirmed")
+    @patch("store.views.notify_order_confirmed")
+    def test_signed_webhook_completes_payment_once(self, notify_confirmed, notify_payment):
+        _reserve_order_inventory(self.order)
+        self.order.razorpay_order_id = "order_webhook"
+        self.order.save(update_fields=["razorpay_order_id"])
+        body = json.dumps({
+            "event": "payment.captured",
+            "payload": {"payment": {"entity": {
+                "order_id": "order_webhook",
+                "amount": 50000,
+                "currency": "INR",
+                "status": "captured",
+            }}},
+        }).encode()
+        signature = hmac.new(b"test-webhook-secret", body, hashlib.sha256).hexdigest()
+
+        for _ in range(2):
+            response = self.client.post(
+                reverse("razorpay_webhook"),
+                data=body,
+                content_type="application/json",
+                HTTP_X_RAZORPAY_SIGNATURE=signature,
+            )
+            self.assertEqual(response.status_code, 200)
+
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.payment_status, "paid")
+        self.assertEqual(self.order.status, "confirmed")
+        notify_confirmed.assert_called_once()
+        notify_payment.assert_called_once()
+
+    @override_settings(PAYMENT_RESERVATION_MINUTES=30)
+    @patch("store.management.commands.release_expired_payment_reservations.notify_payment_failed")
+    def test_expired_payment_command_releases_inventory_once(self, notify_failed):
+        _reserve_order_inventory(self.order)
+        Order.objects.filter(id=self.order.id).update(
+            created_at=timezone.now() - timedelta(minutes=31)
+        )
+
+        call_command("release_expired_payment_reservations")
+        call_command("release_expired_payment_reservations")
+
+        self.order.refresh_from_db()
+        self.product.refresh_from_db()
+        self.assertEqual(self.order.payment_status, "failed")
+        self.assertFalse(self.order.inventory_reserved)
+        self.assertEqual(self.product.stock, 3)
+        notify_failed.assert_called_once()
 
 
 @override_settings(

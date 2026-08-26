@@ -84,6 +84,7 @@ urlpatterns = [
     path("addresses/<int:address_id>/edit/",views.edit_address,name="edit_address"),
     path("addresses/<int:address_id>/delete/",views.delete_address,name="delete_address"),
     path("payment/verify/",views.verify_payment,name="verify_payment"),
+    path("payment/webhook/", views.razorpay_webhook, name="razorpay_webhook"),
    path(
     "payment/retry/<int:order_id>/",
     views.retry_payment,

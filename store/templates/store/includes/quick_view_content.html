@@ -1,20 +1,31 @@
 <div class="bm-quick-grid" data-pet-type="{{ product.pet_type }}">
-    <div class="bm-quick-image">{% if product.display_image_url %}<img src="{{ product.display_image_url }}" alt="{{ product.name }}">{% else %}<span>BM</span>{% endif %}</div>
+    <div class="bm-quick-image">
+        {% if selected_variant and selected_variant.display_image_url %}
+            <img data-quick-image src="{{ selected_variant.display_image_url }}" alt="{{ product.name }} — {{ selected_variant.size }}">
+        {% elif product.display_image_url %}
+            <img data-quick-image src="{{ product.display_image_url }}" alt="{{ product.name }}">
+        {% else %}
+            <span data-quick-image-placeholder>BM</span>
+        {% endif %}
+    </div>
     <div class="bm-quick-copy">
         <small>{{ product.brand|default:"Boww & Meow" }}</small>
         <h2>{{ product.name }}</h2>
         {% if product.requires_prescription %}<div class="bm-rx-note">Prescription required</div>{% endif %}
-        <div class="bm-quick-price"><strong data-quick-price>₹{{ product.display_price }}</strong>{% if product.display_original_price %}<del data-quick-mrp>₹{{ product.display_original_price }}</del>{% endif %}</div>
+        <div class="bm-quick-price">
+            <strong data-quick-price>₹{% if selected_variant %}{{ selected_variant.price|floatformat:2 }}{% else %}{{ product.price|floatformat:2 }}{% endif %}</strong>
+            <del data-quick-mrp{% if selected_variant %}{% if not selected_variant.original_price %} hidden{% endif %}{% elif not product.original_price %} hidden{% endif %}>₹{% if selected_variant and selected_variant.original_price %}{{ selected_variant.original_price|floatformat:2 }}{% elif product.original_price %}{{ product.original_price|floatformat:2 }}{% endif %}</del>
+        </div>
         <form method="post" action="{% url 'add_to_cart' product.id %}" data-quick-cart data-cart-sound="{{ product.pet_type }}">
             {% csrf_token %}
-            {% if product.has_available_variants %}
+            {% if variants %}
             <fieldset><legend>Choose size</legend><div class="bm-quick-variants">
-                {% for variant in product.variants.all %}{% if variant.is_available and variant.stock > 0 %}
-                <label><input type="radio" name="variant" value="{{ variant.id }}" data-price="{{ variant.price }}" data-mrp="{{ variant.original_price|default:'' }}" data-stock="{{ variant.stock }}" {% if forloop.first %}checked{% endif %}><span>{{ variant.size }}</span></label>
-                {% endif %}{% endfor %}
+                {% for variant in variants %}
+                <label><input type="radio" name="variant" value="{{ variant.id }}" data-size="{{ variant.size }}" data-price="{{ variant.price }}" data-mrp="{{ variant.original_price|default:'' }}" data-stock="{{ variant.stock }}" data-image="{{ variant.display_image_url }}" {% if variant.id == selected_variant.id %}checked{% endif %}><span>{{ variant.size }}</span></label>
+                {% endfor %}
             </div></fieldset>
             {% endif %}
-            <p class="bm-quick-stock" data-quick-stock>{% if product.stock > 0 %}{{ product.stock }} available{% else %}Out of stock{% endif %}</p>
+            <p class="bm-quick-stock" data-quick-stock>{% if selected_variant %}{{ selected_variant.stock }} available{% elif product.stock > 0 %}{{ product.stock }} available{% else %}Out of stock{% endif %}</p>
             <div class="bm-quick-actions">
                 {% if product.requires_prescription %}<a href="{% url 'prescription_upload' product.id %}" class="bm-primary">Upload prescription</a>{% else %}<button class="bm-primary" type="submit">Add to cart</button><button type="submit" formaction="{% url 'buy_now' product.id %}">Buy now</button>{% endif %}
             </div>

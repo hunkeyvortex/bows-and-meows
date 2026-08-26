@@ -155,6 +155,23 @@
                 required
             >{% if default_address %}{{ default_address.address_line1 }}{% if default_address.address_line2 %}, {{ default_address.address_line2 }}{% endif %}, {{ default_address.city }}, {{ default_address.state }} - {{ default_address.pincode }}{% endif %}</textarea>
 
+            <label for="checkout-pincode">
+                Delivery Pincode
+            </label>
+
+            <input
+                id="checkout-pincode"
+                type="text"
+                name="pincode"
+                inputmode="numeric"
+                autocomplete="postal-code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                value="{{ submitted_pincode }}"
+                data-checkout-pincode
+                required
+            >
+
 
             <label for="checkout-payment">
                 Payment Method

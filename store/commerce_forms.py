@@ -3,6 +3,7 @@ from pathlib import Path
 from django import forms
 from django.forms import inlineformset_factory
 from django.core.exceptions import ValidationError
+from PIL import Image as PillowImage, UnidentifiedImageError
 
 from .models import BundleItem, DeliveryZone, OfferCampaign, Prescription, Product, ProductBundle, ProductVariant
 
@@ -24,6 +25,16 @@ class PrescriptionUploadForm(forms.ModelForm):
         content_type = getattr(uploaded, "content_type", "")
         if content_type and content_type not in allowed_types:
             raise ValidationError("This file type is not allowed.")
+        try:
+            if extension == ".pdf":
+                if not uploaded.read(5).startswith(b"%PDF-"):
+                    raise ValidationError("The uploaded file is not a valid PDF.")
+            else:
+                PillowImage.open(uploaded).verify()
+        except (UnidentifiedImageError, OSError, SyntaxError):
+            raise ValidationError("The uploaded image is not valid.")
+        finally:
+            uploaded.seek(0)
         return uploaded
 
 
