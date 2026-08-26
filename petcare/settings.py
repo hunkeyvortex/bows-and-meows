@@ -112,7 +112,16 @@ if render_hostname:
     )
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = IS_RENDER
+# Render terminates HTTPS before forwarding requests to Waitress.  Some
+# Waitress configurations deliberately strip untrusted X-Forwarded-Proto
+# headers, which makes Django see an already-secure request as HTTP.  Enabling
+# SecurityMiddleware's redirect in that situation redirects the public HTTPS
+# URL to itself forever.  Render's edge already provides the public HTTPS
+# redirect, so keep the application-level redirect opt-in for hosts whose
+# trusted-proxy forwarding has been explicitly verified.
+SECURE_SSL_REDIRECT = (
+    (env.get("DJANGO_SECURE_SSL_REDIRECT") or "False").lower() == "true"
+)
 SESSION_COOKIE_SECURE = IS_RENDER
 CSRF_COOKIE_SECURE = IS_RENDER
 SECURE_HSTS_SECONDS = int(
