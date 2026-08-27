@@ -51,6 +51,16 @@ class SellableCatalogTests(TestCase):
         self.assertNotIn(medicine.id, visible_ids)
         self.assertNotIn(accessory.id, visible_ids)
 
+    def test_food_category_is_never_hidden_by_bad_imported_product_type(self):
+        mislabeled_food = Product.objects.create(
+            name="Imported Dog Food", category="dog_food", product_type="supply",
+            pet_type="dog", price=Decimal("100"), stock=2,
+        )
+
+        self.assertTrue(
+            Product.objects.customer_visible().filter(id=mislabeled_food.id).exists()
+        )
+
     def test_pharmacy_is_coming_soon_and_dog_food_remains_listed(self):
         food = Product.objects.create(
             name="Visible Dog Food", category="dog_food", product_type="food",

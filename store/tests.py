@@ -235,18 +235,18 @@ class CategoryBestSellerRankingTests(TestCase):
     def best_sellers(self, route_name):
         return list(self.client.get(reverse(route_name)).context["best_sellers"])
 
-    def test_quantity_ten_ranks_over_quantity_four(self):
+    def test_meaningful_sales_history_ranks_higher_quantity_first(self):
         lower = self.product("Four-unit seller")
         higher = self.product("Ten-unit seller")
-        self.sale(lower, 4)
-        self.sale(higher, 10)
+        self.sale(lower, 40)
+        self.sale(higher, 100)
         ranked = self.best_sellers("dog_products")
         self.assertLess(ranked.index(higher), ranked.index(lower))
 
     def test_cancelled_and_failed_orders_do_not_boost_rank(self):
         valid = self.product("Valid seller")
         invalid = self.product("Invalid seller")
-        self.sale(valid, 10)
+        self.sale(valid, 100)
         self.sale(invalid, 100, status="cancelled")
         self.sale(invalid, 100, status="confirmed", payment_status="failed")
         ranked = self.best_sellers("dog_products")

@@ -108,72 +108,10 @@ def home(request):
     )
 
 
-    # ==========================================
-    # BEST SELLERS
-    # ==========================================
-
-    best_sellers = (
-        base_products
-        .order_by(
-            "-sold_count",
-            "-is_featured",
-            "-id"
-        )[:6]
-    )
-
-
-    # ==========================================
-    # POPULAR DOG PRODUCTS
-    # ==========================================
-
-    dog_product_match = (
-        Q(category__startswith="dog_")
-        | (Q(pet_type="dog") & ~Q(category__startswith="cat_"))
-    )
-    cat_product_match = (
-        Q(category__startswith="cat_")
-        | (Q(pet_type="cat") & ~Q(category__startswith="dog_"))
-    )
-
-    popular_dogs = (
-        base_products
-        .filter(dog_product_match)
-        .order_by(
-            "-sold_count",
-            "-is_featured",
-            "-id"
-        )[:8]
-    )
-
-
-    # ==========================================
-    # POPULAR CAT PRODUCTS
-    # ==========================================
-
-    popular_cats = (
-        base_products
-        .filter(cat_product_match)
-        .order_by(
-            "-sold_count",
-            "-is_featured",
-            "-id"
-        )[:8]
-    )
-
-    # Keep the lower "Popular Right Now" grid evenly balanced. Alternating
-    # species also prevents one group from occupying an entire mobile row.
-    top_five_dogs = list(popular_dogs[:5])
-    top_five_cats = list(popular_cats[:5])
-    popular_picks = []
-    for index in range(5):
-        if index < len(top_five_dogs):
-            popular_picks.append(top_five_dogs[index])
-        if index < len(top_five_cats):
-            popular_picks.append(top_five_cats[index])
-
-    # Imported catalogue categories are not always reliable. For this section,
-    # require food language in the product name and rank recognised best-selling
-    # formulas first. The shop's completed sales break ties within that ranking.
+    # Imported catalogue categories are not always reliable. Keep every
+    # homepage popularity section food-only and use exact products already in
+    # Boww & Meow's database. Market popularity is only a ranking signal; all
+    # displayed product data remains ours.
     food_name_terms = (
         "food", "kibble", "meal", "gravy", "jelly", "chunks",
         "dry", "wet", "baked", "nutrition",
@@ -186,28 +124,28 @@ def home(request):
     )
 
     dog_priority_terms = (
-        "Pedigree Chicken and Vegetables Adult",
-        "Royal Canin Mini Puppy",
-        "Royal Canin Maxi Adult",
-        "Drools Optimum Performance Adult",
-        "Farmina N&D Pumpkin Lamb",
-        "Purina Pro Plan Chicken Large Breed Adult",
-        "Henlo Baked Chicken",
-        "Royal Canin Maxi Puppy",
-        "Pedigree Chicken and Milk Puppy",
-        "Pedigree Meat and Rice Adult",
+        "Pedigree Adult Chicken & Vegetables Dry Dog Food",
+        "Drools Adult Chicken & Egg Dry Dog Food",
+        "Royal Canin Maxi Adult Dry Dog Food",
+        "Pedigree Adult Meat & Rice Dry Dog Food",
+        "Farmina N&D Pumpkin Chicken & Pomegranate Adult Dog Food",
+        "Royal Canin Mini Puppy Dry Dog Food",
+        "Pedigree Puppy Chicken & Milk Dry Dog Food",
+        "Drools Focus Adult Super Premium Dog Food",
+        "IAMS Proactive Health Adult Chicken Dry Dog Food",
+        "Purepet Adult Chicken & Vegetable Dry Dog Food",
     )
     cat_priority_terms = (
-        "Royal Canin Persian Adult",
-        "Whiskas Ocean Fish Adult",
-        "Me-O Persian Adult",
-        "Purepet Adult Ocean Fish",
-        "Royal Canin Kitten",
-        "Farmina N&D Prime Chicken Adult Cat",
-        "Whiskas Ocean Fish Kitten",
-        "Whiskas Tuna in Jelly",
-        "Whiskas Chicken in Gravy",
-        "Me-O Seafood Adult",
+        "Royal Canin Persian Adult Dry Cat Food",
+        "Whiskas Adult Ocean Fish Dry Cat Food",
+        "Me-O Persian Adult Cat Food",
+        "Purepet Adult Ocean Fish Dry Cat Food",
+        "Royal Canin Persian Kitten Dry Cat Food",
+        "Drools Adult Ocean Fish Dry Cat Food",
+        "Whiskas Kitten Ocean Fish Dry Cat Food",
+        "Whiskas Chicken in Gravy Adult Wet Cat Food",
+        "Sheba Chicken Premium Wet Cat Food",
+        "Me-O Adult Seafood Dry Cat Food",
     )
 
     def ranked_food_products(pet, category, priority_terms):
@@ -227,12 +165,13 @@ def home(request):
         )
 
         priority_cases = [
-            When(name__icontains=term, then=Value(index))
+            When(name=term, then=Value(index))
             for index, term in enumerate(priority_terms)
         ]
 
         return (
             base_products
+            .filter(category=category)
             .filter(pet_match & food_words)
             .exclude(excluded_words)
             .annotate(
@@ -242,11 +181,22 @@ def home(request):
                     output_field=IntegerField(),
                 )
             )
-            .order_by("market_rank", "-sold_count", "-is_featured", "-id")[:10]
+            .order_by("market_rank", "-is_featured", "-sold_count", "name", "id")[:10]
         )
 
-    top_dog_foods = ranked_food_products("dog", "dog_food", dog_priority_terms)
-    top_cat_foods = ranked_food_products("cat", "cat_food", cat_priority_terms)
+    top_dog_foods = list(ranked_food_products("dog", "dog_food", dog_priority_terms))
+    top_cat_foods = list(ranked_food_products("cat", "cat_food", cat_priority_terms))
+    popular_dogs = top_dog_foods[:8]
+    popular_cats = top_cat_foods[:8]
+
+    # Five dog foods and five cat foods keep the homepage balanced on mobile.
+    popular_picks = []
+    for index in range(5):
+        if index < len(top_dog_foods):
+            popular_picks.append(top_dog_foods[index])
+        if index < len(top_cat_foods):
+            popular_picks.append(top_cat_foods[index])
+    best_sellers = popular_picks
 
     famous_brands = list(
         Product.objects
@@ -3422,7 +3372,7 @@ def search_products(request):
 
 VALID_SALE_STATUSES = ("confirmed", "shipped", "delivered")
 INVALID_SALE_PAYMENT_STATUSES = ("failed", "refunded")
-CATEGORY_SALES_HISTORY_THRESHOLD = 10
+CATEGORY_SALES_HISTORY_THRESHOLD = 100
 CATEGORY_BEST_SELLER_LIMIT = 4
 COMING_SOON_PAGE_TYPES = {"medicine", "vaccine"}
 
@@ -3471,16 +3421,28 @@ PAGE_PRODUCT_TYPE_CATEGORIES = {
 # already sold by Boww & Meow; storefront data always comes from Product.
 MARKET_BEST_SELLER_NAMES = {
     "dog": (
-        "Pedigree Chicken and Vegetables Adult Dog Dry Food",
-        "Royal Canin Mini Puppy Dry Dog Food",
+        "Pedigree Adult Chicken & Vegetables Dry Dog Food",
+        "Drools Adult Chicken & Egg Dry Dog Food",
+        "Royal Canin Maxi Adult Dry Dog Food",
+        "Pedigree Adult Meat & Rice Dry Dog Food",
         "Farmina N&D Pumpkin Chicken & Pomegranate Adult Dog Food",
-        "Orijen Original Dog Dry Food (All Breeds & Ages)",
+        "Royal Canin Mini Puppy Dry Dog Food",
+        "Pedigree Puppy Chicken & Milk Dry Dog Food",
+        "Drools Focus Adult Super Premium Dog Food",
+        "IAMS Proactive Health Adult Chicken Dry Dog Food",
+        "Purepet Adult Chicken & Vegetable Dry Dog Food",
     ),
     "cat": (
-        "Royal Canin Fit 32 Adult Dry Cat Food",
-        "Royal Canin Kitten Dry Cat Food",
-        "Farmina N&D Prime Chicken & Pomegranate Grain Free Adult Cat Dry Food",
-        "Farmina N&D Ocean Herring & Orange Grain Free Adult Cat Dry Food",
+        "Royal Canin Persian Adult Dry Cat Food",
+        "Whiskas Adult Ocean Fish Dry Cat Food",
+        "Me-O Persian Adult Cat Food",
+        "Purepet Adult Ocean Fish Dry Cat Food",
+        "Royal Canin Persian Kitten Dry Cat Food",
+        "Drools Adult Ocean Fish Dry Cat Food",
+        "Whiskas Kitten Ocean Fish Dry Cat Food",
+        "Whiskas Chicken in Gravy Adult Wet Cat Food",
+        "Sheba Chicken Premium Wet Cat Food",
+        "Me-O Adult Seafood Dry Cat Food",
     ),
     "medicine": (
         "Bravecto (20-40KG) Dog Tablet",
@@ -3777,14 +3739,26 @@ def _category_products_page(
 
     else:
 
-        # Best sellers first
-        # Then featured products
-        # Then newest products
+        # During the store's launch period, verified Indian market favourites
+        # appear first. Once the top picks are exhausted, actual sales,
+        # featured status and the remaining catalogue provide the fallback.
+        market_rank = Case(
+            *[
+                When(name=name, then=Value(position))
+                for position, name in enumerate(
+                    MARKET_BEST_SELLER_NAMES.get(page_type, ())
+                )
+            ],
+            default=Value(9999),
+            output_field=IntegerField(),
+        )
 
-        products = products.order_by(
+        products = products.annotate(market_rank=market_rank).order_by(
+            "market_rank",
             "-sold_count",
             "-is_featured",
-            "-id"
+            "name",
+            "id",
         )
 
 

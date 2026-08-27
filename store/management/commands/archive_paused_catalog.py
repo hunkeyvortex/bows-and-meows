@@ -4,6 +4,7 @@ from django.db.models import Count, Q
 
 from store.models import (
     Product,
+    STOREFRONT_FOOD_CATEGORIES,
     STOREFRONT_PAUSED_CATEGORIES,
     STOREFRONT_PAUSED_PRODUCT_TYPES,
 )
@@ -26,8 +27,10 @@ class Command(BaseCommand):
         paused_match = Q(product_type__in=STOREFRONT_PAUSED_PRODUCT_TYPES) | Q(
             category__in=STOREFRONT_PAUSED_CATEGORIES
         )
-        products = Product.objects.filter(paused_match, is_archived=False).exclude(
-            product_type="food"
+        products = (
+            Product.objects.filter(paused_match, is_archived=False)
+            .exclude(product_type="food")
+            .exclude(category__in=STOREFRONT_FOOD_CATEGORIES)
         )
         by_type = list(
             products.order_by()

@@ -8,6 +8,7 @@ from django.utils import timezone
 
 
 STOREFRONT_PAUSED_PRODUCT_TYPES = ("medicine", "supply", "vaccine")
+STOREFRONT_FOOD_CATEGORIES = ("dog_food", "cat_food", "bird_food")
 STOREFRONT_PAUSED_CATEGORIES = (
     "medicine",
     "parasite_control",
@@ -46,7 +47,8 @@ class ProductQuerySet(models.QuerySet):
             # Medicine, vaccination and accessory sales are intentionally
             # paused for launch. Their records remain available to staff in
             # CRM and can be restored to the storefront without re-importing.
-            product_type__in=STOREFRONT_PAUSED_PRODUCT_TYPES,
+            models.Q(product_type__in=STOREFRONT_PAUSED_PRODUCT_TYPES)
+            & ~models.Q(category__in=STOREFRONT_FOOD_CATEGORIES),
         ).exclude(
             category__in=STOREFRONT_PAUSED_CATEGORIES,
         )
