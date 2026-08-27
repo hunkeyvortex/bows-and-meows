@@ -1,5 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Product, ProductVariant, Order, OrderItem
+from .models import (
+    Product,
+    ProductVariant,
+    Order,
+    OrderItem,
+    STOREFRONT_PAUSED_PRODUCT_TYPES,
+)
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.password_validation import validate_password
@@ -3418,6 +3424,7 @@ VALID_SALE_STATUSES = ("confirmed", "shipped", "delivered")
 INVALID_SALE_PAYMENT_STATUSES = ("failed", "refunded")
 CATEGORY_SALES_HISTORY_THRESHOLD = 10
 CATEGORY_BEST_SELLER_LIMIT = 4
+COMING_SOON_PAGE_TYPES = {"medicine", "vaccine"}
 
 PAGE_ELIGIBILITY = {
     "dog": {
@@ -3798,6 +3805,8 @@ def _category_products_page(
         "page_type":
             page_type,
 
+        "page_coming_soon": page_type in COMING_SOON_PAGE_TYPES,
+
         "category_heading": CATEGORY_COPY.get(page_type, (page_title, page_title))[0],
         "all_products_heading": CATEGORY_COPY.get(page_type, (page_title, f"All {page_title}"))[1],
         "best_sellers": best_sellers,
@@ -3824,7 +3833,10 @@ def _category_products_page(
             bool(brand),
             sort != "featured",
         )),
-        "product_types": Product.PRODUCT_TYPE_CHOICES,
+        "product_types": [
+            choice for choice in Product.PRODUCT_TYPE_CHOICES
+            if choice[0] not in STOREFRONT_PAUSED_PRODUCT_TYPES
+        ],
         "care_areas": Product.CARE_AREA_CHOICES,
         "available_brands": category_products.exclude(brand="").order_by().values_list(
             "brand", flat=True

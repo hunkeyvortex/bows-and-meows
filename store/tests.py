@@ -287,10 +287,10 @@ class CategoryBestSellerRankingTests(TestCase):
     def test_category_filter_sheet_reuses_one_form_on_every_listing(self):
         self.product("Shared listing product")
         for route_name in (
-            "dog_products", "cat_products", "medicine_products",
+            "dog_products", "cat_products",
             "wellness_products", "grooming_products", "bird_products",
             "small_pet_products", "farm_animal_products",
-            "fish_reptile_products", "vaccination_products",
+            "fish_reptile_products",
         ):
             response = self.client.get(reverse(route_name))
             self.assertEqual(response.status_code, 200, route_name)
@@ -299,6 +299,12 @@ class CategoryBestSellerRankingTests(TestCase):
                 1,
                 route_name,
             )
+
+        for route_name in ("medicine_products", "vaccination_products"):
+            response = self.client.get(reverse(route_name))
+            self.assertEqual(response.status_code, 200, route_name)
+            self.assertContains(response, "Coming soon")
+            self.assertNotContains(response, 'id="category-filter-sheet"')
 
     def test_filter_count_and_query_values_are_preserved(self):
         self.product("Filtered product")
@@ -742,7 +748,7 @@ class StoreSecurityTests(TestCase):
             self.assertEqual(response.status_code, 200, route_name)
             self.assertContains(response, "Help & policies")
 
-    def test_prescription_product_is_blocked_from_normal_cart(self):
+    def test_paused_prescription_product_is_not_available_to_customers(self):
         medicine = Product.objects.create(
             name="Prescription Medicine",
             category="medicine",
@@ -754,11 +760,7 @@ class StoreSecurityTests(TestCase):
 
         response = self.client.post(reverse("add_to_cart", args=[medicine.id]))
 
-        self.assertRedirects(
-            response,
-            f"{reverse('login')}?next={reverse('prescription_upload', args=[medicine.id])}",
-            fetch_redirect_response=False,
-        )
+        self.assertEqual(response.status_code, 404)
         self.assertFalse(self.client.session.get("cart"))
 
     def test_wishlist_mutation_rejects_get(self):

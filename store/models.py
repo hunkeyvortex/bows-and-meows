@@ -7,6 +7,26 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 
+STOREFRONT_PAUSED_PRODUCT_TYPES = ("medicine", "supply", "vaccine")
+STOREFRONT_PAUSED_CATEGORIES = (
+    "medicine",
+    "parasite_control",
+    "respiratory_care",
+    "kidney_care",
+    "heart_care",
+    "dog_health",
+    "cat_health",
+    "bird_health",
+    "exotic_health",
+    "dog_toy",
+    "dog_accessory",
+    "cat_toy",
+    "cat_litter",
+    "cat_accessory",
+    "accessory",
+)
+
+
 class ProductQuerySet(models.QuerySet):
     def customer_visible(self):
         """Products that can actually be purchased by a customer right now."""
@@ -20,7 +40,16 @@ class ProductQuerySet(models.QuerySet):
         ).filter(
             is_available=True,
             is_archived=False,
-        ).filter(models.Q(stock__gt=0) | models.Q(has_sellable_variant=True))
+        ).filter(
+            models.Q(stock__gt=0) | models.Q(has_sellable_variant=True)
+        ).exclude(
+            # Medicine, vaccination and accessory sales are intentionally
+            # paused for launch. Their records remain available to staff in
+            # CRM and can be restored to the storefront without re-importing.
+            product_type__in=STOREFRONT_PAUSED_PRODUCT_TYPES,
+        ).exclude(
+            category__in=STOREFRONT_PAUSED_CATEGORIES,
+        )
 
 
 class Product(models.Model):

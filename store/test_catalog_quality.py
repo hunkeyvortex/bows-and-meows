@@ -31,6 +31,44 @@ class SellableCatalogTests(TestCase):
         self.assertNotIn(zero_stock.id, visible_ids)
         self.assertNotIn(archived.id, visible_ids)
 
+    def test_launch_catalog_hides_medicine_and_accessories_but_keeps_food(self):
+        food = Product.objects.create(
+            name="Available food", category="dog_food", product_type="food",
+            price=Decimal("100"), stock=2,
+        )
+        medicine = Product.objects.create(
+            name="Available medicine", category="medicine", product_type="medicine",
+            price=Decimal("100"), stock=2,
+        )
+        accessory = Product.objects.create(
+            name="Available accessory", category="dog_accessory", product_type="supply",
+            price=Decimal("100"), stock=2,
+        )
+
+        visible_ids = set(Product.objects.customer_visible().values_list("id", flat=True))
+
+        self.assertIn(food.id, visible_ids)
+        self.assertNotIn(medicine.id, visible_ids)
+        self.assertNotIn(accessory.id, visible_ids)
+
+    def test_pharmacy_is_coming_soon_and_dog_food_remains_listed(self):
+        food = Product.objects.create(
+            name="Visible Dog Food", category="dog_food", product_type="food",
+            pet_type="dog", price=Decimal("100"), stock=2,
+        )
+        medicine = Product.objects.create(
+            name="Hidden Dog Medicine", category="medicine", product_type="medicine",
+            pet_type="dog", price=Decimal("100"), stock=2,
+        )
+
+        pharmacy = self.client.get(reverse("medicine_products"))
+        dogs = self.client.get(reverse("dog_products"))
+
+        self.assertContains(pharmacy, "Coming soon")
+        self.assertNotContains(pharmacy, medicine.name)
+        self.assertContains(dogs, food.name)
+        self.assertNotContains(dogs, medicine.name)
+
     def test_duplicate_cleanup_is_dry_run_then_archives_without_deleting(self):
         canonical = Product.objects.create(
             name="Same Food", brand="Brand", category="dog_food", price=Decimal("100"), stock=5
