@@ -2,10 +2,53 @@ from decimal import Decimal
 from io import StringIO
 
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from .models import ConversionEvent, Coupon, Product, ProductVariant
+
+
+class CsrfRecoveryTests(TestCase):
+    def test_stale_login_form_redirects_to_fresh_form(self):
+        client = Client(enforce_csrf_checks=True)
+        client.get(reverse("login"))
+
+        response = client.post(
+            reverse("login"),
+            {
+                "identifier": "buyer@example.com",
+                "password": "unused-password",
+                "next": reverse("crm_dashboard"),
+                "csrfmiddlewaretoken": "x" * 64,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            f"{reverse('login')}?csrf=expired&next=%2Fcrm%2F",
+        )
+        refreshed = client.get(response.url)
+        self.assertContains(refreshed, "Your secure form expired")
+
+    def test_stale_non_auth_form_remains_forbidden_with_safe_page(self):
+        client = Client(enforce_csrf_checks=True)
+        product = Product.objects.create(
+            name="Protected Food", category="dog_food", product_type="food",
+            price="100.00", stock=1,
+        )
+
+        response = client.post(
+            reverse("add_to_cart", args=[product.id]),
+            {"csrfmiddlewaretoken": "x" * 64},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(
+            response,
+            "Nothing was changed or charged",
+            status_code=403,
+        )
 
 
 class SellableCatalogTests(TestCase):

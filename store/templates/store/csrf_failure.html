@@ -1,0 +1,21 @@
+{% extends "store/base.html" %}
+
+{% block title %}Security check | Boww & Meow{% endblock %}
+
+{% block content %}
+<main class="bm-csrf-page">
+    <section class="bm-csrf-card">
+        <span class="bm-csrf-kicker">SECURE FORM</span>
+        <h1>This page needs a quick refresh.</h1>
+        <p>Your form expired before it was submitted. Nothing was changed or charged.</p>
+        <div class="bm-csrf-actions">
+            <a href="{{ request.path }}">Refresh this page</a>
+            <a href="{% url 'home' %}" class="is-secondary">Return home</a>
+        </div>
+    </section>
+</main>
+
+<style>
+.bm-csrf-page{display:grid;min-height:62vh;place-items:center;padding:48px 20px;background:#fbfaf6}.bm-csrf-card{width:min(650px,100%);padding:clamp(28px,6vw,58px);border:1px solid #dce3da;border-radius:28px;background:linear-gradient(135deg,#fffdf8,#eff6e8);box-shadow:0 24px 60px rgba(24,77,58,.1)}.bm-csrf-kicker{color:#e96f59;font-size:12px;font-weight:900;letter-spacing:.16em}.bm-csrf-card h1{margin:10px 0 14px;color:#17251e;font-size:clamp(34px,6vw,56px);line-height:1.04}.bm-csrf-card p{margin:0;color:#627168;font-size:17px;line-height:1.6}.bm-csrf-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}.bm-csrf-actions a{display:inline-flex;min-height:48px;align-items:center;justify-content:center;padding:0 20px;border:1px solid #184d3a;border-radius:13px;background:#184d3a;color:#fff;font-weight:850;text-decoration:none}.bm-csrf-actions a.is-secondary{background:#fff;color:#184d3a}@media(max-width:520px){.bm-csrf-actions a{width:100%}}
+</style>
+{% endblock %}

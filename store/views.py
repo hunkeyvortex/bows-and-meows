@@ -39,7 +39,7 @@ import hashlib
 import hmac
 import json
 
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from django.core.files.base import ContentFile
 import csv
 import io
@@ -68,6 +68,30 @@ from .services.order_notifications import (
     notify_payment_confirmed,
     notify_payment_failed,
 )
+
+
+def csrf_failure(request, reason=""):
+    """Recover stale auth forms without weakening CSRF protection."""
+    auth_paths = {
+        reverse("login"),
+        reverse("register"),
+        reverse("password_reset"),
+    }
+    if request.path in auth_paths:
+        query_params = {"csrf": "expired"}
+        next_url = request.POST.get("next") or request.GET.get("next")
+        if next_url and url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            query_params["next"] = next_url
+        destination = f"{request.path}?{urlencode(query_params)}"
+        response = redirect(destination)
+        response.delete_cookie(settings.CSRF_COOKIE_NAME)
+        return response
+
+    return render(request, "store/csrf_failure.html", status=403)
 
 
 def _track_conversion(request, event_type, *, product=None, order=None, coupon_code="", metadata=None):
