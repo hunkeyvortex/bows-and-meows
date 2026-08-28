@@ -146,6 +146,168 @@ class SellableCatalogTests(TestCase):
         self.assertTrue(Product.objects.filter(pk=duplicate.pk).exists())
 
 
+class FoodCatalogAuditTests(TestCase):
+    def test_homepage_keeps_five_dog_and_five_cat_foods_in_market_order(self):
+        dog_names = (
+            "Pedigree Adult Chicken & Vegetables Dry Dog Food",
+            "Drools Adult Chicken & Egg Dry Dog Food",
+            "Royal Canin Maxi Adult Dry Dog Food",
+            "Pedigree Adult Meat & Rice Dry Dog Food",
+            "Farmina N&D Pumpkin Chicken & Pomegranate Adult Dog Food",
+        )
+        cat_names = (
+            "Royal Canin Persian Adult Dry Cat Food",
+            "Whiskas Adult Ocean Fish Dry Cat Food",
+            "Me-O Persian Adult Cat Food",
+            "Purepet Adult Ocean Fish Dry Cat Food",
+            "Royal Canin Persian Kitten Dry Cat Food",
+        )
+        for name in dog_names:
+            Product.objects.create(
+                name=name, category="dog_food", product_type="food",
+                pet_type="dog", price=Decimal("500.00"), stock=5,
+            )
+        for name in cat_names:
+            Product.objects.create(
+                name=name, category="cat_food", product_type="food",
+                pet_type="cat", price=Decimal("500.00"), stock=5,
+            )
+
+        response = self.client.get(reverse("home"))
+
+        self.assertEqual(response.status_code, 200)
+        expected = [
+            name
+            for pair in zip(dog_names, cat_names)
+            for name in pair
+        ]
+        self.assertEqual(
+            [product.name for product in response.context["best_sellers"]],
+            expected,
+        )
+
+    def test_cleanup_disables_duplicate_variant_and_syncs_parent(self):
+        product = Product.objects.create(
+            name="Verified Dog Food",
+            brand="Trusted Brand",
+            category="dog_food",
+            product_type="food",
+            pet_type="dog",
+            price=Decimal("999.00"),
+            original_price=Decimal("999.00"),
+            stock=99,
+        )
+        canonical = ProductVariant.objects.create(
+            product=product,
+            size="1.2 kg",
+            price=Decimal("499.00"),
+            original_price=Decimal("599.00"),
+            stock=9,
+            sku="AUDIT-ORIGINAL",
+        )
+        duplicate = ProductVariant.objects.create(
+            product=product,
+            size="1.2 KG",
+            price=Decimal("529.00"),
+            original_price=Decimal("599.00"),
+            stock=10,
+            sku="AUDIT-DUPLICATE",
+        )
+
+        call_command(
+            "audit_food_catalog", "--catalog", "missing-test-catalog.csv",
+            stdout=StringIO(),
+        )
+        duplicate.refresh_from_db()
+        self.assertTrue(duplicate.is_available)
+
+        call_command(
+            "audit_food_catalog", "--apply", "--catalog", "missing-test-catalog.csv",
+            stdout=StringIO(),
+        )
+        product.refresh_from_db()
+        canonical.refresh_from_db()
+        duplicate.refresh_from_db()
+
+        self.assertTrue(canonical.is_available)
+        self.assertFalse(duplicate.is_available)
+        self.assertEqual(duplicate.stock, 0)
+        self.assertEqual(product.stock, canonical.stock)
+        self.assertEqual(product.price, canonical.price)
+        self.assertEqual(product.original_price, canonical.original_price)
+
+    def test_cleanup_archives_obvious_clothing_without_deleting_it(self):
+        clothing = Product.objects.create(
+            name="Festival Sherwani for Dogs",
+            brand="Clothing Brand",
+            category="dog_food",
+            product_type="supply",
+            pet_type="dog",
+            price=Decimal("799.00"),
+            stock=4,
+        )
+
+        call_command(
+            "audit_food_catalog", "--apply", "--catalog", "missing-test-catalog.csv",
+            stdout=StringIO(),
+        )
+        clothing.refresh_from_db()
+
+        self.assertTrue(clothing.is_archived)
+        self.assertFalse(clothing.is_available)
+        self.assertEqual(clothing.stock, 4)
+        self.assertTrue(Product.objects.filter(pk=clothing.pk).exists())
+
+    def test_cleanup_repairs_parent_image_from_an_exact_variant(self):
+        product = Product.objects.create(
+            name="Image Food",
+            brand="Trusted Brand",
+            category="cat_food",
+            product_type="food",
+            pet_type="cat",
+            price=Decimal("200.00"),
+            stock=2,
+        )
+        ProductVariant.objects.create(
+            product=product,
+            size="400 g",
+            price=Decimal("200.00"),
+            original_price=Decimal("220.00"),
+            stock=2,
+            sku="AUDIT-IMAGE",
+            external_image_url="https://images.example.com/food.jpg",
+        )
+
+        call_command(
+            "audit_food_catalog", "--apply", "--catalog", "missing-test-catalog.csv",
+            stdout=StringIO(),
+        )
+        product.refresh_from_db()
+
+        self.assertEqual(
+            product.external_image_url,
+            "https://images.example.com/food.jpg",
+        )
+
+    def test_cleanup_clears_false_discount_mrp(self):
+        product = Product.objects.create(
+            name="No False Discount Food",
+            category="cat_food",
+            product_type="food",
+            price=Decimal("300.00"),
+            original_price=Decimal("299.00"),
+            stock=3,
+        )
+
+        call_command(
+            "audit_food_catalog", "--apply", "--catalog", "missing-test-catalog.csv",
+            stdout=StringIO(),
+        )
+        product.refresh_from_db()
+
+        self.assertIsNone(product.original_price)
+
+
 class ConversionTrackingTests(TestCase):
     def setUp(self):
         self.product = Product.objects.create(
