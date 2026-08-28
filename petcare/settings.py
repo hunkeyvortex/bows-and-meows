@@ -225,14 +225,21 @@ WSGI_APPLICATION = 'petcare.wsgi.application'
 DATABASE_URL = (
     env.get("DATABASE_URL") or ""
 ).strip()
+DB_CONN_MAX_AGE = max(
+    0,
+    int((env.get("DB_CONN_MAX_AGE") or "0").strip()),
+)
 
 if DATABASE_URL:
 
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
+            # Supabase's session pool has a deliberately small client limit.
+            # Closing the connection after each request prevents local and
+            # production workers from pinning every available pool slot.
+            conn_max_age=DB_CONN_MAX_AGE,
+            conn_health_checks=DB_CONN_MAX_AGE > 0,
         )
     }
 
@@ -285,13 +292,23 @@ STATIC_URL = 'static/'
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Local development must serve newly added source assets immediately, even
+# when DEBUG is temporarily disabled. Render keeps the production manifest
+# path below, so deployed files remain hashed and compressed.
+WHITENOISE_AUTOREFRESH = not IS_RENDER
+WHITENOISE_USE_FINDERS = not IS_RENDER
+
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
 
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+            if IS_RENDER
+            else "django.contrib.staticfiles.storage.StaticFilesStorage"
+        ),
     },
 }
 if "test" in sys.argv:

@@ -1,4 +1,7 @@
 {% extends "store/crm_base.html" %}
+{% load static %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/crm-bundles-page.css' %}?v=coral-20260829-3">{% endblock %}
 {% block title %}Bundles | CRM{% endblock %}
 {% block content %}
 <section class="bm-crm-feature bm-bundle-crm">
@@ -23,9 +26,6 @@
   <p>Variants must belong to their selected product. Inventory is validated before purchase.</p>
   <div class="bm-table-wrap"><table class="bm-data-table"><tr><th>Name</th><th>Items</th><th>Price</th><th>Status</th><th></th></tr>{% for bundle in bundles %}<tr><td>{{ bundle.name }}</td><td>{{ bundle.items.all|length }}</td><td>{{ bundle.bundle_price|default:"Calculated" }}</td><td>{{ bundle.is_active|yesno:"Active,Disabled" }}</td><td><a href="{% url 'crm_bundle_edit' bundle.id %}">Edit</a></td></tr>{% endfor %}</table></div>
 </section>
-<style>
-.bm-bundle-help{margin:-8px 0 4px;color:#6f7972;font-size:13px}.bm-bundle-form-row{display:grid;grid-template-columns:minmax(220px,1.6fr) minmax(220px,1.6fr) minmax(170px,1fr) 100px;gap:12px;align-items:end;padding:16px;border:1px solid #dfe5dc;border-radius:16px;background:#fafbf8}.bm-bundle-form-row>label{display:grid;gap:7px;min-width:0;font-size:12px;font-weight:800;color:#405248}.bm-bundle-form-row input,.bm-bundle-form-row select{width:100%;min-width:0;min-height:44px;padding:9px 10px;border:1px solid #d4ddd2;border-radius:10px;background:#fff}.bm-bundle-form-row .bm-delete-item{display:flex;align-items:center;gap:7px;grid-column:1/-1}.bm-delete-item input{width:auto;min-height:auto}.bm-table-wrap{overflow-x:auto}@media(max-width:950px){.bm-bundle-form-row{grid-template-columns:1fr 1fr}}@media(max-width:560px){.bm-bundle-form-row{grid-template-columns:1fr}}
-</style>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const productUrl = "{% url 'crm_bundle_product_search' %}";

@@ -6,25 +6,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Boww & Meow offers trusted food, wellness, pharmacy and everyday essentials for happier pets.">
-    <meta name="theme-color" content="#184D3A">
+    <meta name="theme-color" content="#FF6B5C">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta property="og:site_name" content="Boww & Meow">
     <meta property="og:type" content="website">
     <meta property="og:title" content="{% block og_title %}Boww & Meow Pet Care{% endblock %}">
     <meta property="og:description" content="Trusted food, wellness and everyday pet-care essentials.">
     <title>{% block title %}Boww & Meow{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'store/style.css' %}">
-    <link rel="stylesheet" href="{% static 'store/commerce-features.css' %}">
-    <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}">
-    <link rel="stylesheet" href="{% static 'store/brand-system.css' %}">
+    <link rel="stylesheet" href="{% static 'store/style.css' %}?v=coral-20260829-5">
+    <link rel="stylesheet" href="{% static 'store/commerce-features.css' %}?v=coral-20260829-5">
+    <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}?v=coral-20260829-5">
+    <link rel="stylesheet" href="{% static 'store/brand-system.css' %}?v=coral-20260829-5">
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
 
 <div class="v2-announcement">
     <div class="v2-shell v2-announcement-inner">
-        <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#package"></use></svg> Free delivery above ₹999</span>
-        <span class="v2-announcement-note">Genuine pet essentials • Secure checkout</span>
+        <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#package"></use></svg> Free shipping on orders above ₹499</span>
+        <span class="v2-announcement-note">100% genuine products • Secure payments</span>
     </div>
 </div>
 
@@ -49,6 +50,10 @@
         </form>
 
         <div class="v2-header-actions">
+            <a href="{% url 'contact_page' %}" class="v2-action-link v2-help-link">
+                <span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#chat"></use></svg></span>
+                <small>Help</small>
+            </a>
             {% if request.user.is_authenticated %}
                 <a href="{% url 'wishlist' %}" class="v2-action-link">
                     <span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#heart"></use></svg></span>
@@ -195,23 +200,34 @@
         <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg>
         <span>Home</span>
     </a>
-    <a href="{% url 'dog_products' %}" class="{% if request.resolver_match.url_name == 'dog_products' %}is-active{% endif %}">
-        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#dog"></use></svg>
-        <span>Dogs</span>
-    </a>
-    <a href="{% url 'cat_products' %}" class="{% if request.resolver_match.url_name == 'cat_products' %}is-active{% endif %}">
-        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cat"></use></svg>
-        <span>Cats</span>
-    </a>
-    <a href="{% url 'medicine_products' %}" class="{% if request.resolver_match.url_name == 'medicine_products' %}is-active{% endif %}">
-        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#medical"></use></svg>
-        <span>Pharmacy</span>
+    <a href="{% url 'home' %}#best-sellers" class="{% if request.resolver_match.url_name == 'dog_products' or request.resolver_match.url_name == 'cat_products' or request.resolver_match.url_name == 'medicine_products' or request.resolver_match.url_name == 'wellness_products' or request.resolver_match.url_name == 'grooming_products' or request.resolver_match.url_name == 'bird_products' or request.resolver_match.url_name == 'small_pet_products' or request.resolver_match.url_name == 'farm_animal_products' or request.resolver_match.url_name == 'fish_reptile_products' %}is-active{% endif %}">
+        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#paw"></use></svg>
+        <span>Categories</span>
     </a>
     <a href="{% url 'cart' %}" class="{% if request.resolver_match.url_name == 'cart' %}is-active{% endif %}">
         <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cart"></use></svg>
         <span>Cart</span>
         {% if cart_item_count %}<b class="bm-cart-badge">{{ cart_item_count }}</b>{% endif %}
     </a>
+    {% if request.user.is_authenticated %}
+    <a href="{% url 'my_orders' %}" class="{% if request.resolver_match.url_name == 'my_orders' %}is-active{% endif %}">
+        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#package"></use></svg>
+        <span>Orders</span>
+    </a>
+    <a href="{% url 'account' %}" class="{% if request.resolver_match.url_name == 'account' %}is-active{% endif %}">
+        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#user"></use></svg>
+        <span>Profile</span>
+    </a>
+    {% else %}
+    <a href="{% url 'offers' %}" class="{% if request.resolver_match.url_name == 'offers' %}is-active{% endif %}">
+        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#heart"></use></svg>
+        <span>Offers</span>
+    </a>
+    <a href="{% url 'login' %}" class="{% if request.resolver_match.url_name == 'login' %}is-active{% endif %}">
+        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#user"></use></svg>
+        <span>Account</span>
+    </a>
+    {% endif %}
 </nav>
 
 {% if whatsapp_number %}

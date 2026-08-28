@@ -1,0 +1,112 @@
+/* Extracted from store/templates/store/crm_inventory_bulk_import.html — block 1 */
+.bulk-preview-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 15px;
+    margin: 25px 0;
+}
+
+@media (max-width: 900px) {
+    .bulk-preview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.bulk-preview-card {
+    padding: 20px;
+
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+
+    background: #fff;
+}
+
+.bulk-preview-card span {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #777;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.bulk-preview-card strong {
+    font-size: 28px;
+}
+
+
+.bulk-product-list {
+    display: grid;
+    gap: 10px;
+
+    margin-top: 15px;
+}
+
+.bulk-product-preview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 14px 16px;
+
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+
+    background: #fff;
+}
+
+.bulk-product-preview strong,
+.bulk-product-preview small {
+    display: block;
+}
+
+.bulk-product-preview small {
+    margin-top: 4px;
+    color: #777;
+}
+
+
+.bulk-import-errors {
+    margin-top: 25px;
+    padding: 20px;
+
+    border-radius: 14px;
+
+    background: #fff2f2;
+}
+
+.bulk-import-errors p {
+    margin: 7px 0;
+}
+
+
+.bulk-import-success {
+    padding: 24px;
+
+    border-radius: 16px;
+
+    background: #eff9ef;
+}
+
+
+.bulk-preview-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    margin-top: 30px;
+}
+
+.bulk-preview-actions form {
+    margin: 0;
+}
+
+
+@media (max-width: 800px) {
+
+    .bulk-preview-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+}

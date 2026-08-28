@@ -9,9 +9,11 @@
 
     <title>{% block title %}Boww & Meow CRM{% endblock %}</title>
 
-    <link rel="stylesheet" href="{% static 'store/style.css' %}">
-    <link rel="stylesheet" href="{% static 'store/commerce-features.css' %}">
-    <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}">
+    <link rel="stylesheet" href="{% static 'store/style.css' %}?v=coral-20260829-3">
+    <link rel="stylesheet" href="{% static 'store/commerce-features.css' %}?v=coral-20260829-3">
+    <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}?v=coral-20260829-3">
+    <link rel="stylesheet" href="{% static 'store/crm.css' %}?v=coral-20260829-3">
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body class="crm-body">
@@ -21,7 +23,7 @@
     <aside class="crm-sidebar">
 
         <div class="crm-logo">
-            <span class="crm-logo-mark">🐾</span>
+            <span class="crm-logo-mark"><img src="{% static 'store/images/boww-meow-coral-logo.png' %}" alt=""></span>
             <span class="crm-logo-copy">
                 <strong>Boww & Meow</strong>
                 <small>Store Management</small>
@@ -103,8 +105,6 @@
             {% block content %}
             {% endblock %}
         </div>
-
-        <link rel="stylesheet" href="{% static 'store/crm.css' %}">
 
     </main>
 

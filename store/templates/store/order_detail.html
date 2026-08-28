@@ -1,3 +1,36 @@
-{% extends "store/base.html" %}{% block title %}Order #{{ order.id }} | Boww & Meow{% endblock %}{% block content %}<section class="bm-profile-page"><div class="bm-profile-shell">{% include "store/includes/account_nav.html" %}<a class="bm-back-link" href="{% url 'my_orders' %}">← Back to all orders</a>
-<header class="bm-order-detail-head"><div><span>ORDER BM-{{ order.id|stringformat:"04d" }}</span><h1>{{ order.get_status_display }}</h1><p>Placed {{ order.created_at|date:"d F Y, g:i A" }}</p></div><div class="bm-detail-head-actions"><span class="bm-status bm-status-{{ order.status }}">{{ order.get_status_display }}</span><form method="post" action="{% url 'reorder' order.id %}">{% csrf_token %}<button>↻ Reorder these items</button></form></div></header><div class="bm-detail-progress bm-progress-{{ order.status }}"><div><i>✓</i><strong>Placed</strong></div><div><i>2</i><strong>Confirmed</strong></div><div><i>3</i><strong>Shipped</strong></div><div><i>4</i><strong>Delivered</strong></div></div>
-<div class="bm-order-detail-grid"><main class="bm-detail-panel"><div class="bm-panel-title"><span>🐾</span><div><h2>Products</h2><p>{{ order.items.count }} item{{ order.items.count|pluralize }} in this order</p></div></div>{% for item in order.items.all %}<div class="bm-detail-item"><a href="{% url 'product_detail' item.product.id %}" class="bm-detail-image">{% if item.product.image %}<img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">{% else %}🐾{% endif %}</a><div><h3>{{ item.product.name }}</h3>{% if item.variant_size %}<span>{{ item.variant_size }}</span>{% endif %}<p>Quantity: {{ item.quantity }}</p></div><strong>₹{{ item.price|floatformat:2 }}</strong></div>{% endfor %}</main><aside class="bm-detail-side"><section><h3>Order summary</h3><div><span>Payment method</span><strong>{{ order.get_payment_method_display }}</strong></div><div><span>Payment status</span><strong>{{ order.get_payment_status_display }}</strong></div><div class="bm-grand-total"><span>Total</span><strong>₹{{ order.total_amount|floatformat:2 }}</strong></div></section><section><h3>Delivery address</h3><strong>{{ order.customer_name }}</strong><p>{{ order.address|linebreaksbr }}</p><small>{{ order.phone }}</small></section><div class="bm-help-card">💬 <div><strong>Need help?</strong><p>Keep order BM-{{ order.id|stringformat:"04d" }} ready when contacting us.</p></div></div></aside></div></div></section><style>.bm-detail-head-actions{display:flex;align-items:center;gap:9px}.bm-detail-head-actions form button{min-height:42px;padding:0 15px;border:1px solid #cddac6;border-radius:11px;background:#fff;color:#285b40;font-weight:900;cursor:pointer}@media(max-width:700px){.bm-detail-head-actions{width:100%;justify-content:space-between}}</style>{% endblock %}
+{% extends "store/base.html" %}
+{% load static %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/order-detail-page.css' %}?v=coral-20260829-3">{% endblock %}
+{% block title %}Order #{{ order.id }} | Boww & Meow{% endblock %}
+
+{% block content %}
+<section class="bm-profile-page">
+    <div class="bm-profile-shell">
+        {% include "store/includes/account_nav.html" %}
+        <a class="bm-back-link" href="{% url 'my_orders' %}">← Back to all orders</a>
+        <header class="bm-order-detail-head">
+            <div><span>ORDER BM-{{ order.id|stringformat:"04d" }}</span><h1>{{ order.get_status_display }}</h1><p>Placed {{ order.created_at|date:"d F Y, g:i A" }}</p></div>
+            <div class="bm-detail-head-actions"><span class="bm-status bm-status-{{ order.status }}">{{ order.get_status_display }}</span><form method="post" action="{% url 'reorder' order.id %}">{% csrf_token %}<button>↻ Reorder these items</button></form></div>
+        </header>
+        <div class="bm-detail-progress bm-progress-{{ order.status }}"><div><i>✓</i><strong>Placed</strong></div><div><i>2</i><strong>Confirmed</strong></div><div><i>3</i><strong>Shipped</strong></div><div><i>4</i><strong>Delivered</strong></div></div>
+        <div class="bm-order-detail-grid">
+            <main class="bm-detail-panel">
+                <div class="bm-panel-title"><span>BM</span><div><h2>Products</h2><p>{{ order.items.count }} item{{ order.items.count|pluralize }} in this order</p></div></div>
+                {% for item in order.items.all %}
+                    <div class="bm-detail-item">
+                        <a href="{% url 'product_detail' item.product.id %}" class="bm-detail-image">{% if item.product.image %}<img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">{% else %}BM{% endif %}</a>
+                        <div><h3>{{ item.product.name }}</h3>{% if item.variant_size %}<span>{{ item.variant_size }}</span>{% endif %}<p>Quantity: {{ item.quantity }}</p></div>
+                        <strong>₹{{ item.price|floatformat:2 }}</strong>
+                    </div>
+                {% endfor %}
+            </main>
+            <aside class="bm-detail-side">
+                <section><h3>Order summary</h3><div><span>Payment method</span><strong>{{ order.get_payment_method_display }}</strong></div><div><span>Payment status</span><strong>{{ order.get_payment_status_display }}</strong></div><div class="bm-grand-total"><span>Total</span><strong>₹{{ order.total_amount|floatformat:2 }}</strong></div></section>
+                <section><h3>Delivery address</h3><strong>{{ order.customer_name }}</strong><p>{{ order.address|linebreaksbr }}</p><small>{{ order.phone }}</small></section>
+                <div class="bm-help-card"><span aria-hidden="true">?</span><div><strong>Need help?</strong><p>Keep order BM-{{ order.id|stringformat:"04d" }} ready when contacting us.</p></div></div>
+            </aside>
+        </div>
+    </div>
+</section>
+{% endblock %}

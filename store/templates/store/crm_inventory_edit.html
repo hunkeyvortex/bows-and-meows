@@ -1,5 +1,8 @@
 {% extends "store/crm_base.html" %}
+{% load static %}
 
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/crm-inventory-edit-page.css' %}?v=coral-20260829-3">{% endblock %}
 {% block title %}
 Edit Product | Boww & Meow CRM
 {% endblock %}
@@ -247,17 +250,7 @@ Edit Product | Boww & Meow CRM
                         <div class="variant-image-field">
 
                             {% if variant.image %}
-                                <img
-                                    src="{{ variant.image.url }}"
-                                    alt="{{ variant.size }}"
-                                    style="
-                                        width:60px;
-                                        height:60px;
-                                        object-fit:contain;
-                                        display:block;
-                                        margin-bottom:6px;
-                                    "
-                                >
+                                <img class="crm-variant-thumb" src="{{ variant.image.url }}" alt="{{ variant.size }}">
                             {% endif %}
 
                             <input
@@ -504,12 +497,6 @@ Edit Product | Boww & Meow CRM
     </div>
 
 </section>
-
-<style>
-.crm-product-upload-hint{display:inline-flex;gap:6px;align-items:center;margin-top:12px;padding:9px 12px;border:1px solid #d9e4d1;border-radius:10px;background:#f5f9f1;color:#53635a;font-size:12px}.crm-product-upload-hint code{color:#173f2e;font-weight:900}
-</style>
-
-
 <script>
 const container = document.getElementById("variant-container");
 const button = document.getElementById("add-variant");

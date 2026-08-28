@@ -1,0 +1,2 @@
+/* Extracted from store/templates/store/my_orders.html — block 1 */
+.bm-order-actions{display:flex;align-items:center;gap:7px}.bm-order-actions button{min-height:44px;padding:0 15px;border:1px solid var(--bm-border);border-radius:12px;background:#fff;color:var(--bm-coral-dark);font-size:12px;font-weight:900;cursor:pointer}.bm-order-actions form{display:flex}@media(max-width:700px){.bm-order-actions{grid-column:1/-1}.bm-order-actions>*{flex:1}.bm-order-actions button,.bm-order-actions a{width:100%}}

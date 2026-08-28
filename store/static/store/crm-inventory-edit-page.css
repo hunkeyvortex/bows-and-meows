@@ -1,0 +1,2 @@
+/* Extracted from store/templates/store/crm_inventory_edit.html — block 1 */
+.crm-product-upload-hint{display:inline-flex;gap:6px;align-items:center;margin-top:12px;padding:9px 12px;border:1px solid var(--crm-line);border-radius:10px;background:var(--crm-cream);color:var(--crm-muted);font-size:12px}.crm-product-upload-hint code{color:var(--crm-green-2);font-weight:900}.crm-variant-thumb{display:block;width:60px;height:60px;margin-bottom:6px;object-fit:contain}

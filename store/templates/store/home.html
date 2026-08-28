@@ -1,6 +1,8 @@
 {% extends "store/base.html" %}
 {% load static %}
 
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/home-page.css' %}?v=coral-20260829-3">{% endblock %}
 {% block title %}
 Boww & Meow | Pet Food, Care & Essentials
 {% endblock %}
@@ -8,507 +10,6 @@ Boww & Meow | Pet Food, Care & Essentials
 {% block content %}
 
 <div class="store-v2">
-
-
-<style>
-/* =========================================================
-   CLEAN HOMEPAGE HERO V3
-   Unique bm3-* classes to avoid old CSS collisions.
-   ========================================================= */
-
-.bm3-hero {
-    position: relative;
-    width: 100%;
-    height: 450px;
-    overflow: hidden;
-    background: #f7f7f1;
-    border-bottom: 1px solid #e8e9e3;
-    transition: height .35s ease;
-}
-
-.bm3-hero.is-offer-active { height: min(33.333vw, 600px); }
-
-.bm3-slide {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateX(18px);
-    transition: opacity .45s ease, transform .45s ease, visibility .45s;
-}
-
-.bm3-slide.is-active {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(0);
-}
-
-.bm3-offer-slide {
-    background: #f5f3e8;
-}
-
-.bm3-banner-link,
-.bm3-banner-link img {
-    display: block;
-    width: 100%;
-    height: 100%;
-}
-
-.bm3-banner-link img {
-    object-fit: contain;
-    object-position: center;
-}
-
-.bm3-brand-offer {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: max-content;
-    margin-top: 14px;
-    padding: 8px 13px;
-    border: 1px solid #cdddbf;
-    border-radius: 12px;
-    background: #eef5e5;
-    color: #184b35;
-}
-
-.bm3-brand-offer strong { font-size: 16px; }
-.bm3-brand-offer small { font-size: 10px; font-weight: 750; }
-
-.bm3-brand {
-    display: grid;
-    grid-template-columns: 43% 57%;
-    background:
-        linear-gradient(90deg, #faf9f1 0 43%, #fff 43% 100%);
-}
-
-.bm3-brand-copy {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 30px 34px 28px max(4vw, 52px);
-}
-
-.bm3-eyebrow {
-    color: #1f5b42;
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: .14em;
-}
-
-.bm3-brand h1 {
-    margin: 8px 0 10px;
-    max-width: 560px;
-    color: #17221c;
-    font-size: clamp(40px, 3.9vw, 58px);
-    line-height: .97;
-    letter-spacing: -.045em;
-}
-
-.bm3-brand h1 span {
-    display: block;
-    color: #205c43;
-}
-
-.bm3-brand-copy > p {
-    max-width: 500px;
-    margin: 0;
-    color: #667169;
-    font-size: 13px;
-    line-height: 1.55;
-}
-
-.bm3-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 16px;
-}
-
-.bm3-actions a,
-.bm3-campaign-copy a {
-    display: inline-flex;
-    min-height: 42px;
-    align-items: center;
-    justify-content: center;
-    padding: 0 17px;
-    border-radius: 11px;
-    font-size: 11px;
-    font-weight: 800;
-    text-decoration: none;
-}
-
-.bm3-primary,
-.bm3-campaign-copy a {
-    background: #205b43;
-    color: #fff;
-}
-
-.bm3-secondary {
-    border: 1px solid #d8ddd8;
-    background: #fff;
-    color: #205b43;
-}
-
-.bm3-proof {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-top: 18px;
-    color: #56635b;
-    font-size: 9px;
-    font-weight: 700;
-}
-
-.bm3-brand-photo {
-    position: relative;
-    overflow: hidden;
-}
-
-.bm3-brand-photo > img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-    object-position: center 48%;
-}
-
-.bm3-photo-badge {
-    position: absolute;
-    top: 22px;
-    right: 22px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 10px 13px;
-    border-radius: 14px;
-    background: rgba(255,255,255,.94);
-    box-shadow: 0 12px 28px rgba(0,0,0,.08);
-}
-
-.bm3-photo-badge > span {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    border-radius: 10px;
-    background: #d9f27d;
-}
-
-.bm3-photo-badge strong,
-.bm3-photo-badge small {
-    display: block;
-}
-
-.bm3-photo-badge strong {
-    font-size: 10px;
-}
-
-.bm3-photo-badge small {
-    margin-top: 2px;
-    color: #747b76;
-    font-size: 8px;
-}
-
-/* Campaign slides */
-.bm3-campaign {
-    display: grid;
-    grid-template-columns: 40% 60%;
-    align-items: center;
-    padding: 28px 52px;
-}
-
-.bm3-dog {
-    background:
-        radial-gradient(circle at 77% 45%, #e6f4b6 0, #f4f9de 29%, transparent 58%),
-        linear-gradient(120deg, #f8f8ef, #fff);
-}
-
-.bm3-cat {
-    background:
-        radial-gradient(circle at 77% 45%, #eadcf6 0, #f7f0fb 29%, transparent 58%),
-        linear-gradient(120deg, #fbf8fd, #fff);
-}
-
-.bm3-loved {
-    background:
-        radial-gradient(circle at 77% 45%, #ffe7ad 0, #fff5dc 29%, transparent 58%),
-        linear-gradient(120deg, #fffaf1, #fff);
-}
-
-.bm3-campaign-copy {
-    position: relative;
-    z-index: 3;
-}
-
-.bm3-campaign-copy .bm3-eyebrow {
-    display: block;
-    margin-bottom: 8px;
-}
-
-.bm3-campaign-copy h2 {
-    margin: 0;
-    color: #17231c;
-    font-size: 39px;
-    line-height: .98;
-    letter-spacing: -.035em;
-}
-
-.bm3-campaign-copy p {
-    max-width: 290px;
-    margin: 12px 0 17px;
-    color: #68736b;
-    font-size: 12px;
-    line-height: 1.5;
-}
-
-.bm3-packs {
-    display: flex;
-    height: 290px;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-}
-
-.bm3-packs img {
-    width: 30%;
-    height: 218px;
-    object-fit: contain;
-    filter: drop-shadow(0 16px 14px rgba(0,0,0,.14));
-}
-
-.bm3-packs img:nth-child(1) {
-    margin-right: -30px;
-    transform: translateY(14px) rotate(-5deg) scale(.88);
-}
-
-.bm3-packs img:nth-child(2) {
-    position: relative;
-    z-index: 3;
-    width: 36%;
-    height: 265px;
-    transform: translateY(-2px);
-}
-
-.bm3-packs img:nth-child(3) {
-    margin-left: -30px;
-    transform: translateY(14px) rotate(5deg) scale(.9);
-}
-
-.bm3-pill {
-    position: absolute;
-    right: 28px;
-    bottom: 24px;
-    padding: 7px 12px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.92);
-    color: #20563f;
-    font-size: 9px;
-    font-weight: 900;
-    box-shadow: 0 8px 20px rgba(0,0,0,.06);
-}
-
-/* Slider controls */
-.bm3-arrow {
-    position: absolute;
-    top: 50%;
-    z-index: 20;
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    border: 1px solid #e2e6e0;
-    border-radius: 50%;
-    background: rgba(255,255,255,.95);
-    color: #205a42;
-    box-shadow: 0 6px 16px rgba(0,0,0,.09);
-    font-size: 23px;
-    cursor: pointer;
-    transform: translateY(-50%);
-}
-
-.bm3-prev { left: 14px; }
-.bm3-next { right: 14px; }
-
-.bm3-dots {
-    position: absolute;
-    z-index: 20;
-    left: 50%;
-    bottom: 11px;
-    display: flex;
-    gap: 6px;
-    transform: translateX(-50%);
-}
-
-.bm3-dot {
-    width: 7px;
-    height: 7px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(32,91,67,.25);
-    cursor: pointer;
-}
-
-.bm3-dot.is-active {
-    width: 22px;
-    border-radius: 999px;
-    background: #205b43;
-}
-
-/* Lock Best Sellers to 6 cards on desktop */
-@media (min-width: 1100px) {
-    .home-best-section .home-product-scroll {
-        display: grid !important;
-        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-        gap: 14px !important;
-    }
-}
-
-/* Mobile */
-    @media (max-width: 760px) {
-    .bm3-hero {
-        height: 350px;
-    }
-
-    .bm3-hero.is-offer-active {
-        height: clamp(210px, 58vw, 230px);
-        min-height: 210px;
-    }
-
-    .bm3-offer-slide {
-        background: #faf8ef;
-    }
-
-    .bm3-offer-slide .bm3-banner-link {
-        display: grid;
-        place-items: center;
-        padding-block: 8px 20px;
-    }
-
-    .bm3-offer-slide .bm3-banner-link img {
-        object-fit: contain;
-        object-position: center;
-    }
-
-    .bm3-brand {
-        grid-template-columns: 1fr;
-        grid-template-rows: 178px 172px;
-    }
-
-    .bm3-brand-copy {
-        padding: 18px 18px 14px;
-    }
-
-    .bm3-brand h1 {
-        margin: 5px 0 8px;
-        font-size: clamp(26px, 8vw, 30px);
-    }
-
-    .bm3-brand-copy > p {
-        font-size: 11px;
-    }
-
-    .bm3-brand-offer { display: none; }
-
-    .bm3-proof {
-        display: none;
-    }
-
-    .bm3-actions {
-        margin-top: 11px;
-    }
-
-    .bm3-actions a {
-        min-height: 35px;
-        padding: 0 11px;
-        font-size: 9px;
-    }
-
-    .bm3-brand-photo > img {
-        object-fit: contain;
-        object-position: center;
-        background: #f7f3e9;
-    }
-
-    .bm3-photo-badge {
-        display: none;
-    }
-
-    .bm3-campaign {
-        grid-template-columns: 46% 54%;
-        padding: 14px;
-    }
-
-    .bm3-campaign-copy h2 {
-        font-size: 25px;
-    }
-
-    .bm3-campaign-copy p {
-        margin: 8px 0 12px;
-        font-size: 9px;
-    }
-
-    .bm3-campaign-copy a {
-        min-height: 34px;
-        padding: 0 11px;
-        font-size: 9px;
-    }
-
-    .bm3-packs {
-        height: 190px;
-    }
-
-    .bm3-packs img {
-        height: 145px;
-    }
-
-    .bm3-packs img:nth-child(2) {
-        height: 185px;
-    }
-
-    .bm3-pill {
-        display: none;
-    }
-
-    .bm3-arrow { display: none; }
-}
-
-@media (max-width: 430px) {
-    .bm3-hero {
-        height: 350px;
-    }
-
-    .bm3-brand {
-        grid-template-rows: 174px 176px;
-    }
-
-    .bm3-brand h1 {
-        font-size: 26px;
-    }
-
-    .bm3-hero.is-offer-active {
-        height: 220px;
-        min-height: 220px;
-    }
-
-    .bm3-campaign {
-        padding: 14px 12px;
-    }
-
-    .bm3-campaign-copy h2 {
-        font-size: 21px;
-    }
-
-    .bm3-packs img {
-        height: 115px;
-    }
-
-    .bm3-packs img:nth-child(2) {
-        height: 150px;
-    }
-}
-</style>
-
 <div class="bm3-hero" id="bm3-hero">
 
     <!-- 1. Main brand slide -->
@@ -539,8 +40,12 @@ Boww & Meow | Pet Food, Care & Essentials
 
         <div class="bm3-brand-photo">
             <img
-                src="{% static 'store/images/hero-dog-cat.png' %}"
+                src="{% static 'store/images/hero-dog-cat.webp' %}"
                 alt="Happy dog and cat"
+                width="1536"
+                height="1024"
+                decoding="async"
+                fetchpriority="high"
             >
             <div class="bm3-photo-badge">
                 <span>★</span>
@@ -825,12 +330,7 @@ Boww & Meow | Pet Food, Care & Essentials
             </div>
         </div>
     </section>
-
-    <style>
-    .bm-care-destinations{padding:58px 0;background:#f7f6ef}.bm-care-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}.bm-care-card{position:relative;display:flex;flex-direction:column;min-height:260px;padding:24px;overflow:hidden;border:1px solid #e1e5dc;border-radius:24px;background:#fff;color:inherit;text-decoration:none;box-shadow:0 12px 30px rgba(29,60,43,.07);transition:.22s ease}.bm-care-card:hover{transform:translateY(-5px);box-shadow:0 20px 40px rgba(29,65,45,.13)}.bm-care-card>span{display:grid;place-items:center;width:58px;height:58px;margin-bottom:28px;border-radius:18px;background:var(--care-soft);font-size:27px}.bm-care-card small{color:#70804d;font-size:8px;font-weight:900;letter-spacing:.13em}.bm-care-card h3{margin:6px 0 9px;color:#1c2d23;font-size:20px}.bm-care-card p{margin:0 0 20px;color:#6e7972;font-size:12px;line-height:1.55}.bm-care-card strong{margin-top:auto;color:#245c42;font-size:11px}.bm-care-pharmacy{--care-soft:#f8e8e5}.bm-care-wellness{--care-soft:#eaf3dc}.bm-care-grooming{--care-soft:#e4f1ef}.bm-care-birds{--care-soft:#fff0d8}@media(max-width:980px){.bm-care-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.bm-care-destinations{padding:42px 0}.bm-care-grid{grid-template-columns:1fr}.bm-care-card{min-height:220px}}
-    </style>
-
-    <section class="v2-trust-strip">
+<section class="v2-trust-strip">
         <div class="v2-shell v2-trust-grid">
 
             <div>
@@ -850,7 +350,7 @@ Boww & Meow | Pet Food, Care & Essentials
             </div>
 
             <div>
-                <span class="v2-trust-icon">☁</span>
+                <span class="v2-trust-icon"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#heart"></use></svg></span>
                 <div>
                     <strong>Easy Shopping</strong>
                     <small>Saved products & addresses</small>
@@ -889,7 +389,7 @@ Boww & Meow | Pet Food, Care & Essentials
                         <p>Explore essentials for puppies, adults and senior dogs.</p>
                         <strong>Shop Dogs →</strong>
                     </div>
-                    <div class="v2-pet-card-emoji">🐕</div>
+                    <div class="v2-pet-card-emoji"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#dog"></use></svg></div>
                 </a>
 
                 <a href="{% url 'cat_products' %}" class="v2-pet-card v2-cat-card">
@@ -899,7 +399,7 @@ Boww & Meow | Pet Food, Care & Essentials
                         <p>Everyday essentials for curious cats and growing kittens.</p>
                         <strong>Shop Cats →</strong>
                     </div>
-                    <div class="v2-pet-card-emoji">🐈</div>
+                    <div class="v2-pet-card-emoji"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cat"></use></svg></div>
                 </a>
 
             </div>
@@ -921,44 +421,44 @@ Boww & Meow | Pet Food, Care & Essentials
             <div class="v2-quick-grid">
 
                 <a href="{% url 'dog_products' %}" class="v2-quick-card">
-                    <span class="v2-quick-emoji">🥣</span>
+                    <span class="v2-quick-emoji"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#food"></use></svg></span>
                     <strong>Dog Food</strong>
                     <small>Daily nutrition</small>
                 </a>
 
                 <a href="{% url 'cat_products' %}" class="v2-quick-card">
-                    <span class="v2-quick-emoji">🐟</span>
+                    <span class="v2-quick-emoji"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cat"></use></svg></span>
                     <strong>Cat Food</strong>
                     <small>Meals they love</small>
                 </a>
 
                 <a href="{% url 'medicine_products' %}" class="v2-quick-card">
-                    <span class="v2-quick-emoji">💊</span>
+                    <span class="v2-quick-emoji"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#medical"></use></svg></span>
                     <strong>Pharmacy</strong>
                     <small>Health & wellness</small>
                 </a>
 
                 <a href="{% url 'search_products' %}?q=treat" class="v2-quick-card">
-                    <span class="v2-quick-emoji">🦴</span>
+                    <span class="v2-quick-emoji"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#bone"></use></svg></span>
                     <strong>Treats</strong>
                     <small>Reward good days</small>
                 </a>
 
                 <a href="{% url 'search_products' %}?q=toy" class="v2-quick-card">
-                    <span class="v2-quick-emoji">🎾</span>
+                    <span class="v2-quick-emoji"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#ball"></use></svg></span>
                     <strong>Toys</strong>
                     <small>Play & enrichment</small>
                 </a>
 
                 {% if request.user.is_authenticated %}
                 <a href="{% url 'wishlist' %}" class="v2-quick-card">
-                    <span class="v2-quick-emoji">♡</span>
+                    <span class="v2-quick-emoji"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#heart"></use></svg></span>
                     <strong>Saved Picks</strong>
                     <small>Your favourites</small>
                 </a>
                 {% else %}
                 <a href="{% url 'register' %}" class="v2-quick-card">
-                    <span class="v2-quick-emoji">🐾</span>
+                    <span class="v2-quick-emoji"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#paw"></use></svg></span>
                     <strong>Join Us</strong>
                     <small>Save favourites</small>
                 </a>
@@ -995,7 +495,7 @@ Boww & Meow | Pet Food, Care & Essentials
                             {% if product.display_image_url %}
                                 <img src="{{ product.display_image_url }}" alt="{{ product.name }}">
                             {% else %}
-                                <div class="v2-product-placeholder">🐾</div>
+                                <div class="v2-product-placeholder">BM</div>
                             {% endif %}
                         </a>
 
@@ -1042,7 +542,7 @@ Boww & Meow | Pet Food, Care & Essentials
                 {% empty %}
 
                 <div class="v2-empty-products">
-                    <span>🐾</span>
+                    <span>BM</span>
                     <h3>Your catalogue is ready for products.</h3>
                     <p>Add products from the CRM inventory and they will appear here automatically.</p>
                 </div>
@@ -1106,11 +606,6 @@ Boww & Meow | Pet Food, Care & Essentials
             </div>
         </div>
     </section>
-
-    <style>
-    #offers{scroll-margin-top:125px}.home-offers-empty{width:100%;padding:34px;border:1px solid #dfe5da;border-radius:22px;background:#fff}.home-offers-empty strong{color:#1d3426;font-size:21px}.home-offers-empty p{margin:7px 0 15px;color:#6c786f}.home-offers-empty a{color:#1f5a40;font-weight:850;text-decoration:none}
-    </style>
-
 </div>
 
 <script>

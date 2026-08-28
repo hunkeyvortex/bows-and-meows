@@ -2,7 +2,7 @@
 {% block preheader %}Your Boww & Meow order {{ order_number }} is confirmed.{% endblock %}
 {% block content %}
 <h1 style="margin:0 0 12px;font-size:30px">Order confirmed</h1>
-<p style="color:#56645c;line-height:1.7">Hi {{ order.customer_name }}, thank you for your order. We have received it and will keep you updated.</p>
+<p style="color:#6f6a67;line-height:1.7">Hi {{ order.customer_name }}, thank you for your order. We have received it and will keep you updated.</p>
 <div style="margin:22px 0;padding:18px;border-radius:12px;background:#fdebe6"><strong>{{ order_number }}</strong><br><span style="color:#6e7872">{{ order.created_at|date:"d M Y, g:i A" }}</span></div>
 <h2 style="font-size:18px">Order summary</h2>
 {% for item in items %}<div style="padding:12px 0;border-bottom:1px solid #e8ece7"><strong>{{ item.name }}</strong>{% if item.variant %}<span style="color:#6e7872"> · {{ item.variant }}</span>{% endif %}<br><small>Qty {{ item.quantity }} · ₹{{ item.unit_price|floatformat:2 }} each</small><strong style="float:right">₹{{ item.line_total|floatformat:2 }}</strong></div>{% endfor %}

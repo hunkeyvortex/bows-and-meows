@@ -16,7 +16,7 @@
     gap: 9px;
     min-height: 44px;
     padding: 0 4px;
-    color: #203229;
+    color: var(--bm-text);
     font-size: 14px;
     font-weight: 800;
     cursor: pointer;
@@ -25,7 +25,7 @@
 .bm-select-product > label input {
     width: 18px;
     height: 18px;
-    accent-color: #174b36;
+    accent-color: var(--bm-coral);
 }
 
 .bm-select-product .home-product-card {
@@ -45,8 +45,8 @@
     padding: 0 42px 0 14px;
     border: 1px solid #cbd7c9;
     border-radius: 12px;
-    background: #f8faf5;
-    color: #1d3026;
+    background: var(--bm-cream-alt);
+    color: var(--bm-text);
     font: inherit;
     font-weight: 750;
     cursor: pointer;
@@ -58,7 +58,7 @@
     padding: 0 24px;
     border: 0;
     border-radius: 14px;
-    background: #174b36;
+    background: var(--bm-coral);
     color: #fff;
     font: inherit;
     font-weight: 900;
