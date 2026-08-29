@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="{% static 'store/style.css' %}?v=coral-20260829-6">
     <link rel="stylesheet" href="{% static 'store/commerce-features.css' %}?v=coral-20260829-6">
     <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}?v=coral-20260829-6">
-    <link rel="stylesheet" href="{% static 'store/brand-system.css' %}?v=coral-20260829-6">
+    <link rel="stylesheet" href="{% static 'store/brand-system.css' %}?v=coral-20260830-7">
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -82,15 +82,15 @@
 
     <div class="v2-category-bar">
         <div class="v2-shell v2-category-nav">
-            <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">Home</a>
-            <a href="{% url 'dog_products' %}" class="{% if request.resolver_match.url_name == 'dog_products' %}is-active{% endif %}">Dogs</a>
-            <a href="{% url 'cat_products' %}" class="{% if request.resolver_match.url_name == 'cat_products' %}is-active{% endif %}">Cats</a>
-            <a href="{% url 'medicine_products' %}" class="{% if request.resolver_match.url_name == 'medicine_products' %}is-active{% endif %}">Pharmacy</a>
-            <a href="{% url 'wellness_products' %}" class="{% if request.resolver_match.url_name == 'wellness_products' %}is-active{% endif %}">Wellness</a>
-            <a href="{% url 'grooming_products' %}" class="{% if request.resolver_match.url_name == 'grooming_products' %}is-active{% endif %}">Grooming</a>
-            <a href="{% url 'bird_products' %}" class="{% if request.resolver_match.url_name == 'bird_products' %}is-active{% endif %}">Bird Care</a>
-            <a href="{% url 'home' %}#featured-products">Best Sellers</a>
-            <a href="{% url 'offers' %}" class="{% if request.resolver_match.url_name == 'offers' %}is-active{% endif %}">Offers</a>
+            <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}"><svg class="bm-category-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg><span>Home</span></a>
+            <a href="{% url 'dog_products' %}" class="{% if request.resolver_match.url_name == 'dog_products' %}is-active{% endif %}"><svg class="bm-category-icon outline"><use href="{% static 'store/icons.svg' %}#dog"></use></svg><span>Dogs</span></a>
+            <a href="{% url 'cat_products' %}" class="{% if request.resolver_match.url_name == 'cat_products' %}is-active{% endif %}"><svg class="bm-category-icon outline"><use href="{% static 'store/icons.svg' %}#cat"></use></svg><span>Cats</span></a>
+            <a href="{% url 'medicine_products' %}" class="{% if request.resolver_match.url_name == 'medicine_products' %}is-active{% endif %}"><svg class="bm-category-icon outline"><use href="{% static 'store/icons.svg' %}#medical"></use></svg><span>Pharmacy</span></a>
+            <a href="{% url 'wellness_products' %}" class="{% if request.resolver_match.url_name == 'wellness_products' %}is-active{% endif %}"><svg class="bm-category-icon outline"><use href="{% static 'store/icons.svg' %}#heart"></use></svg><span>Wellness</span></a>
+            <a href="{% url 'grooming_products' %}" class="{% if request.resolver_match.url_name == 'grooming_products' %}is-active{% endif %}"><svg class="bm-category-icon outline"><use href="{% static 'store/icons.svg' %}#bone"></use></svg><span>Grooming</span></a>
+            <a href="{% url 'bird_products' %}" class="{% if request.resolver_match.url_name == 'bird_products' %}is-active{% endif %}"><svg class="bm-category-icon outline"><use href="{% static 'store/icons.svg' %}#food"></use></svg><span>Bird Care</span></a>
+            <a href="{% url 'home' %}#featured-products"><svg class="bm-category-icon outline"><use href="{% static 'store/icons.svg' %}#check"></use></svg><span>Best Sellers</span></a>
+            <a href="{% url 'offers' %}" class="{% if request.resolver_match.url_name == 'offers' %}is-active{% endif %}"><svg class="bm-category-icon outline"><use href="{% static 'store/icons.svg' %}#heart"></use></svg><span>Offers</span></a>
 
             {% if request.user.is_authenticated %}
                 <a href="{% url 'my_pets' %}">My Pets</a>
@@ -200,10 +200,10 @@
         <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg>
         <span>Home</span>
     </a>
-    <a href="{% url 'home' %}#best-sellers" class="{% if request.resolver_match.url_name == 'dog_products' or request.resolver_match.url_name == 'cat_products' or request.resolver_match.url_name == 'medicine_products' or request.resolver_match.url_name == 'wellness_products' or request.resolver_match.url_name == 'grooming_products' or request.resolver_match.url_name == 'bird_products' or request.resolver_match.url_name == 'small_pet_products' or request.resolver_match.url_name == 'farm_animal_products' or request.resolver_match.url_name == 'fish_reptile_products' %}is-active{% endif %}">
+    <button type="button" class="bm-mobile-dock-button{% if request.resolver_match.url_name == 'dog_products' or request.resolver_match.url_name == 'cat_products' or request.resolver_match.url_name == 'medicine_products' or request.resolver_match.url_name == 'wellness_products' or request.resolver_match.url_name == 'grooming_products' or request.resolver_match.url_name == 'bird_products' or request.resolver_match.url_name == 'small_pet_products' or request.resolver_match.url_name == 'farm_animal_products' or request.resolver_match.url_name == 'fish_reptile_products' %} is-active{% endif %}" data-category-open aria-controls="bm-category-sheet" aria-expanded="false">
         <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#paw"></use></svg>
         <span>Categories</span>
-    </a>
+    </button>
     <a href="{% url 'cart' %}" class="{% if request.resolver_match.url_name == 'cart' %}is-active{% endif %}">
         <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cart"></use></svg>
         <span>Cart</span>
@@ -230,6 +230,24 @@
     {% endif %}
 </nav>
 
+<button type="button" class="bm-category-sheet-backdrop" data-category-close aria-label="Close categories" hidden></button>
+<section class="bm-category-sheet" id="bm-category-sheet" role="dialog" aria-modal="true" aria-labelledby="bm-category-sheet-title" hidden>
+    <header>
+        <div><span>SHOP BY PET &amp; NEED</span><h2 id="bm-category-sheet-title">Browse categories</h2></div>
+        <button type="button" data-category-close aria-label="Close categories">×</button>
+    </header>
+    <div class="bm-category-sheet-grid">
+        <a href="{% url 'dog_products' %}"><span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#dog"></use></svg></span><strong>Dogs</strong><small>Food &amp; essentials</small></a>
+        <a href="{% url 'cat_products' %}"><span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#cat"></use></svg></span><strong>Cats</strong><small>Food &amp; essentials</small></a>
+        <a href="{% url 'medicine_products' %}"><span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#medical"></use></svg></span><strong>Pharmacy</strong><small>Coming soon</small></a>
+        <a href="{% url 'wellness_products' %}"><span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#heart"></use></svg></span><strong>Wellness</strong><small>Daily care</small></a>
+        <a href="{% url 'grooming_products' %}"><span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#bone"></use></svg></span><strong>Grooming</strong><small>Clean &amp; comfortable</small></a>
+        <a href="{% url 'bird_products' %}"><span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#food"></use></svg></span><strong>Bird Care</strong><small>Food &amp; care</small></a>
+        <a href="{% url 'home' %}#featured-products"><span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#check"></use></svg></span><strong>Best Sellers</strong><small>Popular picks</small></a>
+        <a href="{% url 'offers' %}"><span><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#heart"></use></svg></span><strong>Offers</strong><small>Save more</small></a>
+    </div>
+</section>
+
 {% if whatsapp_number %}
 <a class="bm-floating-help" href="https://wa.me/{{ whatsapp_number }}?text=Hello%20Boww%20%26%20Meow%2C%20I%20need%20help%20with..." target="_blank" rel="noopener" aria-label="Chat with Boww & Meow on WhatsApp"><span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#chat"></use></svg></span><strong>Need help?</strong></a>
 {% else %}
@@ -237,6 +255,7 @@
 {% endif %}
 
 <script src="{% static 'store/cart-sounds.js' %}" defer></script>
+<script src="{% static 'store/mobile-categories.js' %}" defer></script>
 
 </body>
 </html>
