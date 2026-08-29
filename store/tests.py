@@ -359,6 +359,41 @@ class CategoryBestSellerRankingTests(TestCase):
         self.assertContains(response, 'aria-label="Boww & Meow home"')
         self.assertNotContains(response, "Bows & Meows")
 
+    def test_checkout_uses_selected_variant_image_in_order_summary(self):
+        product = Product.objects.create(
+            name="Checkout Image Food",
+            category="dog_food",
+            product_type="food",
+            price=Decimal("399.00"),
+            stock=5,
+            is_available=True,
+            external_image_url="https://images.example.com/product.webp",
+        )
+        variant = ProductVariant.objects.create(
+            product=product,
+            size="3 KG",
+            price=Decimal("799.00"),
+            stock=3,
+            sku="CHECKOUT-IMAGE-3KG",
+            external_image_url="https://images.example.com/variant.webp",
+        )
+        session = self.client.session
+        session["cart"] = {
+            f"p{product.id}:v{variant.id}": {
+                "product_id": product.id,
+                "variant_id": variant.id,
+                "quantity": 1,
+            }
+        }
+        session["guest_checkout_confirmed"] = True
+        session.save()
+
+        response = self.client.get(reverse("checkout"))
+
+        self.assertContains(response, 'class="checkout-item-image"')
+        self.assertContains(response, 'src="https://images.example.com/variant.webp"')
+        self.assertNotContains(response, 'src="https://images.example.com/product.webp"')
+
     def test_checkout_renders_each_customer_field_label_once(self):
         product = Product.objects.create(
             name="Accessible Checkout Food",

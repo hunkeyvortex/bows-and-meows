@@ -2,7 +2,7 @@
 {% load static %}
 
 
-{% block extra_css %}<link rel="stylesheet" href="{% static 'store/checkout-page.css' %}?v=coral-20260829-3">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/checkout-page.css' %}?v=coral-20260830-4">{% endblock %}
 {% block title %}Checkout | Boww & Meow{% endblock %}
 
 {% block content %}
@@ -209,9 +209,19 @@
 
             {% for item in cart_items %}
 
-                <div class="checkout-item">
+                <div class="checkout-item checkout-product-item">
 
-                    <div>
+                    <a class="checkout-item-image" href="{% url 'product_detail' item.product.id %}" aria-label="View {{ item.product.name }}">
+                        {% if item.variant and item.variant.display_image_url %}
+                            <img src="{{ item.variant.display_image_url }}" alt="">
+                        {% elif item.product.display_image_url %}
+                            <img src="{{ item.product.display_image_url }}" alt="">
+                        {% else %}
+                            <span aria-hidden="true">BM</span>
+                        {% endif %}
+                    </a>
+
+                    <div class="checkout-item-copy">
 
                         <strong>
                             {{ item.product.name }}
