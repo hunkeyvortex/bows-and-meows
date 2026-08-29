@@ -713,6 +713,42 @@ class StoreSecurityTests(TestCase):
         self.assertEqual(list(cart.values())[0]["quantity"], 1)
         self.assertNotIn("coupon_code", self.client.session)
 
+    def test_add_to_cart_requires_variant_and_preserves_cart(self):
+        ProductVariant.objects.create(
+            product=self.product,
+            size="1 KG",
+            price=Decimal("299.00"),
+            stock=3,
+            sku="ADD-REQUIRES-1KG",
+        )
+
+        response = self.client.post(
+            reverse("add_to_cart", args=[self.product.id]),
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("product_detail", args=[self.product.id]))
+        self.assertContains(response, "Select a package size first.")
+        self.assertEqual(self.client.session.get("cart", {}), {})
+
+    def test_add_to_cart_accepts_selected_variant(self):
+        variant = ProductVariant.objects.create(
+            product=self.product,
+            size="1 KG",
+            price=Decimal("299.00"),
+            stock=3,
+            sku="ADD-SELECTED-1KG",
+        )
+
+        response = self.client.post(
+            reverse("add_to_cart", args=[self.product.id]),
+            {"variant": variant.id},
+        )
+
+        self.assertRedirects(response, reverse("cart"), fetch_redirect_response=False)
+        cart = self.client.session["cart"]
+        self.assertEqual(list(cart.values())[0]["variant_id"], variant.id)
+
     def test_reorder_rebuilds_cart_and_redirects_to_checkout(self):
         order = Order.objects.create(
             user=self.user, customer_name="Customer", email="c@example.com",

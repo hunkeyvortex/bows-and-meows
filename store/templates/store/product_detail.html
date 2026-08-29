@@ -218,6 +218,9 @@
                     <p class="pd-v2-variant-note" id="variant-message">
                         Choose a size before adding this product to your cart.
                     </p>
+                    <p class="pd-v2-variant-error" id="variant-selection-error" role="alert" hidden>
+                        Select a package size first.
+                    </p>
 
                 </div>
                 {% endif %}
@@ -375,8 +378,8 @@
                             <form method="POST" action="{% url 'add_to_cart' product.id %}" id="variant-cart-form" class="pd-v2-action-form"{% if product.pet_type == 'dog' or product.pet_type == 'both' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' %} data-cart-sound="cat"{% endif %}>
                                 {% csrf_token %}
                                 <input type="hidden" name="variant" id="variant-cart-input">
-                                <button type="submit" class="pd-v2-cart-btn" id="variant-cart-button" disabled>
-                                    <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#cart"></use></svg><span id="variant-cart-label">Select a size</span>
+                                <button type="submit" class="pd-v2-cart-btn" id="variant-cart-button">
+                                    <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#cart"></use></svg><span id="variant-cart-label">Add to Cart</span>
                                 </button>
                             </form>
                             <form method="POST" action="{% url 'buy_now' product.id %}" id="variant-buy-form" class="pd-v2-action-form"{% if product.pet_type == 'dog' or product.pet_type == 'both' %} data-cart-sound="dog"{% elif product.pet_type == 'cat' %} data-cart-sound="cat"{% endif %}>
@@ -685,6 +688,37 @@ const cartLabel = document.getElementById("variant-cart-label");
 const buyButton = document.getElementById("variant-buy-button");
 const selectedVariantInput = document.getElementById("selected-variant-id");
 const variantMessage = document.getElementById("variant-message");
+const variantSelectionError = document.getElementById("variant-selection-error");
+const variantCartForm = document.getElementById("variant-cart-form");
+
+if (variantCartForm) {
+    variantCartForm.addEventListener("submit", function (event) {
+        const variantCartInput = document.getElementById("variant-cart-input");
+
+        if (!variantCartInput || !variantCartInput.value) {
+            event.preventDefault();
+
+            if (variantSelectionError) {
+                variantSelectionError.hidden = false;
+            }
+
+            if (variantMessage) {
+                variantMessage.textContent = "Choose one of the available package sizes below.";
+            }
+
+            const firstAvailableVariant = document.querySelector(
+                ".pd-v2-variant-card:not(:disabled)"
+            );
+            if (firstAvailableVariant) {
+                firstAvailableVariant.focus({ preventScroll: true });
+                firstAvailableVariant.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            }
+        }
+    });
+}
 
 variantButtons.forEach(function (button) {
 
@@ -699,6 +733,10 @@ variantButtons.forEach(function (button) {
         });
 
         button.classList.add("pd-v2-variant-selected");
+
+        if (variantSelectionError) {
+            variantSelectionError.hidden = true;
+        }
 
         const variantId = button.dataset.variantId;
         const price = button.dataset.price;

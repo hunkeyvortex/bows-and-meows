@@ -651,8 +651,10 @@ def add_to_cart(request, product_id):
     if variant_id:
         variant = get_object_or_404(ProductVariant, id=variant_id, product=product)
         if not variant.is_available or variant.stock <= 0:
+            messages.error(request, "That package size is currently unavailable.")
             return redirect("product_detail", product_id=product.id)
     elif product.variants.exists():
+        messages.error(request, "Select a package size first.")
         return redirect("product_detail", product_id=product.id)
 
     line_key = _cart_line_key(product.id, variant.id if variant else None)

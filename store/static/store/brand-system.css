@@ -494,3 +494,25 @@ h1,h2,h3,h4,strong { color:var(--bm-text); }
   .v2-category-nav a{min-width:60px !important;min-height:58px !important;padding:5px 7px !important;gap:3px !important;border-radius:15px !important;font-size:9px !important}
   .v2-category-nav a .bm-category-icon{width:17px;height:17px;flex-basis:17px}
 }
+
+/* Mobile product-detail polish: compact the buying decision without changing
+   the desktop composition or commerce behavior. */
+.pd-v2-variant-error[hidden]{display:none !important}
+.pd-v2-variant-error{margin:8px 0 0;color:#a33d34;font-size:12px;font-weight:800}
+
+@media(max-width:768px){
+  .pd-v2-info h1{font-size:clamp(27px,7.9vw,34px) !important;line-height:1.03 !important;letter-spacing:-.035em}
+  .pd-v2-variant-section{margin-top:18px}
+  .pd-v2-section-label{gap:4px !important;margin-bottom:8px !important}
+  .pd-v2-section-label span{font-size:12px}
+  .pd-v2-variant-grid{gap:8px !important;padding-block:2px 5px !important}
+  .pd-v2-variant-card{min-height:96px !important;padding:11px 12px !important;border-radius:13px !important}
+  .pd-v2-variant-card.pd-v2-variant-selected{padding:10px 11px !important}
+  .pd-v2-variant-card span{margin-top:4px}
+  .pd-v2-variant-card small{font-size:10px}
+  .pd-v2-variant-card em{margin-top:5px}
+  .pd-v2-variant-note{margin-top:6px}
+  .pd-v2-actions>form:not(.pd-v2-action-form){width:auto;justify-self:center}
+  .pd-v2-actions>form:not(.pd-v2-action-form) .pd-v2-wishlist-btn,
+  .pd-v2-actions>.pd-v2-wishlist-btn{width:auto !important;min-height:42px !important;padding:0 18px !important}
+}
