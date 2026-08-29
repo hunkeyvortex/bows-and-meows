@@ -2,7 +2,7 @@
 {% load static %}
 
 
-{% block extra_css %}<link rel="stylesheet" href="{% static 'store/home-page.css' %}?v=coral-20260830-4">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/home-page.css' %}?v=coral-20260830-5">{% endblock %}
 {% block title %}
 Boww & Meow | Pet Food, Care & Essentials
 {% endblock %}
@@ -12,47 +12,16 @@ Boww & Meow | Pet Food, Care & Essentials
 <div class="store-v2">
 <div class="bm3-hero" id="bm3-hero">
 
-    <!-- 1. Main brand slide -->
-    <section class="bm3-slide bm3-brand is-active">
-        <div class="bm3-brand-copy">
-            <span class="bm3-eyebrow"><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg> BOWW & MEOW</span>
-            <h1>Better pet care, <span>made simple.</span></h1>
-            <p>
-                Food, treats, wellness and everyday essentials for happier dogs and cats.
-            </p>
-
-            <div class="bm3-brand-offer">
-                <strong>FLAT 20% OFF</strong>
-                <small>You care for your pet. We care for your budget.</small>
-            </div>
-
-            <div class="bm3-actions">
-                <a href="{% url 'dog_products' %}" class="bm3-primary">Shop Dogs →</a>
-                <a href="{% url 'cat_products' %}" class="bm3-secondary">Shop Cats →</a>
-            </div>
-
-            <div class="bm3-proof">
-                <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#check"></use></svg> Genuine products</span>
-                <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#lock"></use></svg> Secure checkout</span>
-                <span><svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#package"></use></svg> Order tracking</span>
-            </div>
-        </div>
-
-        <div class="bm3-brand-photo">
-            <img
-                src="{% static 'store/images/hero-dog-cat.webp' %}"
-                alt="Happy dog and cat"
-                width="1536"
-                height="1024"
-                decoding="async"
-                fetchpriority="high"
-            >
-            <div class="bm3-photo-badge">
-                <span>★</span>
-                <div>
-                    <strong>Pet-parent approved</strong>
-                    <small>Everyday essentials in one place</small>
-                </div>
+    <!-- 1. Boww & Meow campaign -->
+    <section class="bm3-slide bm3-house-slide is-active">
+        <img class="bm3-house-art" src="{% static 'store/images/campaign/boww-meow-care-wide-v2.webp' %}" alt="Happy golden retriever and tabby cat" width="1774" height="887" decoding="async" fetchpriority="high">
+        <div class="bm3-house-copy">
+            <span>HAPPY PETS, HAPPY HEARTS</span>
+            <h1>Everything for your <strong>Boww &amp; Meow</strong></h1>
+            <p>Trusted food and everyday care for happier pets.</p>
+            <div class="bm3-house-actions">
+                <a href="{% url 'dog_products' %}">Shop Dogs</a>
+                <a href="{% url 'cat_products' %}">Shop Cats</a>
             </div>
         </div>
     </section>
