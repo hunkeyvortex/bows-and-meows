@@ -516,3 +516,35 @@ h1,h2,h3,h4,strong { color:var(--bm-text); }
   .pd-v2-actions>form:not(.pd-v2-action-form) .pd-v2-wishlist-btn,
   .pd-v2-actions>.pd-v2-wishlist-btn{width:auto !important;min-height:42px !important;padding:0 18px !important}
 }
+
+/* Stable order-card product previews. A third thumbnail must not change the
+   width allocated to the item count or push the order total off-screen. */
+.bm-order-thumb-stack{display:flex;align-items:center;min-width:max-content}
+.bm-order-product-summary{display:flex;min-width:0;flex-direction:column;gap:4px;margin-left:20px}
+
+@media(max-width:800px){
+  .bm-order-body{grid-template-columns:minmax(0,1fr) auto !important;gap:14px !important}
+  .bm-order-products{display:grid !important;grid-template-columns:78px minmax(0,1fr);align-items:center;min-width:0}
+  .bm-order-thumb-stack{position:relative;width:78px;height:54px;min-width:78px}
+  .bm-order-thumb-stack .bm-order-thumb{position:absolute;top:0;width:44px;height:54px;margin:0;border-width:2px;border-radius:11px}
+  .bm-order-thumb-stack .bm-order-thumb:nth-child(1){left:0;z-index:3}
+  .bm-order-thumb-stack .bm-order-thumb:nth-child(2){left:17px;z-index:2}
+  .bm-order-thumb-stack .bm-order-thumb:nth-child(3){left:34px;z-index:1}
+  .bm-order-product-summary{min-width:0;margin-left:8px !important}
+  .bm-order-product-summary strong{font-size:14px;line-height:1.15;overflow-wrap:anywhere}
+  .bm-order-total{min-width:76px}
+  .bm-order-total small{white-space:nowrap}
+  .bm-order-total strong{font-size:16px !important;white-space:nowrap}
+}
+
+@media(max-width:380px){
+  .bm-order-body{gap:9px !important;padding-inline:14px !important}
+  .bm-order-products{grid-template-columns:68px minmax(0,1fr)}
+  .bm-order-thumb-stack{width:68px;min-width:68px}
+  .bm-order-thumb-stack .bm-order-thumb{width:40px;height:50px}
+  .bm-order-thumb-stack .bm-order-thumb:nth-child(2){left:14px}
+  .bm-order-thumb-stack .bm-order-thumb:nth-child(3){left:28px}
+  .bm-order-product-summary{margin-left:5px !important}
+  .bm-order-total{min-width:70px}
+  .bm-order-total strong{font-size:15px !important}
+}
