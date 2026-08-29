@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="{% static 'store/style.css' %}?v=coral-20260829-6">
     <link rel="stylesheet" href="{% static 'store/commerce-features.css' %}?v=coral-20260829-6">
     <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}?v=coral-20260829-6">
-    <link rel="stylesheet" href="{% static 'store/brand-system.css' %}?v=coral-20260830-7">
+    <link rel="stylesheet" href="{% static 'store/brand-system.css' %}?v=coral-20260830-8">
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -201,7 +201,7 @@
         <span>Home</span>
     </a>
     <button type="button" class="bm-mobile-dock-button{% if request.resolver_match.url_name == 'dog_products' or request.resolver_match.url_name == 'cat_products' or request.resolver_match.url_name == 'medicine_products' or request.resolver_match.url_name == 'wellness_products' or request.resolver_match.url_name == 'grooming_products' or request.resolver_match.url_name == 'bird_products' or request.resolver_match.url_name == 'small_pet_products' or request.resolver_match.url_name == 'farm_animal_products' or request.resolver_match.url_name == 'fish_reptile_products' %} is-active{% endif %}" data-category-open aria-controls="bm-category-sheet" aria-expanded="false">
-        <svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#paw"></use></svg>
+        <svg class="bm-icon"><use href="{% static 'store/icons.svg' %}#paw"></use></svg>
         <span>Categories</span>
     </button>
     <a href="{% url 'cart' %}" class="{% if request.resolver_match.url_name == 'cart' %}is-active{% endif %}">

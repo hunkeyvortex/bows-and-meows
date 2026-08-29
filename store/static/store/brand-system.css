@@ -275,8 +275,43 @@ body { background: var(--bm-cream); color: var(--bm-text); }
   .bm-offer-hero,.bm-bundle-page,.bm-prescription-page { padding:20px 16px; border-radius:20px; }
 }
 
-@media (min-width:769px) {
+@media (min-width:901px) {
   .bm-category-sheet,.bm-category-sheet-backdrop { display:none !important; }
+}
+
+/* Keep the compact category experience aligned with the mobile dock.  The dock
+   is active up to 900px, so narrow tablets and resized browser windows must not
+   fall back to the desktop text-only category row. */
+@media (min-width:769px) and (max-width:900px) {
+  .v2-search { overflow:hidden; }
+  .v2-search:focus-within { outline:0; box-shadow:0 0 0 3px rgba(255,107,92,.16),0 8px 22px rgba(89,44,38,.08); }
+  .v2-search input:focus,.v2-search input:focus-visible { outline:0 !important; box-shadow:none !important; }
+  .v2-category-nav { gap:6px !important; padding-block:8px !important; }
+  .v2-category-nav a { min-width:68px; min-height:68px !important; padding:7px 8px !important; flex-direction:column; justify-content:center; gap:5px; border-color:var(--bm-border) !important; border-radius:18px !important; font-size:10px !important; }
+  .v2-category-nav a .bm-category-icon { display:block; }
+  .v2-category-nav a span { white-space:nowrap; }
+  .bm-mobile-dock-button { position:relative; display:flex; min-width:0; padding:0; align-items:center; justify-content:center; flex-direction:column; gap:3px; border:0; background:transparent; color:#627068; font:inherit; font-size:9px; font-weight:800; cursor:pointer; }
+  .bm-mobile-dock-button::before { content:""; position:absolute; top:-7px; width:28px; height:3px; border-radius:99px; background:transparent; }
+  .bm-mobile-dock-button.is-active { color:var(--bm-coral-dark); }
+  .bm-mobile-dock-button.is-active::before { background:var(--bm-coral); }
+  .bm-mobile-dock-button .bm-icon { width:21px; height:21px; color:var(--bm-coral-dark); }
+  body.bm-category-sheet-open { overflow:hidden; }
+  .bm-category-sheet-backdrop { position:fixed; z-index:1250; inset:0; display:block !important; border:0; background:rgba(43,30,28,.48); opacity:0; transition:opacity .22s ease; }
+  .bm-category-sheet { position:fixed; z-index:1251; right:0; bottom:0; left:0; display:block !important; max-height:82dvh; overflow:auto; padding:22px 16px calc(20px + env(safe-area-inset-bottom)); border:1px solid var(--bm-border); border-radius:26px 26px 0 0; background:var(--bm-surface); box-shadow:0 -22px 60px rgba(73,37,32,.24); transform:translateY(105%); transition:transform .22s ease; }
+  .bm-category-sheet[hidden],.bm-category-sheet-backdrop[hidden] { display:none !important; }
+  body.bm-category-sheet-open .bm-category-sheet { transform:translateY(0); }
+  body.bm-category-sheet-open .bm-category-sheet-backdrop { opacity:1; }
+  .bm-category-sheet header { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:18px; }
+  .bm-category-sheet header span { color:var(--bm-coral-dark); font-size:9px; font-weight:900; letter-spacing:.14em; }
+  .bm-category-sheet header h2 { margin:4px 0 0; font-size:27px; letter-spacing:-.035em; }
+  .bm-category-sheet header button { display:grid; width:44px; height:44px; place-items:center; border:1px solid var(--bm-border); border-radius:50%; background:#fff; color:var(--bm-text); font-size:25px; }
+  .bm-category-sheet-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .bm-category-sheet-grid a { display:grid; min-width:0; min-height:132px; padding:15px; align-content:start; border:1px solid var(--bm-border); border-radius:18px; background:linear-gradient(145deg,#fff,var(--bm-coral-soft)); color:var(--bm-text); text-decoration:none; }
+  .bm-category-sheet-grid a>span { display:grid; width:42px; height:42px; margin-bottom:10px; place-items:center; border-radius:14px; background:#fff; color:var(--bm-coral-dark); box-shadow:0 5px 14px rgba(100,55,47,.08); }
+  .bm-category-sheet-grid .bm-icon { width:23px; height:23px; }
+  .bm-category-sheet-grid strong { font-size:14px; }
+  .bm-category-sheet-grid small { margin-top:3px; color:var(--bm-muted); font-size:10px; line-height:1.35; }
+  body.bm-category-sheet-open .bm-floating-help { visibility:hidden; opacity:0; pointer-events:none; }
 }
 
 @media (max-width:360px) {
