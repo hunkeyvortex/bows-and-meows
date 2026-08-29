@@ -486,3 +486,11 @@ h1,h2,h3,h4,strong { color:var(--bm-text); }
 @media(max-width:380px){
   .bm-confirm-page{padding-inline:10px}.bm-confirm-hero{padding-inline:2px}.bm-confirm-hero h1{font-size:33px}.bm-confirm-products header{align-items:flex-start}.bm-confirm-products article{grid-template-columns:68px minmax(0,1fr);padding:14px}.bm-confirm-products article>a{width:68px;height:80px}.bm-confirm-products article h3{font-size:14px}
 }
+
+/* Compact mobile browse rail: keep the useful icons without allowing the
+   category strip to compete with the promotional banner for screen space. */
+@media(max-width:900px){
+  .v2-category-nav{gap:5px !important;padding-block:6px !important}
+  .v2-category-nav a{min-width:60px !important;min-height:58px !important;padding:5px 7px !important;gap:3px !important;border-radius:15px !important;font-size:9px !important}
+  .v2-category-nav a .bm-category-icon{width:17px;height:17px;flex-basis:17px}
+}

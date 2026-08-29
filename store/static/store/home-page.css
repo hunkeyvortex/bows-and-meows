@@ -359,8 +359,8 @@
     }
 
     .bm3-hero.is-offer-active {
-        height: clamp(210px, 58vw, 230px);
-        min-height: 210px;
+        height: clamp(176px, 49vw, 196px);
+        min-height: 176px;
     }
 
     .bm3-offer-slide {
@@ -370,7 +370,7 @@
     .bm3-offer-slide .bm3-banner-link {
         display: grid;
         place-items: center;
-        padding-block: 8px 20px;
+        padding-block: 4px 12px;
     }
 
     .bm3-offer-slide .bm3-banner-link img {
@@ -475,8 +475,8 @@
     }
 
     .bm3-hero.is-offer-active {
-        height: 220px;
-        min-height: 220px;
+        height: clamp(176px, 49vw, 190px);
+        min-height: 176px;
     }
 
     .bm3-campaign {
