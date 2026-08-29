@@ -52,6 +52,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
+from .brand_logos import brand_logo_path
 from .models import (
     Product,
     ProductVariant,
@@ -243,6 +244,8 @@ def home(request):
         )
         .order_by("-brand_sales", "-product_count", "brand")[:12]
     )
+    for brand in famous_brands:
+        brand["logo_path"] = brand_logo_path(brand["brand"])
 
     offers = (
         base_products

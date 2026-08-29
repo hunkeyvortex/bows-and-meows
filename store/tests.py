@@ -1187,3 +1187,41 @@ class BrandAndCartSoundTests(TestCase):
         self.assertIn("const activeSubmissions = new WeakSet()", script)
         self.assertIn('document.addEventListener("submit"', script)
         self.assertNotIn("soundPlayed", script)
+
+
+class BrandLogoRegistryTests(TestCase):
+    def test_known_brand_spelling_resolves_to_local_logo(self):
+        from .brand_logos import brand_logo_path
+
+        self.assertEqual(
+            brand_logo_path("Royal Canin"),
+            "store/images/brands/royal-canin.png",
+        )
+        self.assertEqual(
+            brand_logo_path("Me-O"),
+            "store/images/brands/me-o-logo.webp",
+        )
+
+    def test_unregistered_supplier_brand_uses_wordmark_fallback(self):
+        from .brand_logos import brand_logo_path
+
+        self.assertEqual(brand_logo_path("A New Supplier Brand"), "")
+
+    def test_home_brand_cards_render_logo_and_safe_wordmark_fallback(self):
+        for index, brand in enumerate(("Whiskas", "A New Supplier Brand")):
+            Product.objects.create(
+                name=f"Brand Card Food {index}",
+                brand=brand,
+                category="cat_food",
+                pet_type="cat",
+                product_type="food",
+                price=Decimal("399.00"),
+                stock=5,
+                is_available=True,
+            )
+
+        html = self.client.get(reverse("home")).content.decode()
+
+        self.assertIn("store/images/brands/whiskas.png", html)
+        self.assertIn("bm-famous-brand-mark--word", html)
+        self.assertIn("A New Supplier Brand", html)

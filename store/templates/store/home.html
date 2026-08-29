@@ -132,7 +132,20 @@ Boww & Meow | Pet Food, Care & Essentials
         <div class="bm-famous-brands-grid">
             {% for item in famous_brands %}
                 <a href="{% url 'search_products' %}?q={{ item.brand|urlencode }}" class="bm-famous-brand-card" aria-label="Shop {{ item.brand }} products">
-                    <span class="bm-famous-brand-mark">{{ item.brand|slice:":1"|upper }}</span>
+                    <span class="bm-famous-brand-mark{% if not item.logo_path %} bm-famous-brand-mark--word{% endif %}" aria-hidden="true">
+                        {% if item.logo_path %}
+                            <img
+                                src="{% static item.logo_path %}"
+                                alt=""
+                                width="92"
+                                height="60"
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        {% else %}
+                            <span>{{ item.brand }}</span>
+                        {% endif %}
+                    </span>
                     <strong>{{ item.brand }}</strong>
                     <small>{{ item.product_count }} product{{ item.product_count|pluralize }}</small>
                     <span class="bm-famous-brand-arrow">View products →</span>
