@@ -1,2 +1,10 @@
-/* Extracted from store/templates/store/crm_inventory.html — block 1 */
+/* Inventory thumbnails and coral identity accents. */
+.crm-inventory-identity{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-width:0}
+.crm-inventory-thumbnail{display:flex;align-items:center;justify-content:center;flex:0 0 72px;width:72px;height:72px;overflow:hidden;border:1px solid var(--crm-line);border-radius:12px;background:#fff;text-decoration:none}
+.crm-inventory-thumbnail img{display:block;width:72px;height:72px;object-fit:contain;padding:5px}
+.crm-inventory-thumbnail [hidden]{display:none}
+.crm-inventory-thumbnail span{color:var(--crm-muted);font-size:11px;text-align:center}
+.crm-inventory-identity .crm-product-id{width:max-content;background:var(--crm-green)}
+.crm-inventory-identity .crm-image-filename{max-width:100%;overflow-wrap:anywhere;background:var(--crm-cream);color:var(--crm-green-2)}
+.crm-inline-action .crm-restore-btn{border-color:var(--crm-line);background:var(--crm-cream);color:var(--crm-green-2)}
 .crm-product-id{display:inline-flex;padding:5px 9px;border-radius:999px;background:#173f2e;color:#fff;font-size:11px;font-weight:900}.crm-image-filename{display:block;width:max-content;margin-top:7px;padding:5px 7px;border-radius:7px;background:#eef4e8;color:#375542;font-size:10px}.crm-inline-action{display:inline-block;margin-left:5px}.crm-inline-action button{min-height:31px;padding:0 10px;border-radius:8px;font-size:9px;font-weight:850;cursor:pointer}.crm-archive-btn{border:1px solid #efd2ca;background:#fff3ef;color:#9c493b}.crm-restore-btn{border:1px solid #cce1c4;background:#edf7e9;color:#346534}

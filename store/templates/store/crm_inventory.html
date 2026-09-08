@@ -2,7 +2,7 @@
 {% load static %}
 
 
-{% block extra_css %}<link rel="stylesheet" href="{% static 'store/crm-inventory-page.css' %}?v=coral-20260829-3">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/crm-inventory-page.css' %}?v=20260909-2">{% endblock %}
 {% block title %}
 Inventory | Boww & Meow CRM
 {% endblock %}
@@ -130,8 +130,16 @@ Inventory | Boww & Meow CRM
                 <tr>
 
                     <td>
-                        <span class="crm-product-id">#{{ product.id }}</span>
-                        <code class="crm-image-filename">{{ product.id }}-main.jpg</code>
+                        <div class="crm-inventory-identity">
+                            <a class="crm-inventory-thumbnail" href="{% url 'crm_inventory_edit' product.id %}" aria-label="Edit {{ product.name }}">
+                                {% if product.display_image_url %}
+                                <img src="{{ product.display_image_url }}" alt="{{ product.name }}" width="72" height="72" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+                                <span hidden>No image</span>
+                                {% else %}<span>No image</span>{% endif %}
+                            </a>
+                            <div><span class="crm-product-id">#{{ product.id }}</span>
+                            <code class="crm-image-filename">{{ product.id }}-main.jpg</code></div>
+                        </div>
                     </td>
 
                     <td>
