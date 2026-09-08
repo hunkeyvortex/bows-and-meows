@@ -1349,7 +1349,7 @@ def order_detail(request, order_id):
 def crm_dashboard(request):
 
     if not request.user.is_staff:
-        return redirect("home")
+        return render(request, "store/crm_access_denied.html", status=403)
 
     total_customers = User.objects.filter(is_staff=False).count()
     total_orders = Order.objects.count()

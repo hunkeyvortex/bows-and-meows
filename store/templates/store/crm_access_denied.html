@@ -1,0 +1,13 @@
+{% extends "store/base.html" %}
+{% block title %}Staff access required | Boww & Meow{% endblock %}
+{% block content %}
+<section class="account-page">
+  <div class="success-card">
+    <h1>Staff access required</h1>
+    <p>You are signed in with a customer account. Sign in with your store staff account to open CRM.</p>
+    <a href="{% url 'login' %}?next=/crm/">Sign in with a staff account →</a>
+    <p>If this account should manage the store, ask the store administrator to enable staff access.</p>
+  </div>
+</section>
+{% include "store/includes/flow_theme.html" %}
+{% endblock %}
