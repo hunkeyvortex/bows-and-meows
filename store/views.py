@@ -1495,10 +1495,16 @@ def crm_customer_detail(request, user_id):
     )
 @login_required
 def crm_inventory(request):
+    from .catalog_sections import SECTION_CHOICES, filter_section
     if not request.user.is_staff:
         return redirect("home")
 
     products = Product.objects.all().order_by("name")
+    section = request.GET.get("section", "")
+    pet = request.GET.get("pet", "")
+    products = filter_section(products, section)
+    if pet in ("dog", "cat"):
+        products = products.filter(Q(pet_type__in=(pet, "both")) | Q(category__startswith=pet + "_"))
 
     search_query = request.GET.get("q")
     category_filter = request.GET.get("category")
@@ -1533,6 +1539,9 @@ def crm_inventory(request):
         "category_filter": category_filter or "",
         "low_stock": low_stock or "",
         "archive_filter": archive_filter,
+        "section_choices": SECTION_CHOICES,
+        "section_filter": section,
+        "pet_filter": pet,
     }
 
     return render(
@@ -3595,7 +3604,9 @@ def _category_products_page(
     fixed_product_type=None,
 ):
 
-    products = Product.objects.customer_visible().prefetch_related("variants")
+    from .catalog_sections import SECTION_CHOICES, filter_section
+    section = request.GET.get("section", "")
+    products = filter_section(Product.objects.customer_visible().prefetch_related("variants"), section)
 
 
     # ==========================================
@@ -3836,6 +3847,8 @@ def _category_products_page(
             sort,
 
         "product_type_filter": product_type,
+        "section_choices": SECTION_CHOICES,
+        "section_filter": section,
         "care_area_filter": care_area,
         "brand_filter": brand,
         "active_filter_count": sum((

@@ -40,6 +40,15 @@ Inventory | Boww & Meow CRM
 
     <div class="crm-panel">
         <form method="GET" class="crm-filter-bar">
+    <select name="pet" aria-label="Pet">
+        <option value="">All pets</option>
+        <option value="dog" {% if pet_filter == 'dog' %}selected{% endif %}>Dogs</option>
+        <option value="cat" {% if pet_filter == 'cat' %}selected{% endif %}>Cats</option>
+    </select>
+    <select name="section" aria-label="Product section">
+        <option value="">All sections</option>
+        {% for value,label in section_choices %}<option value="{{ value }}" {% if section_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
 
     <input
         type="text"

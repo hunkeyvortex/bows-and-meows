@@ -25,6 +25,11 @@
     </div>
 
     <div class="filter-field filter-search-field">
+        <label for="catalog-section">Section</label>
+        <select id="catalog-section" name="section">
+            <option value="">All sections</option>
+            {% for value,label in section_choices %}<option value="{{ value }}" {% if section_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
         <label for="category-filter-search">Search products</label>
         <input id="category-filter-search" type="search" name="q" value="{{ query }}" placeholder="Search in this category...">
     </div>
