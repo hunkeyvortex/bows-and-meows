@@ -1,0 +1,21 @@
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="email-soft" bgcolor="#fff5f0" style="margin:22px 0;background-color:#fff5f0;border:1px solid #f1d8cf;border-radius:10px"><tr><td style="padding:16px">
+<strong style="font-size:18px">Order {{ order_number }}</strong><br><span class="email-muted" style="color:#625b57">{{ order.created_at|date:"d M Y, g:i A" }}</span><br>Status: <strong>{{ order.get_status_display }}</strong>
+</td></tr></table>
+{% if progress_stages %}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed;margin:0 0 24px"><tr>
+{% for stage in progress_stages %}<td width="25%" align="center" style="padding:8px 2px;border-top:4px solid {% if stage.current %}#ff6b5c{% else %}#dad3ce{% endif %};font-size:11px;line-height:1.5;{% if stage.current %}font-weight:bold;{% endif %}">{{ stage.label }}{% if stage.current %}<br>Current stage{% endif %}</td>{% endfor %}
+</tr></table>{% endif %}
+<h2 style="font-size:18px;margin:20px 0 6px">Your order</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed">
+{% for item in items %}<tr><td style="padding:14px 0;border-bottom:1px solid #eadfd9;overflow-wrap:anywhere">
+{% if item.image_url %}<img src="{{ item.image_url }}" alt="" width="56" border="0" style="display:block;width:56px;max-width:100%;height:auto;margin-bottom:8px">{% endif %}
+<strong>{{ item.name }}</strong>{% if item.variant %}<br><span class="email-muted" style="color:#625b57">Size: {{ item.variant }}</span>{% endif %}<br><span class="email-muted" style="color:#625b57;font-size:13px">Qty {{ item.quantity }} &middot; ₹{{ item.unit_price|floatformat:2 }} each</span><br><strong>₹{{ item.line_total|floatformat:2 }}</strong>
+</td></tr>{% endfor %}</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0;font-size:14px">
+<tr><td style="padding:5px 0">Subtotal</td><td align="right">₹{{ order.subtotal_amount|floatformat:2 }}</td></tr>
+<tr><td style="padding:5px 0">Delivery</td><td align="right">Free</td></tr>
+{% if order.discount_amount %}<tr><td style="padding:5px 0">Discount{% if order.coupon_code %}<br><small>{{ order.coupon_code }}</small>{% endif %}</td><td align="right">−₹{{ order.discount_amount|floatformat:2 }}</td></tr>{% endif %}
+<tr><td style="padding:12px 0;border-top:2px solid #ff6b5c;font-size:20px"><strong>Total</strong></td><td align="right" style="padding:12px 0;border-top:2px solid #ff6b5c;font-size:20px"><strong>₹{{ order.total_amount|floatformat:2 }}</strong></td></tr>
+</table>
+<p><strong>Payment:</strong> {% include "store/emails/customer_payment_label.txt" %}</p>
+<h2 style="font-size:18px;margin:24px 0 8px">Delivery details</h2>
+<p style="margin:0;overflow-wrap:anywhere">{{ order.customer_name }}<br>{{ order.address|linebreaksbr }}{% if order.phone %}<br>Phone: {{ order.phone }}{% endif %}</p>

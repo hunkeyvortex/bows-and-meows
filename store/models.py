@@ -510,6 +510,18 @@ class ConversionEvent(models.Model):
             models.Index(fields=["session_key", "created_at"], name="store_event_session_idx"),
             models.Index(fields=["user", "event_type"], name="store_event_user_type_idx"),
         ]
+class OrderEmailDelivery(models.Model):
+    """One durable send attempt per order/event; never automatically replay it."""
+    order = models.ForeignKey("Order", on_delete=models.CASCADE, related_name="email_deliveries")
+    event = models.CharField(max_length=40)
+    state = models.CharField(max_length=16, default="attempting")
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["order", "event"], name="unique_order_email_event")]
+
+
 class FeedingGuide(models.Model):
 
     product = models.ForeignKey(

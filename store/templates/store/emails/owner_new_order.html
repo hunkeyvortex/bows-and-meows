@@ -1,0 +1,10 @@
+<!doctype html><html><body>
+<h1>New order {{ order_number }}</h1>
+<p>Customer: {{ order.customer_name }}<br>Email: {{ order.email }}<br>Phone: {{ order.phone }}</p>
+<p>Delivery address: {{ order.address|linebreaksbr }}</p>
+<p>Order time: {{ order.created_at|date:"c" }}<br>Payment method: {{ order.get_payment_method_display }}<br>Payment status: {{ order.get_payment_status_display }}<br>Order status: {{ order.get_status_display }}</p>
+<ul>{% for item in items %}<li>{{ item.name }} — {{ item.variant }} — Qty {{ item.quantity }} — INR {{ item.unit_price }} each — INR {{ item.line_total }}</li>{% endfor %}</ul>
+<p>Order total: INR {{ order.total_amount }}</p>
+<p><a href="{{ crm_url }}">Open CRM orders (staff sign-in required)</a></p>
+<p>Online orders may still be awaiting payment. Verify payment before fulfilment.</p>
+</body></html>

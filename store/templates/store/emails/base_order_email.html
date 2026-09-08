@@ -1,21 +1,33 @@
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ order_number }}</title></head>
-<body style="margin:0;background:#faf8f2;color:#18261f;font-family:Arial,sans-serif">
-<div style="display:none;max-height:0;overflow:hidden">{% block preheader %}An update from Boww &amp; Meow{% endblock %}</div>
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#faf8f2;padding:24px 12px"><tr><td align="center">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#fff;border:1px solid #dde3dc;border-radius:20px;overflow:hidden">
-    <tr><td style="height:8px;background:#e86f58"></td></tr>
-    <tr><td style="padding:26px 30px;background:#ff6b5c;color:#fff">
-      <div style="font-size:25px;font-weight:800">Boww &amp; Meow</div>
-      <div style="margin-top:5px;color:#dbe9df;font-size:13px">Pet care, made better</div>
-    </td></tr>
-    <tr><td style="padding:30px">
-      {% block content %}{% endblock %}
-      {% if track_url %}<p style="margin:28px 0"><a href="{{ track_url }}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:#ff6b5c;color:#fff;text-decoration:none;font-weight:700">Track order</a></p>{% endif %}
-      <p style="margin:30px 0 0;color:#6e7872;font-size:13px;line-height:1.6">Need help? {% if support_email %}Email <a href="mailto:{{ support_email }}" style="color:#ff6b5c">{{ support_email }}</a>.{% else %}Visit Boww &amp; Meow and contact our pet-care team.{% endif %}</p>
-    </td></tr>
-    <tr><td style="padding:20px 30px;background:#f5f2e9;color:#6e7872;font-size:12px">© Boww &amp; Meow · This message relates to order {{ order_number }}.</td></tr>
-  </table>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>Boww &amp; Meow — {{ order_number }}</title>
+<style>
+@media (prefers-color-scheme:dark) {
+.email-bg {background-color:#202020 !important}
+.email-card {background-color:#292929 !important;color:#f5f3ef !important}
+.email-soft {background-color:#333333 !important;color:#f5f3ef !important}
+.email-muted {color:#d1cdca !important}
+.email-link {color:#ff9b90 !important}
+}
+@media screen and (max-width:430px) {.email-pad {padding:20px 16px !important}}
+</style></head>
+<body class="email-bg" style="margin:0;padding:0;background-color:#faf8f5;font-family:Arial,Helvetica,sans-serif;color:#292524">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">{% block preheader %}An update about {{ order_number }}{% endblock %}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="email-bg" bgcolor="#faf8f5"><tr><td align="center" style="padding:20px 8px">
+<!--[if mso]><table role="presentation" width="620"><tr><td><![endif]-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="email-card" bgcolor="#ffffff" style="max-width:620px;background-color:#ffffff;color:#292524;border:1px solid #eadfd9;border-radius:16px">
+<tr><td height="5" bgcolor="#ff6b5c" style="height:5px;font-size:1px;line-height:5px">&nbsp;</td></tr>
+<tr><td class="email-pad" style="padding:24px 28px">
+{% if logo_url %}<a href="{{ store_url }}"><img src="{{ logo_url }}" width="128" alt="Boww &amp; Meow" border="0" style="display:block;width:128px;max-width:100%;height:auto"></a>{% else %}<strong style="font-size:24px;color:#ff6b5c">Boww &amp; Meow</strong>{% endif %}
+</td></tr>
+<tr><td class="email-pad" style="padding:20px 28px;font-size:15px;line-height:1.6">
+{% block content %}{% endblock %}
+{% include "store/emails/customer_order_details.html" %}
+{% if track_url %}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0"><tr><td bgcolor="#ff6b5c" style="background-color:#ff6b5c;border-radius:8px"><a href="{{ track_url }}" style="display:inline-block;border:14px solid #ff6b5c;border-left-width:20px;border-right-width:20px;background-color:#ff6b5c;color:#241917;font-weight:bold;text-decoration:none">Track your order</a></td></tr></table>{% endif %}
+<h2 style="font-size:17px;margin:26px 0 6px">Need help with your order?</h2>
+<p class="email-muted" style="margin:0;color:#625b57">Our pet-care team is happy to help.<br>{% if support_email %}<a class="email-link" href="mailto:{{ support_email }}" style="color:#a73529;overflow-wrap:anywhere">{{ support_email }}</a>{% else %}<a class="email-link" href="{{ store_url }}" style="color:#a73529">Visit our website to contact us.</a>{% endif %}</p>
+</td></tr>
+<tr><td class="email-soft email-pad" bgcolor="#fff5f0" style="padding:20px 28px;background-color:#fff5f0;border-top:1px solid #eadfd9;font-size:12px;line-height:1.7">
+<strong>Boww &amp; Meow</strong><br>Pet care, made better.<br><a class="email-link" href="{{ store_url }}" style="color:#a73529">Visit our store</a><br>This message relates to order {{ order_number }}.
 </td></tr></table>
-</body></html>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr></table></body></html>

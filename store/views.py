@@ -65,6 +65,7 @@ from .models import (
 )
 from .services.order_notifications import (
     notify_order_confirmed,
+    notify_owner_new_order,
     notify_order_status,
     notify_payment_confirmed,
     notify_payment_failed,
@@ -995,6 +996,7 @@ def checkout(request):
         except ValueError as exc:
             return render_checkout_error(str(exc), status=409)
 
+        notify_owner_new_order(order)
         request.session.pop("checkout_token", None)
         request.session.pop("coupon_code", None)
 

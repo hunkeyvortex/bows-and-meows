@@ -1,0 +1,32 @@
+Boww & Meow
+{% block heading %}Your order update{% endblock %}
+Hi {{ order.customer_name }},
+{% block message %}{% endblock %}
+
+Order {{ order_number }}
+Order date: {{ order.created_at|date:"d M Y, g:i A" }}
+Status: {{ order.get_status_display }}
+
+YOUR ORDER
+{% for item in items %}- {{ item.name }}{% if item.variant %} — Size: {{ item.variant }}{% endif %}
+  Qty {{ item.quantity }} | ₹{{ item.unit_price|floatformat:2 }} each | ₹{{ item.line_total|floatformat:2 }}
+{% endfor %}
+Subtotal: ₹{{ order.subtotal_amount|floatformat:2 }}
+Delivery: Free
+{% if order.discount_amount %}Discount{% if order.coupon_code %} ({{ order.coupon_code }}){% endif %}: −₹{{ order.discount_amount|floatformat:2 }}
+{% endif %}Total: ₹{{ order.total_amount|floatformat:2 }}
+Payment: {% include "store/emails/customer_payment_label.txt" %}
+
+DELIVERY DETAILS
+{{ order.customer_name }}
+{{ order.address }}
+{% if order.phone %}Phone: {{ order.phone }}{% endif %}
+{% if track_url %}Track your order: {{ track_url }}{% endif %}
+
+Need help with your order?
+Our pet-care team is happy to help.
+{% if support_email %}Email: {{ support_email }}{% endif %}
+
+Boww & Meow
+Pet care, made better.
+{{ store_url }}

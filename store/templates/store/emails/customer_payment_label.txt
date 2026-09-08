@@ -1,0 +1,1 @@
+{% if order.payment_status == 'paid' %}{% if order.payment_method == 'online' %}Paid online{% else %}Paid — Cash on Delivery{% endif %}{% elif order.payment_status == 'refunded' %}Refunded{% elif order.payment_status == 'failed' %}Payment not completed{% elif order.payment_method == 'cod' %}Cash on Delivery{% else %}Payment pending{% endif %}

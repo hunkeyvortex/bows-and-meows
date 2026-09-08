@@ -326,7 +326,7 @@ if "test" in sys.argv:
 # Brevo API key is present, production uses Brevo's HTTPS API so it also works
 # on hosts that block outbound SMTP ports.
 BREVO_API_KEY = (env.get("BREVO_API_KEY") or "").strip()
-BREVO_SENDER_EMAIL = (env.get("BREVO_SENDER_EMAIL") or "").strip()
+BREVO_SENDER_EMAIL = (env.get("BREVO_SENDER_EMAIL") or "orders@bowwandmeow.com").strip()
 BREVO_SENDER_NAME = (env.get("BREVO_SENDER_NAME") or "Boww & Meow").strip()
 # A configured Brevo key always wins over legacy SMTP environment values.
 # This prevents an old EMAIL_BACKEND setting on Render from silently routing
@@ -352,12 +352,9 @@ EMAIL_HOST_PASSWORD = (
     env.get("EMAIL_HOST_PASSWORD") or ""
 ).strip()
 
-DEFAULT_FROM_EMAIL = (
-    env.get("DEFAULT_FROM_EMAIL")
-    or (f"{BREVO_SENDER_NAME} <{BREVO_SENDER_EMAIL}>" if BREVO_SENDER_EMAIL else "")
-    or EMAIL_HOST_USER
-    or "Boww & Meow <noreply@bowsandmeows.com>"
-).strip()
+# Include the display name even when DEFAULT_FROM_EMAIL contains a bare address.
+DEFAULT_FROM_EMAIL = f"{BREVO_SENDER_NAME} <{BREVO_SENDER_EMAIL}>"
+ORDER_NOTIFICATION_EMAIL = (env.get("ORDER_NOTIFICATION_EMAIL") or "").strip()
 STOREFRONT_BASE_URL = (
     env.get("STOREFRONT_BASE_URL")
     or (f"https://{render_hostname}" if render_hostname else "http://127.0.0.1:8000")

@@ -10,6 +10,7 @@
         : "/static/store/sounds/";
 
     const soundFiles = {
+        bird: new URL("bird-chirp.ogg", assetBase).href,
         dog: new URL(
             "dog-bark.ogg",
             assetBase

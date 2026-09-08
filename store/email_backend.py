@@ -90,20 +90,15 @@ class BrevoAPIEmailBackend(BaseEmailBackend):
                 },
                 timeout=getattr(settings, "EMAIL_TIMEOUT", 10),
             )
-        except requests.RequestException as exc:
-            raise BrevoDeliveryError(f"Brevo API connection failed: {exc}") from exc
+        except requests.RequestException:
+            raise BrevoDeliveryError("Brevo API connection failed") from None
 
         if not 200 <= response.status_code < 300:
-            detail = (response.text or "No response body").strip()[:1000]
             raise BrevoDeliveryError(
-                f"Brevo API returned HTTP {response.status_code}: {detail}"
+                f"Brevo API returned HTTP {response.status_code}"
             )
 
-        try:
-            message_id = response.json().get("messageId", "")
-        except (TypeError, ValueError):
-            message_id = ""
-        logger.info("Brevo accepted transactional email%s", f" ({message_id})" if message_id else "")
+        logger.info("Brevo accepted transactional email")
 
     @staticmethod
     def _recipient(value):

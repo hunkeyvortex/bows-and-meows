@@ -1,5 +1,4 @@
-Payment for Boww & Meow order {{ order_number }} was not completed.
-
-Hi {{ order.customer_name }}, Boww & Meow has not marked this order as paid.
-{% if retry_url %}Try payment again: {{ retry_url }}
-{% endif %}{% if support_email %}Support: {{ support_email }}{% endif %}
+{% extends "store/emails/base_order_email.txt" %}
+{% block heading %}Payment update{% endblock %}
+{% block message %}{% if order.payment_status == 'failed' %}Your payment was not completed.{% else %}Please see your current payment status below.{% endif %}
+{% if retry_url and order.payment_status == 'failed' %}Try payment again: {{ retry_url }}{% endif %}{% endblock %}

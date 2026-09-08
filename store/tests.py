@@ -1228,7 +1228,7 @@ class BrandAndCartSoundTests(TestCase):
     def product(self, pet_type):
         return Product.objects.create(
             name=f"{pet_type.title()} Sound Product",
-            category="cat_food" if pet_type == "cat" else "dog_food",
+            category={"cat": "cat_food", "bird": "bird_food"}.get(pet_type, "dog_food"),
             pet_type=pet_type,
             product_type="food",
             price=Decimal("399.00"),
@@ -1244,7 +1244,7 @@ class BrandAndCartSoundTests(TestCase):
         self.assertNotIn('class="v2-brand-copy"', html)
 
     def test_product_purchase_forms_use_structured_pet_type_sound(self):
-        cases = (("dog", "dog"), ("cat", "cat"), ("both", "dog"))
+        cases = (("dog", "dog"), ("cat", "cat"), ("both", "dog"), ("bird", "bird"))
         for pet_type, expected_sound in cases:
             html = self.client.get(
                 reverse("product_detail", args=[self.product(pet_type).id])

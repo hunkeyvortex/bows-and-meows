@@ -8,9 +8,9 @@ from django.test import SimpleTestCase, override_settings
 @override_settings(
     EMAIL_BACKEND="store.email_backend.BrevoAPIEmailBackend",
     BREVO_API_KEY="test-api-key",
-    BREVO_SENDER_EMAIL="bowsandmeows00@gmail.com",
+    BREVO_SENDER_EMAIL="orders@bowwandmeow.com",
     BREVO_SENDER_NAME="Boww & Meow",
-    DEFAULT_FROM_EMAIL="Boww & Meow <bowsandmeows00@gmail.com>",
+    DEFAULT_FROM_EMAIL="Boww & Meow <orders@bowwandmeow.com>",
     EMAIL_TIMEOUT=10,
 )
 class BrevoAPIEmailBackendTests(SimpleTestCase):
@@ -36,7 +36,7 @@ class BrevoAPIEmailBackendTests(SimpleTestCase):
         self.assertEqual(call.kwargs["headers"]["api-key"], "test-api-key")
         self.assertEqual(
             call.kwargs["json"]["sender"],
-            {"name": "Boww & Meow", "email": "bowsandmeows00@gmail.com"},
+            {"name": "Boww & Meow", "email": "orders@bowwandmeow.com"},
         )
         self.assertEqual(
             call.kwargs["json"]["to"],

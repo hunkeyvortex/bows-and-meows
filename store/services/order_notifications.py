@@ -1,12 +1,17 @@
 """Failure-safe, centralized customer notifications for order events."""
 
 import logging
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
+from ipaddress import ip_address
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.db import transaction
+from django.utils import timezone
+from django.templatetags.static import static
+from store.models import OrderEmailDelivery
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +46,9 @@ def _context(order, event):
             "quantity": item.quantity,
             "unit_price": item.price,
             "line_total": item.price * item.quantity,
+            "image_url": _public_image_url(
+                item.variant.display_image_url if item.variant_id else item.product.display_image_url
+            ) if event != "owner_new_order" else "",
         })
 
     track_url = ""
@@ -60,42 +68,98 @@ def _context(order, event):
         "retry_url": retry_url,
         "store_url": _absolute_url(reverse("home")),
         "support_email": getattr(settings, "SUPPORT_EMAIL", ""),
+        "crm_url": _absolute_url(reverse("crm_orders")),
+        "logo_url": _logo_url() if event != "owner_new_order" else "",
+        "progress_stages": [
+            {"label": label, "current": order.status == value}
+            for value, label in (("confirmed", "Confirmed"), ("packed", "Packed"),
+                                 ("shipped", "Shipped"), ("delivered", "Delivered"))
+        ] if order.status in {"confirmed", "packed", "shipped", "delivered"} else [],
     }
 
 
-def send_order_notification(order, event):
-    """Send one order event through Django's configured backend.
+def _public_image_url(value):
+    """Presentation only: omit unsafe/local URLs; never fetch images while sending."""
+    if not value:
+        return ""
+    try:
+        url = _absolute_url(value) if value.startswith("/") and not value.startswith("//") else value
+        parsed = urlsplit(url)
+        host = (parsed.hostname or "").lower()
+        if parsed.scheme != "https" or parsed.username or parsed.password or not host:
+            return ""
+        if host == "localhost" or host.endswith((".localhost", ".local", ".internal")) or "." not in host:
+            return ""
+        try:
+            if not ip_address(host).is_global:
+                return ""
+        except ValueError:
+            pass
+        return url
+    except ValueError:
+        return ""
 
-    Callers own transition/deduplication decisions. Delivery errors are logged
-    and intentionally never escape into checkout, payment, inventory, or CRM.
-    """
-    if not order.email or event not in EVENT_CONFIG:
+
+def _logo_url():
+    try:
+        return _public_image_url(static("store/images/boww-meow-coral-logo.png"))
+    except (ValueError, OSError):
+        return ""
+
+
+def _deliver(order, event, recipient, subject_template, template_name):
+    delivery = None
+    try:
+        # Unique database constraint arbitrates concurrent callbacks/workers.
+        # Claim BEFORE contacting Brevo: an uncertain result must not be replayed.
+        delivery, created = OrderEmailDelivery.objects.get_or_create(order=order, event=event)
+        if not created:
+            return False
+        context = _context(order, event)
+        message = EmailMultiAlternatives(
+            subject=subject_template.format(number=context["order_number"]),
+            body=render_to_string(f"store/emails/{template_name}.txt", context),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[recipient],
+        )
+        message.attach_alternative(render_to_string(f"store/emails/{template_name}.html", context), "text/html")
+        accepted = message.send(fail_silently=False) == 1
+        OrderEmailDelivery.objects.filter(pk=delivery.pk).update(
+            state="sent" if accepted else "failed", completed_at=timezone.now())
+        return accepted
+    except Exception:
+        # Do not log exception text, email addresses, payloads or credentials.
+        logger.error("Order email attempt failed: order_id=%s event=%s", order.pk, event)
+        if delivery is not None:
+            try:
+                OrderEmailDelivery.objects.filter(pk=delivery.pk).update(state="failed", completed_at=timezone.now())
+            except Exception:
+                logger.error("Order email audit update failed: order_id=%s event=%s", order.pk, event)
         return False
 
-    subject_template, template_name = EVENT_CONFIG[event]
-    context = _context(order, event)
-    subject = subject_template.format(number=context["order_number"])
-    html = render_to_string(f"store/emails/{template_name}.html", context)
-    text = render_to_string(f"store/emails/{template_name}.txt", context)
 
+def _schedule(order, event, recipient, subject, template):
+    if not recipient:
+        return False
     try:
-        message = EmailMultiAlternatives(
-            subject=subject,
-            body=text,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[order.email],
-        )
-        message.attach_alternative(html, "text/html")
-        message.send(fail_silently=False)
+        if not transaction.get_connection().in_atomic_block:
+            return _deliver(order, event, recipient, subject, template)
+        transaction.on_commit(lambda: _deliver(order, event, recipient, subject, template), robust=True)
         return True
     except Exception:
-        logger.exception(
-            "Could not send %s notification for order %s to %s",
-            event,
-            order.pk,
-            order.email,
-        )
+        logger.error("Order email scheduling failed: order_id=%s event=%s", order.pk, event)
         return False
+
+
+def send_order_notification(order, event):
+    if event not in EVENT_CONFIG:
+        return False
+    return _schedule(order, event, order.email, *EVENT_CONFIG[event])
+
+
+def notify_owner_new_order(order):
+    return _schedule(order, "owner_new_order", settings.ORDER_NOTIFICATION_EMAIL,
+                     "New Boww & Meow order {number}", "owner_new_order")
 
 
 def notify_order_confirmed(order):
