@@ -1,8 +1,10 @@
 from django.urls import path
 from . import views, commerce_views
+from .search_suggestions import suggestions
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
+    path("search/suggestions/", suggestions, name="search_suggestions"),
     path("", views.home, name="home"),
     path("delivery/check/", commerce_views.delivery_status, name="delivery_status"),
     path("quick-view/<int:product_id>/", commerce_views.quick_view, name="quick_view"),

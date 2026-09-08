@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}?v=coral-20260829-6">
     <link rel="stylesheet" href="{% static 'store/brand-system.css' %}?v=coral-20260830-11">
     {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'store/mobile-search.css' %}?v=1">
 </head>
 
 <body>
@@ -37,7 +38,7 @@
             <img class="v2-brand-logo" src="{% static 'store/images/boww-meow-coral-logo.png' %}" alt="Boww & Meow">
         </a>
 
-        <form method="GET" action="{% url 'search_products' %}" class="v2-search" role="search">
+        <form method="GET" action="{% url 'search_products' %}" class="v2-search" role="search" data-suggestions-url="{% url 'search_suggestions' %}">
             <span class="v2-search-icon"><svg class="bm-icon outline"><use href="{% static 'store/icons.svg' %}#search"></use></svg></span>
             <input
                 type="text"
@@ -47,6 +48,8 @@
                 autocomplete="off"
             >
             <button type="submit">Search</button>
+            <div class="mobile-search-results" id="mobile-search-results" aria-label="Search suggestions" hidden></div>
+            <span class="mobile-search-status" role="status" aria-live="polite"></span>
         </form>
 
         <div class="v2-header-actions">
@@ -256,6 +259,7 @@
 
 <script src="{% static 'store/cart-sounds.js' %}" defer></script>
 <script src="{% static 'store/mobile-categories.js' %}" defer></script>
+<script src="{% static 'store/mobile-search.js' %}" defer></script>
 
 </body>
 </html>

@@ -1,0 +1,14 @@
+.mobile-search-results[hidden] { display: none !important; }
+.mobile-search-results { display: none; }
+.mobile-search-status { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+@media (max-width: 900px) {
+  .v2-search { position:relative; overflow:visible !important; }
+  .mobile-search-results { display:block; position:absolute; top:calc(100% + 8px); left:0; right:0; z-index:1000; max-height: min(55vh, 420px); overflow-y:auto; overscroll-behavior:contain; background:#fff; border:1px solid #f4d4cf; border-radius:16px; box-shadow:0 12px 32px #40251f26; padding:6px; }
+  .mobile-search-results a { display:flex; align-items:center; gap:10px; padding:10px; min-height:44px; color:#25352e; text-decoration:none; border-radius:10px; font-size:14px; line-height:1.4; }
+  .mobile-search-results a:focus, .mobile-search-results a:hover { background:#fff0ec; outline:2px solid #ff6b5c; outline-offset:-2px; }
+  .mobile-search-results img { width:44px; height:44px; object-fit:contain; flex-shrink:0; }
+  .mobile-search-results .suggestion-label { flex:1; min-width:0; overflow-wrap:anywhere; }
+  .mobile-search-results small { display:block; color:#776a66; }
+  .mobile-search-results .suggestion-price { white-space:nowrap; font-weight:700; }
+  .mobile-search-results .suggestion-all { color:#c64235; border-top:1px solid #f5e3df; margin-top:4px; font-weight:700; }
+}
