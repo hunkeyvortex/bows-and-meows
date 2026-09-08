@@ -2,6 +2,9 @@
 .mobile-search-results { display: none; }
 .mobile-search-status { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
 @media (max-width: 900px) {
+  /* Mobile's static header otherwise lets banner stacking contexts cover results. */
+  .site-header-v2 { position:relative; z-index:500; overflow:visible; }
+  .site-header-v2 .v2-main-header { position:relative; z-index:2; overflow:visible; }
   .v2-search { position:relative; overflow:visible !important; }
   .mobile-search-results { display:block; position:absolute; top:calc(100% + 8px); left:0; right:0; z-index:1000; max-height: min(55vh, 420px); overflow-y:auto; overscroll-behavior:contain; background:#fff; border:1px solid #f4d4cf; border-radius:16px; box-shadow:0 12px 32px #40251f26; padding:6px; }
   .mobile-search-results a { display:flex; align-items:center; gap:10px; padding:10px; min-height:44px; color:#25352e; text-decoration:none; border-radius:10px; font-size:14px; line-height:1.4; }
