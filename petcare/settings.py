@@ -74,9 +74,13 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "bows-and-meows-1.onrender.com",
+    "bowwandmeow.com",
+    "www.bowwandmeow.com",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "https://bows-and-meows-1.onrender.com",
+    "https://bowwandmeow.com",
+    "https://www.bowwandmeow.com",
 ]
 
 ALLOWED_HOSTS.extend(
