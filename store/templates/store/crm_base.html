@@ -14,13 +14,16 @@
     <link rel="stylesheet" href="{% static 'store/commerce-polish.css' %}?v=coral-20260829-3">
     <link rel="stylesheet" href="{% static 'store/crm.css' %}?v=coral-20260829-3">
     {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'store/crm-mobile.css' %}?v=20260909-1">
 </head>
 
 <body class="crm-body">
 
 <div class="crm-layout">
+    <button class="crm-menu-toggle" type="button" aria-expanded="false" aria-controls="crm-sidebar">☰ Menu</button>
+    <button class="crm-menu-backdrop" type="button" aria-label="Close menu" hidden></button>
 
-    <aside class="crm-sidebar">
+    <aside class="crm-sidebar" id="crm-sidebar">
 
         <div class="crm-logo">
             <span class="crm-logo-mark"><img src="{% static 'store/images/boww-meow-coral-logo.png' %}" alt=""></span>
@@ -110,6 +113,7 @@
 
 </div>
 
+<script src="{% static 'store/crm-mobile.js' %}?v=20260909-1" defer></script>
 </body>
 
 </html>

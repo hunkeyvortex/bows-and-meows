@@ -96,7 +96,7 @@ CRM Dashboard | Boww & Meow
 
             <div>
                 <p>Low Stock</p>
-                <h2>{{ low_stock_products.count }}</h2>
+                <h2>{{ low_stock_count }}</h2>
             </div>
 
         </div>
@@ -206,7 +206,7 @@ CRM Dashboard | Boww & Meow
                     </div>
 
                     <span>
-                        {{ product.stock }} left
+                        {{ product.inventory_stock }} left
                     </span>
 
                 </div>
@@ -218,6 +218,7 @@ CRM Dashboard | Boww & Meow
                 </p>
 
             {% endfor %}
+            <p class="crm-empty">Showing up to 10 active products. <a href="{% url 'crm_inventory' %}">Manage inventory →</a></p>
 
         </div>
 

@@ -1360,9 +1360,17 @@ def crm_dashboard(request):
         total=Sum("total_amount")
     )["total"] or 0
 
+    from .models import STOREFRONT_PAUSED_CATEGORIES, STOREFRONT_PAUSED_PRODUCT_TYPES
     low_stock_products = Product.objects.filter(
-        stock__lte=5
-    ).order_by("stock")
+        is_archived=False, is_available=True,
+    ).exclude(category__in=STOREFRONT_PAUSED_CATEGORIES).exclude(
+        product_type__in=STOREFRONT_PAUSED_PRODUCT_TYPES,
+    ).annotate(
+        variant_stock=Sum("variants__stock", filter=Q(variants__is_available=True)),
+    ).annotate(
+        inventory_stock=Coalesce("variant_stock", "stock"),
+    ).filter(inventory_stock__lte=5).order_by("inventory_stock", "id")
+    low_stock_count = low_stock_products.count()
 
     recent_orders = Order.objects.order_by(
         "-created_at"
@@ -1372,7 +1380,8 @@ def crm_dashboard(request):
         "total_customers": total_customers,
         "total_orders": total_orders,
         "total_revenue": total_revenue,
-        "low_stock_products": low_stock_products,
+        "low_stock_products": low_stock_products[:10],
+        "low_stock_count": low_stock_count,
         "recent_orders": recent_orders,
     }
 
