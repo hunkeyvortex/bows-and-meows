@@ -1,12 +1,23 @@
 {% load static %}<link rel="stylesheet" href="{% static 'store/flow-theme.css' %}?v=20260909-1">
 <style>
-.account-page .success-card,.success-page .success-card {
+.account-page .auth-card,.account-page .address-form,.account-page .success-card,.success-page .success-card {
     box-sizing:border-box;
     width:100%;
     min-width:0;
 }
-.account-page .success-card h1,.success-page .success-card h1 {
+.account-page .auth-card h1,.account-page .success-card h1,.success-page .success-card h1 {
     overflow-wrap:break-word;
     line-height:1.15;
+}
+.account-page .auth-card { overflow-wrap:anywhere; }
+.account-page .auth-card input { box-sizing:border-box; min-width:0; max-width:100%; font-size:16px; }
+.account-page .auth-card .errorlist { padding:12px 12px 12px 28px; border-radius:10px; background:#fff0ed; color:#93443c; text-align:left; }
+.account-page .auth-card .helptext { display:block; font-size:13px; line-height:1.5; text-align:left; }
+.account-page .auth-card .helptext ul { padding-left:20px; }
+.account-page .auth-card a.product-detail-cart { display:flex; align-items:center; justify-content:center; box-sizing:border-box; padding:14px; text-decoration:none; }
+.password-reset-status:focus { outline:none; }
+@media(max-width:480px) {
+    .account-page .auth-card h1 { font-size:28px!important; }
+    .account-page .auth-card p { font-size:15px; }
 }
 </style>
