@@ -2254,22 +2254,22 @@ footer {
    ========================================================== */
 
 :root {
-    --bm-coral: #ff6b5c;
-    --bm-coral-dark: #e95c4e;
-    --bm-coral-soft: #ffe8e2;
-    --bm-peach: #ffb8a7;
-    --bm-green: #ff6b5c;
-    --bm-green-dark: #e95c4e;
-    --bm-green-soft: #ffe8e2;
+    --bm-coral: #f45a0a;
+    --bm-coral-dark: #d94700;
+    --bm-coral-soft: #fff0e5;
+    --bm-peach: #ffb16f;
+    --bm-green: #f45a0a;
+    --bm-green-dark: #d94700;
+    --bm-green-soft: #fff0e5;
     --bm-success: #2f8f5b;
     --bm-success-soft: #e9f6ee;
-    --bm-cream: #fff7f5;
-    --bm-cream-alt: #fff1ed;
-    --bm-surface: #fffcfa;
-    --bm-text: #2e2e2e;
-    --bm-muted: #6f6a67;
-    --bm-border: #f1d8d1;
-    --bm-focus: 0 0 0 3px rgba(255, 107, 92, .22);
+    --bm-cream: #fff5ec;
+    --bm-cream-alt: #fff9f4;
+    --bm-surface: #ffffff;
+    --bm-text: #202020;
+    --bm-muted: #666666;
+    --bm-border: #eaeaea;
+    --bm-focus: 0 0 0 3px rgba(244, 90, 10, .22);
     --bm-shadow-sm: 0 8px 24px rgba(99, 55, 48, .07);
     --bm-shadow-md: 0 16px 44px rgba(99, 55, 48, .11);
     --bm-radius-control: 12px;
@@ -2284,7 +2284,7 @@ footer {
     --v2-green-dark: var(--bm-green-dark);
     --v2-lime: var(--bm-green-soft);
     --v2-orange: var(--bm-coral);
-    --v2-yellow: #f9dc75;
+    --v2-yellow: #f6b800;
     --v2-blue: #dceefa;
     --v2-pink: #f8dddd;
     --v2-shadow: 0 20px 60px rgba(31, 35, 33, 0.08);
@@ -2998,6 +2998,7 @@ footer {
 
 .v2-product-media {
     min-height: 250px;
+    overflow: hidden;
     position: relative;
     display: grid;
     place-items: center;
@@ -3007,13 +3008,20 @@ footer {
 .v2-product-media > a {
     width: 100%;
     height: 250px;
-    display: grid;
-    place-items: center;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .v2-product-media img {
+    display: block;
+    min-width: 0;
+    min-height: 0;
     width: 86%;
     height: 86%;
+    max-width: 86%;
+    max-height: 86%;
     object-fit: contain;
     transition: transform 0.25s ease;
 }
