@@ -100,7 +100,6 @@
     height: 100%;
     padding: 12px;
     object-fit: contain;
-    filter: brightness(0) saturate(100%) invert(55%) sepia(85%) saturate(1899%) hue-rotate(326deg) brightness(104%) contrast(103%);
 }
 
 .category-coming-soon-eyebrow {
